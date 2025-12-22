@@ -1,0 +1,31 @@
+{{define "totals"}}
+<div id="totals" class="bg-white rounded-lg shadow-sm p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Quote Summary</h2>
+    <div class="space-y-3">
+        <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Materials</span>
+            <span class="font-medium">{{formatMoney .MaterialSubtotal}}</span>
+        </div>
+        <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Labor</span>
+            <span class="font-medium">{{formatMoney .LaborSubtotal}}</span>
+        </div>
+        <div class="border-t border-gray-200 pt-3">
+            <div class="flex justify-between text-sm">
+                <span class="text-gray-500">Subtotal</span>
+                <span class="font-medium">{{formatMoney .Subtotal}}</span>
+            </div>
+        </div>
+        <div class="flex justify-between text-sm">
+            <span class="text-gray-500">Total Markup</span>
+            <span class="font-medium text-green-600">+{{formatMoney .SurchargeTotal}}</span>
+        </div>
+        <div class="border-t border-gray-200 pt-3">
+            <div class="flex justify-between">
+                <span class="text-lg font-semibold text-gray-900">Grand Total</span>
+                <span class="text-lg font-bold text-gray-900">{{formatMoney .GrandTotal}}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

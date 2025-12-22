@@ -1,0 +1,34 @@
+{{define "line_item"}}
+<div id="item-{{.ID}}" class="p-3 hover:bg-gray-50 flex items-center gap-3">
+    <!-- Type indicator -->
+    <span class="w-2 h-2 rounded-full {{if eq .Type "material"}}bg-blue-500{{else}}bg-orange-500{{end}}"
+          title="{{.Type}}"></span>
+
+    <!-- Name -->
+    <span class="flex-1 text-sm">{{.Name}}</span>
+
+    <!-- Quantity -->
+    <span class="w-16 text-sm text-right">{{printf "%.2f" .Quantity}}</span>
+
+    <!-- Unit -->
+    <span class="w-12 text-sm text-gray-500">{{.Unit}}</span>
+
+    <!-- Unit Price -->
+    <span class="w-20 text-sm text-right">{{printf "$%.2f" .UnitPrice}}</span>
+
+    <!-- Line Total -->
+    <span class="w-24 text-sm text-right font-medium text-gray-900">
+        {{printf "$%.2f" (mul .Quantity .UnitPrice)}}
+    </span>
+
+    <!-- Delete -->
+    <button hx-delete="/items/{{.ID}}"
+            hx-target="#item-{{.ID}}"
+            hx-swap="outerHTML"
+            class="text-gray-400 hover:text-red-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+    </button>
+</div>
+{{end}}

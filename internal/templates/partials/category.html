@@ -1,0 +1,95 @@
+{{define "category"}}
+<div id="category-{{.ID}}" class="category p-4 hover:bg-gray-50" x-data="{ expanded: true, showAddItem: false }">
+    <div class="flex items-center gap-3">
+        <!-- Expand/Collapse -->
+        <button @click="expanded = !expanded" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-90': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </button>
+
+        <!-- Category Name -->
+        <span class="flex-1 font-medium text-gray-900">{{.Name}}</span>
+
+        <!-- Surcharge -->
+        <span class="text-sm text-gray-500">
+            {{if .SurchargePercent.Valid}}{{printf "%.1f%%" .SurchargePercent.Float64}}{{else}}inherit{{end}}
+        </span>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-2">
+            <button @click="showAddItem = !showAddItem" title="Add line item"
+                    class="text-gray-400 hover:text-blue-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+            </button>
+            <button hx-delete="/categories/{{.ID}}"
+                    hx-target="#category-{{.ID}}"
+                    hx-swap="outerHTML"
+                    hx-confirm="Delete this category and all its items?"
+                    class="text-gray-400 hover:text-red-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Line Item Form -->
+    <div x-show="showAddItem" x-collapse class="mt-4 ml-8">
+        <form hx-post="/categories/{{.ID}}/items"
+              hx-target="#category-{{.ID}} .line-items"
+              hx-swap="beforeend"
+              @htmx:after-request="$el.reset(); showAddItem = false"
+              class="bg-gray-50 p-4 rounded-lg grid grid-cols-2 md:grid-cols-6 gap-3">
+            <div class="col-span-2">
+                <input type="text" name="name" required placeholder="Item name"
+                       class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div>
+                <select name="type" required
+                        class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="material">Material</option>
+                    <option value="labor">Labor</option>
+                </select>
+            </div>
+            <div>
+                <input type="number" name="quantity" required step="0.01" min="0.01" value="1" placeholder="Qty"
+                       class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div>
+                <input type="text" name="unit" required placeholder="Unit" list="common-units"
+                       class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div>
+                <input type="number" name="unit_price" required step="0.01" min="0" value="0" placeholder="Price"
+                       class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            </div>
+            <div class="col-span-2 md:col-span-6">
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+                    Add Item
+                </button>
+            </div>
+        </form>
+        <datalist id="common-units">
+            <option value="ea">
+            <option value="hr">
+            <option value="sqft">
+            <option value="lnft">
+            <option value="day">
+            <option value="bundle">
+            <option value="box">
+            <option value="bag">
+            <option value="gal">
+            <option value="sheet">
+        </datalist>
+    </div>
+
+    <!-- Line Items -->
+    <div x-show="expanded" x-collapse class="ml-8 mt-2 line-items divide-y divide-gray-100">
+        <!-- Line items will be added here -->
+    </div>
+</div>
+{{end}}

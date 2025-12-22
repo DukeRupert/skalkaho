@@ -1,0 +1,62 @@
+{{define "settings"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head" .}}
+</head>
+<body class="bg-gray-50 min-h-screen">
+    {{template "header" .}}
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-2xl mx-auto">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
+
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Default Quote Settings</h2>
+                <p class="text-sm text-gray-500 mb-6">These settings will be applied to new quotes by default.</p>
+
+                <form hx-put="/settings" hx-swap="none" class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Default Markup Percentage</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="default_surcharge_percent"
+                                   value="{{.Settings.DefaultSurchargePercent}}"
+                                   step="0.1" min="0"
+                                   class="w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <span class="text-gray-500">%</span>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-500">Applied to new quotes at the job level.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Default Markup Mode</label>
+                        <select name="default_surcharge_mode"
+                                class="w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="stacking" {{if eq .Settings.DefaultSurchargeMode "stacking"}}selected{{end}}>
+                                Stacking - All markups add together
+                            </option>
+                            <option value="override" {{if eq .Settings.DefaultSurchargeMode "override"}}selected{{end}}>
+                                Override - Most specific markup wins
+                            </option>
+                        </select>
+                        <div class="mt-2 text-sm text-gray-500">
+                            <p><strong>Stacking:</strong> Job (15%) + Category (10%) + Item (5%) = 30% total</p>
+                            <p><strong>Override:</strong> Uses the most specific level (Item 5% wins over Category/Job)</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Save Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    {{template "toast" .}}
+</body>
+</html>
+{{end}}
