@@ -1,6 +1,7 @@
 package quote
 
 import (
+	"bytes"
 	"database/sql"
 	"net/http"
 	"strconv"
@@ -9,6 +10,39 @@ import (
 	"github.com/dukerupert/skalkaho/internal/repository"
 	"github.com/google/uuid"
 )
+
+// writeTotalsOOB writes the totals partial with OOB swap to the response
+func (h *Handler) writeTotalsOOB(w http.ResponseWriter, r *http.Request, jobID string) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job for totals", "error", err)
+		return
+	}
+
+	categories, err := h.queries.ListCategoriesByJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to list categories for totals", "error", err)
+		return
+	}
+
+	lineItems, err := h.queries.ListLineItemsByJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to list line items for totals", "error", err)
+		return
+	}
+
+	totals := h.calculateTotals(job, categories, lineItems)
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderToWriter(&buf, "totals_oob", totals); err != nil {
+		logger.Error("failed to render totals OOB", "error", err)
+		return
+	}
+	w.Write(buf.Bytes())
+}
 
 // CreateLineItem creates a new line item.
 func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
@@ -47,16 +81,24 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get category for jobID
+	category, err := h.queries.GetCategory(ctx, categoryID)
+	if err != nil {
+		logger.Error("failed to get category", "error", err)
+		http.Error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
 	// Return line item partial for HTMX
 	if r.Header.Get("HX-Request") == "true" {
 		if err := h.renderer.RenderPartial(w, "line_item", lineItem); err != nil {
 			logger.Error("failed to render line item", "error", err)
 		}
+		// Append OOB totals update
+		h.writeTotalsOOB(w, r, category.JobID)
 		return
 	}
 
-	// Get category to redirect
-	category, _ := h.queries.GetCategory(ctx, categoryID)
 	http.Redirect(w, r, "/jobs/"+category.JobID, http.StatusSeeOther)
 }
 
@@ -141,15 +183,24 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get category for jobID
+	category, err := h.queries.GetCategory(ctx, lineItem.CategoryID)
+	if err != nil {
+		logger.Error("failed to get category", "error", err)
+		http.Error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
 	// Return updated line item for HTMX
 	if r.Header.Get("HX-Request") == "true" {
 		if err := h.renderer.RenderPartial(w, "line_item", lineItem); err != nil {
 			logger.Error("failed to render line item", "error", err)
 		}
+		// Append OOB totals update
+		h.writeTotalsOOB(w, r, category.JobID)
 		return
 	}
 
-	category, _ := h.queries.GetCategory(ctx, lineItem.CategoryID)
 	http.Redirect(w, r, "/jobs/"+category.JobID, http.StatusSeeOther)
 }
 
@@ -159,15 +210,30 @@ func (h *Handler) DeleteLineItem(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.LoggerFromContext(ctx)
 	itemID := r.PathValue("id")
 
+	// Get item first to find jobID for OOB update
+	item, err := h.queries.GetLineItem(ctx, itemID)
+	if err != nil {
+		logger.Error("failed to get line item", "error", err)
+		http.Error(w, "Line item not found", http.StatusNotFound)
+		return
+	}
+
+	category, err := h.queries.GetCategory(ctx, item.CategoryID)
+	if err != nil {
+		logger.Error("failed to get category", "error", err)
+		http.Error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
 	if err := h.queries.DeleteLineItem(ctx, itemID); err != nil {
 		logger.Error("failed to delete line item", "error", err)
 		http.Error(w, "Failed to delete line item", http.StatusInternalServerError)
 		return
 	}
 
-	// Return empty response for HTMX
+	// Return empty response for HTMX with OOB totals update
 	if r.Header.Get("HX-Request") == "true" {
-		w.WriteHeader(http.StatusOK)
+		h.writeTotalsOOB(w, r, category.JobID)
 		return
 	}
 
