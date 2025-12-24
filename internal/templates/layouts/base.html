@@ -142,6 +142,46 @@ function selectItem(button) {
     // Clear search results
     const searchResults = form.querySelector('.search-results');
     if (searchResults) searchResults.innerHTML = '';
+
+    // Move focus to quantity field
+    const qtyInput = form.querySelector('input[name="quantity"]');
+    if (qtyInput) qtyInput.focus();
 }
+
+// Keyboard navigation for search results
+document.addEventListener('keydown', function(e) {
+    const input = e.target;
+    if (input.name !== 'name' || !input.closest('form')) return;
+
+    const resultsContainer = input.parentElement.querySelector('.search-results');
+    if (!resultsContainer) return;
+
+    const items = resultsContainer.querySelectorAll('button');
+    if (items.length === 0) return;
+
+    const current = resultsContainer.querySelector('.bg-copper-100');
+    let index = Array.from(items).indexOf(current);
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (index < items.length - 1) index++;
+        else if (index === -1) index = 0;
+        items.forEach(item => item.classList.remove('bg-copper-100'));
+        items[index].classList.add('bg-copper-100');
+        items[index].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (index > 0) index--;
+        else if (index === -1) index = items.length - 1;
+        items.forEach(item => item.classList.remove('bg-copper-100'));
+        items[index].classList.add('bg-copper-100');
+        items[index].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && current) {
+        e.preventDefault();
+        selectItem(current);
+    } else if (e.key === 'Escape') {
+        resultsContainer.innerHTML = '';
+    }
+});
 </script>
 {{end}}
