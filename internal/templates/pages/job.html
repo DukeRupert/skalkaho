@@ -55,7 +55,7 @@
                     {{$lineItemsByCategory := .LineItemsByCategory}}
                     {{$childCategories := .ChildCategories}}
                     {{range .Categories}}
-                        {{template "category" (dict "Category" . "Job" $job "LineItems" (index $lineItemsByCategory .ID) "ChildCategories" (index $childCategories .ID))}}
+                        {{template "category" (dict "Category" . "Job" $job "LineItems" (index $lineItemsByCategory .ID) "ChildCategories" (index $childCategories .ID) "Depth" 1 "LineItemsByCategory" $lineItemsByCategory "AllChildCategories" $childCategories)}}
                     {{else}}
                         <div id="empty-categories" class="p-8 text-center text-slate-500">
                             <p>No categories yet. Add a category to get started.</p>

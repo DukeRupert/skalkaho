@@ -20,6 +20,7 @@ func Register(mux *http.ServeMux, h *quote.Handler) {
 
 	// Categories
 	mux.HandleFunc("POST /jobs/{jobID}/categories", h.CreateCategory)
+	mux.HandleFunc("POST /categories/{parentID}/subcategories", h.CreateSubcategory)
 	mux.HandleFunc("PUT /categories/{id}", h.UpdateCategory)
 	mux.HandleFunc("DELETE /categories/{id}", h.DeleteCategory)
 

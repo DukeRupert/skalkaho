@@ -1,6 +1,11 @@
 {{define "category"}}
+{{$depth := .Depth}}{{if not $depth}}{{$depth = 1}}{{end}}
+{{$canAddSubcategory := lt $depth 3}}
 <details id="category-{{.Category.ID}}" class="category" open>
-    <summary class="flex items-center gap-3 px-4 py-3 bg-slate-50 border-l-4 border-slate-900 cursor-pointer list-none">
+    <summary class="flex items-center gap-3 px-4 py-3 cursor-pointer list-none
+        {{if eq $depth 1}}bg-slate-100 border-l-4 border-slate-900{{end}}
+        {{if eq $depth 2}}bg-slate-50 border-l-4 border-slate-500 ml-4{{end}}
+        {{if eq $depth 3}}bg-white border-l-4 border-slate-300 ml-8{{end}}">
         <!-- Expand/Collapse Arrow -->
         <svg class="w-5 h-5 text-slate-500 transition-transform details-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -8,6 +13,9 @@
 
         <!-- Category Name -->
         <span class="flex-1 font-semibold text-slate-900 uppercase tracking-wide text-sm">{{.Category.Name}}</span>
+
+        <!-- Depth indicator -->
+        <span class="text-xs text-slate-400">L{{$depth}}</span>
 
         <!-- Surcharge -->
         <span class="text-xs text-slate-500 bg-white px-2 py-0.5 rounded">
@@ -27,70 +35,104 @@
         </button>
     </summary>
 
-    <!-- Add Line Item Form (always visible when expanded) -->
-    <div class="p-4 border-l-4 border-slate-200 bg-white">
-        <form hx-post="/categories/{{.Category.ID}}/items"
-              hx-target="#category-{{.Category.ID}} .line-items"
-              hx-swap="beforeend"
-              hx-on::after-request="if(event.detail.requestConfig.verb === 'post') { this.reset(); this.querySelector('.search-results').innerHTML = ''; }"
-              class="bg-slate-50 p-4 rounded-lg ring-1 ring-slate-100 grid grid-cols-2 md:grid-cols-6 gap-3">
-            <div class="col-span-2 relative">
-                <input type="text" name="name" required placeholder="Search items or type new..."
-                       autocomplete="off"
-                       hx-get="/items/search"
-                       hx-trigger="keyup changed delay:300ms"
-                       hx-target="next .search-results"
-                       class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
-                <div class="search-results"></div>
-            </div>
-            <div>
-                <select name="type" required
-                        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
-                    <option value="material">Material</option>
-                    <option value="labor">Labor</option>
-                    <option value="equipment">Equipment</option>
-                </select>
-            </div>
-            <div>
-                <input type="number" name="quantity" required step="0.01" min="0.01" value="1" placeholder="Qty"
-                       class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
-            </div>
-            <div>
-                <input type="text" name="unit" required placeholder="Unit" list="common-units-{{.Category.ID}}"
-                       class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
-            </div>
-            <div>
-                <input type="number" name="unit_price" required step="0.01" min="0" value="0" placeholder="Price"
-                       class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
-            </div>
-            <div class="col-span-2 md:col-span-6">
-                <button type="submit"
-                        class="inline-flex items-center justify-center rounded-lg bg-copper-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500 focus:ring-offset-2 transition-colors">
-                    Add Item
-                </button>
-            </div>
-        </form>
-        <datalist id="common-units-{{.Category.ID}}">
-            <option value="ea">
-            <option value="hr">
-            <option value="sqft">
-            <option value="lnft">
-            <option value="day">
-            <option value="wk">
-            <option value="mo">
-            <option value="bundle">
-            <option value="box">
-            <option value="bag">
-            <option value="gal">
-            <option value="sheet">
-        </datalist>
-    </div>
+    <!-- Category Content -->
+    <div class="{{if eq $depth 1}}ml-0{{end}}{{if eq $depth 2}}ml-4{{end}}{{if eq $depth 3}}ml-8{{end}}">
+        <!-- Add Line Item Form -->
+        <div class="p-4 border-l-4 border-slate-200 bg-white">
+            <form hx-post="/categories/{{.Category.ID}}/items"
+                  hx-target="#category-{{.Category.ID}} > div > .line-items"
+                  hx-swap="beforeend"
+                  hx-on::after-request="if(event.detail.requestConfig.verb === 'post') { this.reset(); this.querySelector('.search-results').innerHTML = ''; }"
+                  class="bg-slate-50 p-4 rounded-lg ring-1 ring-slate-100 grid grid-cols-2 md:grid-cols-6 gap-3">
+                <div class="col-span-2 relative">
+                    <input type="text" name="name" required placeholder="Search items or type new..."
+                           autocomplete="off"
+                           hx-get="/items/search"
+                           hx-trigger="keyup changed delay:300ms"
+                           hx-target="next .search-results"
+                           class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
+                    <div class="search-results"></div>
+                </div>
+                <div>
+                    <select name="type" required
+                            class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
+                        <option value="material">Material</option>
+                        <option value="labor">Labor</option>
+                        <option value="equipment">Equipment</option>
+                    </select>
+                </div>
+                <div>
+                    <input type="number" name="quantity" required step="0.01" min="0.01" value="1" placeholder="Qty"
+                           class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
+                </div>
+                <div>
+                    <input type="text" name="unit" required placeholder="Unit" list="common-units-{{.Category.ID}}"
+                           class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
+                </div>
+                <div>
+                    <input type="number" name="unit_price" required step="0.01" min="0" value="0" placeholder="Price"
+                           class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
+                </div>
+                <div class="col-span-2 md:col-span-6 flex gap-2">
+                    <button type="submit"
+                            class="inline-flex items-center justify-center rounded-lg bg-copper-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500 focus:ring-offset-2 transition-colors">
+                        Add Item
+                    </button>
+                    {{if $canAddSubcategory}}
+                    <button type="button"
+                            onclick="this.nextElementSibling.classList.toggle('hidden')"
+                            class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+                        + Subcategory
+                    </button>
+                    <div class="hidden flex gap-2">
+                        <input type="text" id="subcat-name-{{.Category.ID}}" placeholder="Subcategory name"
+                               class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
+                        <button type="button"
+                                hx-post="/categories/{{.Category.ID}}/subcategories"
+                                hx-target="#category-{{.Category.ID}} > div > .subcategories"
+                                hx-swap="beforeend"
+                                hx-include="[id='subcat-name-{{.Category.ID}}']"
+                                onclick="document.getElementById('subcat-name-{{.Category.ID}}').name = 'name'"
+                                class="inline-flex items-center justify-center rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-forest-500 transition-colors">
+                            Add
+                        </button>
+                    </div>
+                    {{end}}
+                </div>
+            </form>
+            <datalist id="common-units-{{.Category.ID}}">
+                <option value="ea">
+                <option value="hr">
+                <option value="sqft">
+                <option value="lnft">
+                <option value="day">
+                <option value="wk">
+                <option value="mo">
+                <option value="bundle">
+                <option value="box">
+                <option value="bag">
+                <option value="gal">
+                <option value="sheet">
+            </datalist>
+        </div>
 
-    <!-- Line Items -->
-    <div class="line-items border-l-4 border-slate-200 bg-white divide-y divide-slate-100">
-        {{range .LineItems}}
-            {{template "line_item" .}}
-        {{end}}
+        <!-- Line Items -->
+        <div class="line-items border-l-4 border-slate-200 bg-white divide-y divide-slate-100">
+            {{range .LineItems}}
+                {{template "line_item" .}}
+            {{end}}
+        </div>
+
+        <!-- Child Categories -->
+        <div class="subcategories">
+            {{$job := .Job}}
+            {{$childDepth := add $depth 1}}
+            {{$lineItemsByCategory := .LineItemsByCategory}}
+            {{$allChildCategories := .AllChildCategories}}
+            {{range .ChildCategories}}
+                {{template "category" (dict "Category" . "Job" $job "LineItems" (index $lineItemsByCategory .ID) "ChildCategories" (index $allChildCategories .ID) "Depth" $childDepth "LineItemsByCategory" $lineItemsByCategory "AllChildCategories" $allChildCategories)}}
+            {{end}}
+        </div>
     </div>
 </details>
 {{end}}
