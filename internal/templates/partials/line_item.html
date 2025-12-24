@@ -1,5 +1,5 @@
 {{define "line_item"}}
-<div id="item-{{.ID}}" class="p-3 hover:bg-slate-50 flex items-center gap-3 transition-colors">
+<div id="item-{{.ID}}" class="py-3 px-4 pl-8 hover:bg-slate-50 flex items-center gap-3 transition-colors">
     <!-- Type indicator -->
     <span class="w-2 h-2 rounded-full {{if eq .Type "material"}}bg-forest-700{{else}}bg-copper-700{{end}}"
           title="{{.Type}}"></span>

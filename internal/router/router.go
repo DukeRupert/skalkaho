@@ -28,6 +28,9 @@ func Register(mux *http.ServeMux, h *quote.Handler) {
 	mux.HandleFunc("PUT /items/{id}", h.UpdateLineItem)
 	mux.HandleFunc("DELETE /items/{id}", h.DeleteLineItem)
 
+	// Item Templates (autocomplete)
+	mux.HandleFunc("GET /items/search", h.SearchItemTemplates)
+
 	// Settings
 	mux.HandleFunc("GET /settings", h.GetSettings)
 	mux.HandleFunc("PUT /settings", h.UpdateSettings)

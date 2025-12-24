@@ -17,6 +17,15 @@ type Category struct {
 	SortOrder        int64           `json:"sort_order"`
 }
 
+type ItemTemplate struct {
+	ID           int64   `json:"id"`
+	Type         string  `json:"type"`
+	Category     string  `json:"category"`
+	Name         string  `json:"name"`
+	DefaultUnit  string  `json:"default_unit"`
+	DefaultPrice float64 `json:"default_price"`
+}
+
 type Job struct {
 	ID               string         `json:"id"`
 	Name             string         `json:"name"`

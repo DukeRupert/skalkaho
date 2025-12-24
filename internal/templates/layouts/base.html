@@ -119,5 +119,26 @@ function toastManager() {
         }
     };
 }
+
+// Item template autocomplete selection
+function selectItem(button) {
+    const form = button.closest('form');
+    if (!form) return;
+
+    // Populate form fields from data attributes
+    const nameInput = form.querySelector('input[name="name"]');
+    const typeSelect = form.querySelector('select[name="type"]');
+    const unitInput = form.querySelector('input[name="unit"]');
+    const priceInput = form.querySelector('input[name="unit_price"]');
+
+    if (nameInput) nameInput.value = button.dataset.name || '';
+    if (typeSelect) typeSelect.value = button.dataset.type || 'material';
+    if (unitInput) unitInput.value = button.dataset.unit || '';
+    if (priceInput) priceInput.value = button.dataset.price || '0';
+
+    // Clear search results
+    const searchResults = form.querySelector('.search-results');
+    if (searchResults) searchResults.innerHTML = '';
+}
 </script>
 {{end}}
