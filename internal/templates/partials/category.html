@@ -85,14 +85,13 @@
                         + Subcategory
                     </button>
                     <div class="hidden flex gap-2">
-                        <input type="text" id="subcat-name-{{.Category.ID}}" placeholder="Subcategory name"
+                        <input type="text" name="name" id="subcat-name-{{.Category.ID}}" placeholder="Subcategory name"
                                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
                         <button type="button"
                                 hx-post="/categories/{{.Category.ID}}/subcategories"
                                 hx-target="#category-{{.Category.ID}} > div > .subcategories"
                                 hx-swap="beforeend"
-                                hx-include="[id='subcat-name-{{.Category.ID}}']"
-                                onclick="document.getElementById('subcat-name-{{.Category.ID}}').name = 'name'"
+                                hx-include="#subcat-name-{{.Category.ID}}"
                                 class="inline-flex items-center justify-center rounded-lg bg-forest-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-forest-500 transition-colors">
                             Add
                         </button>
