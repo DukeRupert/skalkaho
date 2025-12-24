@@ -1,13 +1,10 @@
 {{define "category"}}
-<div id="category-{{.Category.ID}}" class="category" x-data="{ expanded: true, showAddItem: false }">
-    <!-- Category Header -->
-    <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 border-l-4 border-slate-900">
-        <!-- Expand/Collapse -->
-        <button @click="expanded = !expanded" class="text-slate-500 hover:text-slate-700 transition-colors">
-            <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-90': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-        </button>
+<details id="category-{{.Category.ID}}" class="category" open>
+    <summary class="flex items-center gap-3 px-4 py-3 bg-slate-50 border-l-4 border-slate-900 cursor-pointer list-none">
+        <!-- Expand/Collapse Arrow -->
+        <svg class="w-5 h-5 text-slate-500 transition-transform details-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
 
         <!-- Category Name -->
         <span class="flex-1 font-semibold text-slate-900 uppercase tracking-wide text-sm">{{.Category.Name}}</span>
@@ -17,32 +14,25 @@
             {{if .Category.SurchargePercent.Valid}}{{printf "%.1f%%" .Category.SurchargePercent.Float64}} markup{{else}}inherit{{end}}
         </span>
 
-        <!-- Actions -->
-        <div class="flex items-center gap-1">
-            <button @click="showAddItem = !showAddItem" title="Add line item"
-                    class="p-1.5 rounded-md text-slate-500 hover:text-copper-700 hover:bg-copper-50 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-            </button>
-            <button hx-delete="/categories/{{.Category.ID}}"
-                    hx-target="#category-{{.Category.ID}}"
-                    hx-swap="outerHTML"
-                    hx-confirm="Delete this category and all its items?"
-                    class="p-1.5 rounded-md text-slate-500 hover:text-error-700 hover:bg-error-100 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-            </button>
-        </div>
-    </div>
+        <!-- Delete Button -->
+        <button hx-delete="/categories/{{.Category.ID}}"
+                hx-target="#category-{{.Category.ID}}"
+                hx-swap="outerHTML"
+                hx-confirm="Delete this category and all its items?"
+                onclick="event.stopPropagation()"
+                class="p-1.5 rounded-md text-slate-500 hover:text-error-700 hover:bg-error-100 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+        </button>
+    </summary>
 
-    <!-- Add Line Item Form -->
-    <div x-show="showAddItem" x-collapse class="p-4 border-l-4 border-slate-200 bg-white">
+    <!-- Add Line Item Form (always visible when expanded) -->
+    <div class="p-4 border-l-4 border-slate-200 bg-white">
         <form hx-post="/categories/{{.Category.ID}}/items"
               hx-target="#category-{{.Category.ID}} .line-items"
               hx-swap="beforeend"
-              @htmx:after-request="$el.reset(); showAddItem = false; $el.querySelector('.search-results').innerHTML = ''"
+              hx-on::after-request="this.reset(); this.querySelector('.search-results').innerHTML = ''"
               class="bg-slate-50 p-4 rounded-lg ring-1 ring-slate-100 grid grid-cols-2 md:grid-cols-6 gap-3">
             <div class="col-span-2 relative">
                 <input type="text" name="name" required placeholder="Search items or type new..."
@@ -66,25 +56,21 @@
                        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
             </div>
             <div>
-                <input type="text" name="unit" required placeholder="Unit" list="common-units"
+                <input type="text" name="unit" required placeholder="Unit" list="common-units-{{.Category.ID}}"
                        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
             </div>
             <div>
                 <input type="number" name="unit_price" required step="0.01" min="0" value="0" placeholder="Price"
                        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
             </div>
-            <div class="col-span-2 md:col-span-6 flex gap-2">
+            <div class="col-span-2 md:col-span-6">
                 <button type="submit"
                         class="inline-flex items-center justify-center rounded-lg bg-copper-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500 focus:ring-offset-2 transition-colors">
                     Add Item
                 </button>
-                <button type="button" @click="showAddItem = false"
-                        class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors">
-                    Cancel
-                </button>
             </div>
         </form>
-        <datalist id="common-units">
+        <datalist id="common-units-{{.Category.ID}}">
             <option value="ea">
             <option value="hr">
             <option value="sqft">
@@ -101,8 +87,10 @@
     </div>
 
     <!-- Line Items -->
-    <div x-show="expanded" x-collapse class="line-items border-l-4 border-slate-200 ml-0 bg-white divide-y divide-slate-100">
-        <!-- Line items will be added here -->
+    <div class="line-items border-l-4 border-slate-200 bg-white divide-y divide-slate-100">
+        {{range .LineItems}}
+            {{template "line_item" .}}
+        {{end}}
     </div>
-</div>
+</details>
 {{end}}

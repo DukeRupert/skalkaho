@@ -76,6 +76,9 @@ tailwind.config = {
 <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 <style>
     [x-cloak] { display: none !important; }
+    /* Details arrow rotation */
+    details[open] > summary .details-arrow { transform: rotate(90deg); }
+    details > summary::-webkit-details-marker { display: none; }
 </style>
 {{end}}
 
