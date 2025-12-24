@@ -1,5 +1,5 @@
 {{define "category"}}
-<div id="category-{{.ID}}" class="category" x-data="{ expanded: true, showAddItem: false }">
+<div id="category-{{.Category.ID}}" class="category" x-data="{ expanded: true, showAddItem: false }">
     <!-- Category Header -->
     <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 border-l-4 border-slate-900">
         <!-- Expand/Collapse -->
@@ -10,11 +10,11 @@
         </button>
 
         <!-- Category Name -->
-        <span class="flex-1 font-semibold text-slate-900 uppercase tracking-wide text-sm">{{.Name}}</span>
+        <span class="flex-1 font-semibold text-slate-900 uppercase tracking-wide text-sm">{{.Category.Name}}</span>
 
         <!-- Surcharge -->
         <span class="text-xs text-slate-500 bg-white px-2 py-0.5 rounded">
-            {{if .SurchargePercent.Valid}}{{printf "%.1f%%" .SurchargePercent.Float64}} markup{{else}}inherit{{end}}
+            {{if .Category.SurchargePercent.Valid}}{{printf "%.1f%%" .Category.SurchargePercent.Float64}} markup{{else}}inherit{{end}}
         </span>
 
         <!-- Actions -->
@@ -25,8 +25,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
             </button>
-            <button hx-delete="/categories/{{.ID}}"
-                    hx-target="#category-{{.ID}}"
+            <button hx-delete="/categories/{{.Category.ID}}"
+                    hx-target="#category-{{.Category.ID}}"
                     hx-swap="outerHTML"
                     hx-confirm="Delete this category and all its items?"
                     class="p-1.5 rounded-md text-slate-500 hover:text-error-700 hover:bg-error-100 transition-colors">
@@ -39,8 +39,8 @@
 
     <!-- Add Line Item Form -->
     <div x-show="showAddItem" x-collapse class="p-4 border-l-4 border-slate-200 bg-white">
-        <form hx-post="/categories/{{.ID}}/items"
-              hx-target="#category-{{.ID}} .line-items"
+        <form hx-post="/categories/{{.Category.ID}}/items"
+              hx-target="#category-{{.Category.ID}} .line-items"
               hx-swap="beforeend"
               @htmx:after-request="$el.reset(); showAddItem = false; $el.querySelector('.search-results').innerHTML = ''"
               class="bg-slate-50 p-4 rounded-lg ring-1 ring-slate-100 grid grid-cols-2 md:grid-cols-6 gap-3">
