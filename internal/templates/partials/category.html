@@ -49,9 +49,10 @@
                            autocomplete="off"
                            hx-get="/items/search"
                            hx-trigger="keyup changed delay:300ms"
-                           hx-target="next .search-results"
+                           hx-target="#search-results-{{.Category.ID}}"
+                           hx-swap="innerHTML"
                            class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
-                    <div class="search-results"></div>
+                    <div id="search-results-{{.Category.ID}}" class="search-results"></div>
                 </div>
                 <div>
                     <select name="type" required
@@ -69,9 +70,10 @@
                     <input type="text" name="unit" required placeholder="Unit" list="common-units-{{.Category.ID}}"
                            class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
                 </div>
-                <div>
-                    <input type="number" name="unit_price" required step="0.01" min="0" value="0" placeholder="Price"
-                           class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                    <input type="number" name="unit_price" required step="0.01" min="0" value="0" placeholder="0.00"
+                           class="block w-full rounded-lg border border-slate-300 bg-white pl-7 pr-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
                 </div>
                 <div class="col-span-2 md:col-span-6">
                     <button type="submit"

@@ -1,26 +1,20 @@
-{{define "item_search_results"}}
-{{if .}}
-<ul class="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg ring-1 ring-slate-200 max-h-60 overflow-auto">
-    {{range .}}
-    <li>
-        <button type="button"
-                class="w-full text-left px-3 py-2 hover:bg-copper-50 focus:bg-copper-50 focus:outline-none transition-colors"
-                onclick="selectItem(this)"
-                data-name="{{.Name}}"
-                data-type="{{.Type}}"
-                data-unit="{{.DefaultUnit}}"
-                data-price="{{.DefaultPrice}}">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full {{if eq .Type "material"}}bg-forest-700{{else if eq .Type "labor"}}bg-copper-700{{else}}bg-info-700{{end}}"></span>
-                    <span class="text-sm font-medium text-slate-900">{{.Name}}</span>
-                </div>
-                <span class="text-xs text-slate-500">{{.DefaultUnit}} @ ${{printf "%.2f" .DefaultPrice}}</span>
-            </div>
-            <div class="text-xs text-slate-500 ml-4">{{.Category}}</div>
-        </button>
-    </li>
-    {{end}}
-</ul>
-{{end}}
-{{end}}
+{{define "item_search_results"}}{{if .}}<ul class="absolute z-10 mt-1 w-full bg-white rounded-lg shadow-lg ring-1 ring-slate-200 max-h-60 overflow-auto">
+{{range .}}<li>
+<button type="button"
+        class="w-full text-left px-3 py-2 hover:bg-copper-50 focus:bg-copper-50 focus:outline-none transition-colors"
+        onclick="selectItem(this)"
+        data-name="{{.Name}}"
+        data-type="{{.Type}}"
+        data-unit="{{.DefaultUnit}}"
+        data-price="{{.DefaultPrice}}">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full {{if eq .Type "material"}}bg-forest-700{{else if eq .Type "labor"}}bg-copper-700{{else}}bg-info-700{{end}}"></span>
+            <span class="text-sm font-medium text-slate-900">{{.Name}}</span>
+        </div>
+        <span class="text-xs text-slate-500">{{.DefaultUnit}} @ ${{printf "%.2f" .DefaultPrice}}</span>
+    </div>
+    <div class="text-xs text-slate-500 ml-4">{{.Category}}</div>
+</button>
+</li>{{end}}
+</ul>{{end}}{{end}}
