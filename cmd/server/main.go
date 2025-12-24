@@ -32,6 +32,8 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
+	logger.Info("Skalkaho starting", "environment", cfg.Environment)
+
 	// Open database
 	db, err := sql.Open("sqlite3", cfg.DatabasePath+"?_foreign_keys=on")
 	if err != nil {

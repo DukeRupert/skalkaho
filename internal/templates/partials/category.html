@@ -1,25 +1,25 @@
 {{define "category"}}
-<div id="category-{{.ID}}" class="category p-4 hover:bg-gray-50" x-data="{ expanded: true, showAddItem: false }">
+<div id="category-{{.ID}}" class="category p-4 hover:bg-slate-50 transition-colors" x-data="{ expanded: true, showAddItem: false }">
     <div class="flex items-center gap-3">
         <!-- Expand/Collapse -->
-        <button @click="expanded = !expanded" class="text-gray-400 hover:text-gray-600">
+        <button @click="expanded = !expanded" class="text-slate-400 hover:text-slate-600 transition-colors">
             <svg class="w-5 h-5 transition-transform" :class="{ 'rotate-90': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
             </svg>
         </button>
 
         <!-- Category Name -->
-        <span class="flex-1 font-medium text-gray-900">{{.Name}}</span>
+        <span class="flex-1 font-medium text-slate-900">{{.Name}}</span>
 
         <!-- Surcharge -->
-        <span class="text-sm text-gray-500">
+        <span class="text-sm text-slate-500">
             {{if .SurchargePercent.Valid}}{{printf "%.1f%%" .SurchargePercent.Float64}}{{else}}inherit{{end}}
         </span>
 
         <!-- Actions -->
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1">
             <button @click="showAddItem = !showAddItem" title="Add line item"
-                    class="text-gray-400 hover:text-blue-500">
+                    class="p-1.5 rounded-md text-slate-400 hover:text-copper-700 hover:bg-copper-50 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
@@ -28,7 +28,7 @@
                     hx-target="#category-{{.ID}}"
                     hx-swap="outerHTML"
                     hx-confirm="Delete this category and all its items?"
-                    class="text-gray-400 hover:text-red-500">
+                    class="p-1.5 rounded-md text-slate-400 hover:text-error-700 hover:bg-error-100 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
@@ -42,34 +42,38 @@
               hx-target="#category-{{.ID}} .line-items"
               hx-swap="beforeend"
               @htmx:after-request="$el.reset(); showAddItem = false"
-              class="bg-gray-50 p-4 rounded-lg grid grid-cols-2 md:grid-cols-6 gap-3">
+              class="bg-slate-50 p-4 rounded-lg ring-1 ring-slate-100 grid grid-cols-2 md:grid-cols-6 gap-3">
             <div class="col-span-2">
                 <input type="text" name="name" required placeholder="Item name"
-                       class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                       class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
             </div>
             <div>
                 <select name="type" required
-                        class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
                     <option value="material">Material</option>
                     <option value="labor">Labor</option>
                 </select>
             </div>
             <div>
                 <input type="number" name="quantity" required step="0.01" min="0.01" value="1" placeholder="Qty"
-                       class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                       class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
             </div>
             <div>
                 <input type="text" name="unit" required placeholder="Unit" list="common-units"
-                       class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                       class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
             </div>
             <div>
                 <input type="number" name="unit_price" required step="0.01" min="0" value="0" placeholder="Price"
-                       class="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                       class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
             </div>
-            <div class="col-span-2 md:col-span-6">
+            <div class="col-span-2 md:col-span-6 flex gap-2">
                 <button type="submit"
-                        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+                        class="inline-flex items-center justify-center rounded-lg bg-copper-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500 focus:ring-offset-2 transition-colors">
                     Add Item
+                </button>
+                <button type="button" @click="showAddItem = false"
+                        class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-colors">
+                    Cancel
                 </button>
             </div>
         </form>
@@ -88,7 +92,7 @@
     </div>
 
     <!-- Line Items -->
-    <div x-show="expanded" x-collapse class="ml-8 mt-2 line-items divide-y divide-gray-100">
+    <div x-show="expanded" x-collapse class="ml-8 mt-2 line-items divide-y divide-slate-100">
         <!-- Line items will be added here -->
     </div>
 </div>

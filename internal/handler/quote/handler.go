@@ -77,15 +77,12 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Return job card partial for HTMX
+	// Redirect to the new job page
 	if r.Header.Get("HX-Request") == "true" {
-		if err := h.renderer.RenderPartial(w, "job_card", job); err != nil {
-			logger.Error("failed to render job card", "error", err)
-		}
+		w.Header().Set("HX-Redirect", "/jobs/"+job.ID)
 		return
 	}
 
-	// Full page redirect
 	http.Redirect(w, r, "/jobs/"+job.ID, http.StatusSeeOther)
 }
 

@@ -4,18 +4,18 @@
 <head>
     {{template "head" .}}
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen">
     {{template "header" .}}
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="space-y-6">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-900">Quotes</h1>
+                <h1 class="text-2xl font-bold text-slate-900">Quotes</h1>
                 <button hx-post="/jobs"
                         hx-target="#jobs-list"
                         hx-swap="afterbegin"
-                        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="inline-flex items-center gap-2 rounded-lg bg-copper-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500 focus:ring-offset-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                     </svg>
                     New Quote
@@ -28,12 +28,12 @@
                         {{template "job_card" .}}
                     {{end}}
                 {{else}}
-                    <div class="text-center py-12 bg-white rounded-lg shadow-sm">
-                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="text-center py-12 bg-white rounded-lg shadow-sm ring-1 ring-slate-100">
+                        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
-                        <h3 class="mt-2 text-sm font-medium text-gray-900">No quotes yet</h3>
-                        <p class="mt-1 text-sm text-gray-500">Get started by creating a new quote.</p>
+                        <h3 class="mt-2 text-sm font-medium text-slate-900">No quotes yet</h3>
+                        <p class="mt-1 text-sm text-slate-500">Get started by creating a new quote.</p>
                     </div>
                 {{end}}
             </div>
@@ -46,32 +46,32 @@
 {{end}}
 
 {{define "job_card"}}
-<div id="job-{{.ID}}" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+<div id="job-{{.ID}}" class="bg-white rounded-lg shadow-sm ring-1 ring-slate-100 p-6 hover:shadow-md transition-shadow">
     <div class="flex justify-between items-start">
         <div>
-            <a href="/jobs/{{.ID}}" class="text-lg font-semibold text-gray-900 hover:text-blue-600">
+            <a href="/jobs/{{.ID}}" class="text-lg font-semibold text-slate-900 hover:text-copper-700 transition-colors">
                 {{.Name}}
             </a>
             {{if .CustomerName.Valid}}
-                <p class="text-sm text-gray-500 mt-1">{{.CustomerName.String}}</p>
+                <p class="text-sm text-slate-500 mt-1">{{.CustomerName.String}}</p>
             {{end}}
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-500">
+        <div class="flex items-center gap-3">
+            <span class="text-sm text-slate-500">
                 {{printf "%.1f%%" .SurchargePercent}} markup
             </span>
             <button hx-delete="/jobs/{{.ID}}"
                     hx-target="#job-{{.ID}}"
                     hx-swap="outerHTML"
                     hx-confirm="Delete this quote?"
-                    class="text-gray-400 hover:text-red-500">
+                    class="p-1.5 rounded-md text-slate-400 hover:text-error-700 hover:bg-error-100 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
             </button>
         </div>
     </div>
-    <div class="mt-4 flex items-center gap-4 text-sm text-gray-500">
+    <div class="mt-4 flex items-center gap-4 text-sm text-slate-500">
         <span>Created {{.CreatedAt}}</span>
         <span class="capitalize">{{.SurchargeMode}} mode</span>
     </div>
