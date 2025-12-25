@@ -128,3 +128,72 @@ func buildCategoryChain(categoryID string, categoryByID map[string]*Category) []
 
 	return chain
 }
+
+// CalculateCategoryTotal computes totals for a category including all nested subcategories.
+func CalculateCategoryTotal(categoryID string, job *Job, categories []*Category, lineItems []*LineItem) CategoryTotal {
+	var result CategoryTotal
+	result.CategoryID = categoryID
+
+	// Build category lookup
+	categoryByID := make(map[string]*Category)
+	for _, cat := range categories {
+		categoryByID[cat.ID] = cat
+	}
+
+	// Find all descendant category IDs (including the target category itself)
+	descendantIDs := findDescendantCategories(categoryID, categories)
+	descendantIDs[categoryID] = true
+
+	// Build category chains cache
+	categoryChains := make(map[string][]*Category)
+
+	for _, li := range lineItems {
+		// Only include items from this category or its descendants
+		if !descendantIDs[li.CategoryID] {
+			continue
+		}
+
+		// Get or build category chain
+		chain, exists := categoryChains[li.CategoryID]
+		if !exists {
+			chain = buildCategoryChain(li.CategoryID, categoryByID)
+			categoryChains[li.CategoryID] = chain
+		}
+
+		// Calculate prices
+		basePrice := li.BasePrice()
+		effSurcharge := EffectiveSurcharge(li, job, chain)
+		finalPrice := FinalPrice(li, effSurcharge)
+
+		result.Subtotal += basePrice
+		result.Total += finalPrice
+	}
+
+	result.SurchargeTotal = result.Total - result.Subtotal
+
+	return result
+}
+
+// findDescendantCategories returns a set of all category IDs that are descendants of the given category.
+func findDescendantCategories(parentID string, categories []*Category) map[string]bool {
+	result := make(map[string]bool)
+
+	// Build children lookup
+	childrenOf := make(map[string][]string)
+	for _, cat := range categories {
+		if cat.ParentID != nil {
+			childrenOf[*cat.ParentID] = append(childrenOf[*cat.ParentID], cat.ID)
+		}
+	}
+
+	// BFS to find all descendants
+	queue := childrenOf[parentID]
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		result[current] = true
+		queue = append(queue, childrenOf[current]...)
+	}
+
+	return result
+}
