@@ -438,6 +438,7 @@ func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 		lineItems        []*domain.LineItem
 		wantMaterial     float64
 		wantLabor        float64
+		wantEquipment    float64
 		wantGrandTotal   float64
 	}{
 		{
@@ -449,6 +450,7 @@ func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 			},
 			wantMaterial:   345, // (100+100+100) * 1.15
 			wantLabor:      0,
+			wantEquipment:  0,
 			wantGrandTotal: 345,
 		},
 		{
@@ -459,17 +461,30 @@ func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 			},
 			wantMaterial:   0,
 			wantLabor:      460, // (200+200) * 1.15
+			wantEquipment:  0,
 			wantGrandTotal: 460,
 		},
 		{
-			name: "mixed types",
+			name: "all equipment",
 			lineItems: []*domain.LineItem{
-				makeLineItem("m1", "cat-1", domain.LineItemTypeMaterial, 10, 10), // 100 * 1.15 = 115
-				makeLineItem("l1", "cat-1", domain.LineItemTypeLabor, 5, 30),     // 150 * 1.15 = 172.5
-				makeLineItem("m2", "cat-1", domain.LineItemTypeMaterial, 2, 25),  // 50 * 1.15 = 57.5
+				makeLineItem("e1", "cat-1", domain.LineItemTypeEquipment, 1, 500),  // 500 * 1.15 = 575
+				makeLineItem("e2", "cat-1", domain.LineItemTypeEquipment, 2, 250),  // 500 * 1.15 = 575
 			},
-			wantMaterial:   172.5,
-			wantLabor:      172.5,
+			wantMaterial:   0,
+			wantLabor:      0,
+			wantEquipment:  1150, // (500+500) * 1.15
+			wantGrandTotal: 1150,
+		},
+		{
+			name: "mixed types including equipment",
+			lineItems: []*domain.LineItem{
+				makeLineItem("m1", "cat-1", domain.LineItemTypeMaterial, 10, 10),   // 100 * 1.15 = 115
+				makeLineItem("l1", "cat-1", domain.LineItemTypeLabor, 5, 20),       // 100 * 1.15 = 115
+				makeLineItem("e1", "cat-1", domain.LineItemTypeEquipment, 1, 100),  // 100 * 1.15 = 115
+			},
+			wantMaterial:   115,
+			wantLabor:      115,
+			wantEquipment:  115,
 			wantGrandTotal: 345,
 		},
 	}
@@ -488,6 +503,9 @@ func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 			}
 			if !floatEquals(result.LaborSubtotal, tt.wantLabor) {
 				t.Errorf("LaborSubtotal = %v, want %v", result.LaborSubtotal, tt.wantLabor)
+			}
+			if !floatEquals(result.EquipmentSubtotal, tt.wantEquipment) {
+				t.Errorf("EquipmentSubtotal = %v, want %v", result.EquipmentSubtotal, tt.wantEquipment)
 			}
 			if !floatEquals(result.GrandTotal, tt.wantGrandTotal) {
 				t.Errorf("GrandTotal = %v, want %v", result.GrandTotal, tt.wantGrandTotal)

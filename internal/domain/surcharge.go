@@ -64,11 +64,12 @@ type CategoryTotal struct {
 
 // JobTotal calculates the complete job totals.
 type JobTotal struct {
-	Subtotal         float64 `json:"subtotal"`          // Sum of all base prices
-	SurchargeTotal   float64 `json:"surcharge_total"`   // Total surcharges applied
-	GrandTotal       float64 `json:"grand_total"`       // Final total
-	MaterialSubtotal float64 `json:"material_subtotal"` // Materials only
-	LaborSubtotal    float64 `json:"labor_subtotal"`    // Labor only
+	Subtotal           float64 `json:"subtotal"`            // Sum of all base prices
+	SurchargeTotal     float64 `json:"surcharge_total"`     // Total surcharges applied
+	GrandTotal         float64 `json:"grand_total"`         // Final total
+	MaterialSubtotal   float64 `json:"material_subtotal"`   // Materials only
+	LaborSubtotal      float64 `json:"labor_subtotal"`      // Labor only
+	EquipmentSubtotal  float64 `json:"equipment_subtotal"`  // Equipment only
 }
 
 // CalculateJobTotal computes all totals for a job.
@@ -101,10 +102,13 @@ func CalculateJobTotal(job *Job, categories []*Category, lineItems []*LineItem) 
 		result.GrandTotal += finalPrice
 
 		// Track by type
-		if li.Type == LineItemTypeMaterial {
+		switch li.Type {
+		case LineItemTypeMaterial:
 			result.MaterialSubtotal += finalPrice
-		} else {
+		case LineItemTypeLabor:
 			result.LaborSubtotal += finalPrice
+		case LineItemTypeEquipment:
+			result.EquipmentSubtotal += finalPrice
 		}
 	}
 

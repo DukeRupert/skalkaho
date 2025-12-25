@@ -10,12 +10,13 @@ const (
 	SurchargeModeOverride SurchargeMode = "override"
 )
 
-// LineItemType distinguishes materials from labor.
+// LineItemType distinguishes materials, labor, and equipment.
 type LineItemType string
 
 const (
-	LineItemTypeMaterial LineItemType = "material"
-	LineItemTypeLabor    LineItemType = "labor"
+	LineItemTypeMaterial  LineItemType = "material"
+	LineItemTypeLabor     LineItemType = "labor"
+	LineItemTypeEquipment LineItemType = "equipment"
 )
 
 // Settings holds application-wide defaults.
