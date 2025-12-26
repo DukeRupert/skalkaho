@@ -4,6 +4,12 @@ WHERE name LIKE '%' || ? || '%'
 ORDER BY name
 LIMIT 10;
 
+-- name: SearchItemTemplatesByType :many
+SELECT * FROM item_templates
+WHERE type = ? AND name LIKE '%' || ? || '%'
+ORDER BY name
+LIMIT 10;
+
 -- name: ListItemTemplates :many
 SELECT * FROM item_templates
 ORDER BY category, name;

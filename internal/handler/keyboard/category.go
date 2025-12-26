@@ -11,6 +11,40 @@ import (
 	"github.com/google/uuid"
 )
 
+// SearchItems searches for item templates by type and name.
+func (h *Handler) SearchItems(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+
+	itemType := r.URL.Query().Get("type")
+	query := r.URL.Query().Get("q")
+
+	if query == "" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		return
+	}
+
+	items, err := h.queries.SearchItemTemplatesByType(ctx, repository.SearchItemTemplatesByTypeParams{
+		Type:   itemType,
+		Column2: sql.NullString{String: query, Valid: true},
+	})
+	if err != nil {
+		logger.Error("failed to search items", "error", err)
+		http.Error(w, "Search failed", http.StatusInternalServerError)
+		return
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "search_results", items); err != nil {
+		logger.Error("failed to render search results", "error", err)
+		http.Error(w, "Failed to render results", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(buf.Bytes())
+}
+
 // GetCategory shows a category with its items and subcategories.
 func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

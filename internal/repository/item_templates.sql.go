@@ -180,3 +180,45 @@ func (q *Queries) SearchItemTemplates(ctx context.Context, dollar_1 sql.NullStri
 	}
 	return items, nil
 }
+
+const searchItemTemplatesByType = `-- name: SearchItemTemplatesByType :many
+SELECT id, type, category, name, default_unit, default_price FROM item_templates
+WHERE type = ? AND name LIKE '%' || ? || '%'
+ORDER BY name
+LIMIT 10
+`
+
+type SearchItemTemplatesByTypeParams struct {
+	Type    string         `json:"type"`
+	Column2 sql.NullString `json:"column_2"`
+}
+
+func (q *Queries) SearchItemTemplatesByType(ctx context.Context, arg SearchItemTemplatesByTypeParams) ([]ItemTemplate, error) {
+	rows, err := q.db.QueryContext(ctx, searchItemTemplatesByType, arg.Type, arg.Column2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ItemTemplate{}
+	for rows.Next() {
+		var i ItemTemplate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Category,
+			&i.Name,
+			&i.DefaultUnit,
+			&i.DefaultPrice,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

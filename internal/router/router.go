@@ -53,5 +53,6 @@ func Register(mux *http.ServeMux, h *quote.Handler, kh *keyboard.Handler) {
 	mux.HandleFunc("GET /k/categories/{categoryID}/form", kh.GetInlineForm)
 	mux.HandleFunc("GET /k/category-form", kh.GetCategoryForm)
 	mux.HandleFunc("GET /k/job-form", kh.GetJobForm)
+	mux.HandleFunc("GET /k/items/search", kh.SearchItems)
 	mux.HandleFunc("DELETE /k/items/{id}", kh.DeleteLineItem)
 }

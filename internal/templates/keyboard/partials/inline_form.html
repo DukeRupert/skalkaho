@@ -1,25 +1,31 @@
 {{define "inline_form"}}
-<div class="inline-form px-4 py-3 border-t border-slate-200">
+<div class="inline-form px-4 py-3 border-t border-slate-200" data-item-type="{{.Type}}">
     <form hx-post="/k/categories/{{.CategoryID}}/items"
           hx-target="body"
           class="grid grid-cols-12 gap-2 items-center"
-          onsubmit="this.querySelector('input[name=name]').focus()">
+          id="inline-item-form">
         <input type="hidden" name="type" value="{{.Type}}">
 
-        <div class="col-span-5 flex items-center gap-2">
+        <div class="col-span-5 flex items-center gap-2 relative">
             <span class="{{if eq .Type "material"}}text-forest-600{{else if eq .Type "labor"}}text-copper-600{{else}}text-slate-600{{end}}">
                 {{typeIndicator .Type}}
             </span>
-            <input type="text"
-                   name="name"
-                   placeholder="Item name..."
-                   class="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-                   autofocus
-                   required>
+            <div class="flex-1 relative">
+                <input type="text"
+                       name="name"
+                       id="item-name-input"
+                       placeholder="Search or enter name..."
+                       class="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                       autocomplete="off"
+                       autofocus
+                       required>
+                <div id="autocomplete-container"></div>
+            </div>
         </div>
 
         <input type="number"
                name="quantity"
+               id="item-quantity"
                value="1"
                step="0.01"
                min="0.01"
@@ -27,12 +33,14 @@
 
         <input type="text"
                name="unit"
+               id="item-unit"
                value="{{.DefaultUnit}}"
                placeholder="unit"
                class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
 
         <input type="number"
                name="unit_price"
+               id="item-price"
                value="0"
                step="0.01"
                min="0"
@@ -52,9 +60,106 @@
         </div>
     </form>
     <p class="text-xs text-slate-500 mt-1">
-        <kbd class="px-1 bg-slate-100 rounded">Tab</kbd> next field
+        <kbd class="px-1 bg-slate-100 rounded">↓</kbd> select suggestion
+        <kbd class="px-1 bg-slate-100 rounded ml-2">Tab</kbd> next field
         <kbd class="px-1 bg-slate-100 rounded ml-2">Enter</kbd> save
-        <kbd class="px-1 bg-slate-100 rounded ml-2">Escape</kbd> cancel
     </p>
 </div>
+<script>
+(function() {
+    const input = document.getElementById('item-name-input');
+    const container = document.getElementById('autocomplete-container');
+    const form = document.getElementById('inline-item-form');
+    const itemType = document.querySelector('[data-item-type]').dataset.itemType;
+    let debounceTimer;
+    let selectedIndex = -1;
+
+    function getItems() {
+        return container.querySelectorAll('.autocomplete-item');
+    }
+
+    function updateSelection() {
+        const items = getItems();
+        items.forEach((item, i) => {
+            item.classList.toggle('bg-slate-100', i === selectedIndex);
+        });
+    }
+
+    function selectItem(item) {
+        input.value = item.dataset.name;
+        document.getElementById('item-unit').value = item.dataset.unit;
+        document.getElementById('item-price').value = item.dataset.price;
+        container.innerHTML = '';
+        selectedIndex = -1;
+        document.getElementById('item-quantity').focus();
+        document.getElementById('item-quantity').select();
+    }
+
+    function positionDropdown() {
+        const rect = input.getBoundingClientRect();
+        const dropdown = container.querySelector('.autocomplete-results');
+        if (dropdown) {
+            dropdown.style.position = 'fixed';
+            dropdown.style.top = rect.bottom + 'px';
+            dropdown.style.left = rect.left + 'px';
+            dropdown.style.width = rect.width + 'px';
+        }
+    }
+
+    input.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        const query = this.value.trim();
+
+        if (query.length < 2) {
+            container.innerHTML = '';
+            return;
+        }
+
+        debounceTimer = setTimeout(() => {
+            fetch(`/k/items/search?type=${encodeURIComponent(itemType)}&q=${encodeURIComponent(query)}`)
+                .then(res => res.text())
+                .then(html => {
+                    container.innerHTML = html;
+                    selectedIndex = -1;
+                    positionDropdown();
+
+                    // Add click handlers to results
+                    getItems().forEach(item => {
+                        item.addEventListener('click', () => selectItem(item));
+                    });
+                });
+        }, 150);
+    });
+
+    input.addEventListener('keydown', function(e) {
+        const items = getItems();
+
+        if (items.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+            updateSelection();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateSelection();
+        } else if (e.key === 'Enter' && selectedIndex >= 0) {
+            e.preventDefault();
+            selectItem(items[selectedIndex]);
+        } else if (e.key === 'Escape') {
+            container.innerHTML = '';
+            selectedIndex = -1;
+        }
+    });
+
+    // Close autocomplete when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!container.contains(e.target) && e.target !== input) {
+            container.innerHTML = '';
+            selectedIndex = -1;
+        }
+    });
+})();
+</script>
 {{end}}
