@@ -75,7 +75,7 @@ tailwind.config = {
         {{block "shortcuts" .}}
         <span><kbd class="px-1 bg-slate-100 rounded">↑↓</kbd> navigate</span>
         <span><kbd class="px-1 bg-slate-100 rounded">⏎</kbd> select</span>
-        <span><kbd class="px-1 bg-slate-100 rounded">⌫</kbd> back</span>
+        <span><kbd class="px-1 bg-slate-100 rounded">esc</kbd> back</span>
         <span><kbd class="px-1 bg-slate-100 rounded">?</kbd> help</span>
         {{end}}
     </div>
@@ -98,8 +98,8 @@ tailwind.config = {
                     <span>Move up</span>
                     <span><kbd class="px-1 bg-slate-100 rounded">Enter</kbd></span>
                     <span>Select / Edit</span>
-                    <span><kbd class="px-1 bg-slate-100 rounded">Backspace</kbd></span>
-                    <span>Go back</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">Escape</kbd></span>
+                    <span>Go back / Cancel</span>
                     <span><kbd class="px-1 bg-slate-100 rounded">g</kbd> <kbd class="px-1 bg-slate-100 rounded">h</kbd></span>
                     <span>Go home</span>
                 </div>
@@ -130,8 +130,6 @@ tailwind.config = {
                     <span>Next field</span>
                     <span><kbd class="px-1 bg-slate-100 rounded">Enter</kbd></span>
                     <span>Submit</span>
-                    <span><kbd class="px-1 bg-slate-100 rounded">Escape</kbd></span>
-                    <span>Cancel</span>
                 </div>
             </div>
         </div>
@@ -358,9 +356,20 @@ document.addEventListener('keydown', function(e) {
             break;
         case 'Escape':
             e.preventDefault();
-            hideInlineForm();
-            hideCategoryForm();
-            hideJobForm();
+            // If any form is visible, close it; otherwise go back
+            const jobForm = document.getElementById('job-form-container');
+            const catForm = document.getElementById('category-form-container');
+            const inlineForm = document.getElementById('inline-form-container');
+            const hasOpenForm = (jobForm && jobForm.innerHTML.trim()) ||
+                               (catForm && catForm.innerHTML.trim()) ||
+                               (inlineForm && inlineForm.innerHTML.trim());
+            if (hasOpenForm) {
+                hideInlineForm();
+                hideCategoryForm();
+                hideJobForm();
+            } else {
+                goBack();
+            }
             break;
 
         // Actions - context sensitive
