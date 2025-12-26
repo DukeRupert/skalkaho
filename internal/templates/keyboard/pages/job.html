@@ -1,0 +1,108 @@
+{{define "job"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head" .}}
+</head>
+<body class="bg-slate-50 pb-12" data-job-id="{{.Job.ID}}">
+    {{template "header" .}}
+
+    <main class="max-w-2xl mx-auto p-4">
+        <!-- Back link (hidden, used by JS) -->
+        <a data-back-url="/k/" class="hidden"></a>
+
+        <!-- Breadcrumb -->
+        <div class="flex items-center gap-2 text-sm text-slate-500 mb-4">
+            <a href="/k/" class="hover:text-slate-700">← Jobs</a>
+            <span>/</span>
+            <span class="text-slate-900 font-medium">{{.Job.Name}}</span>
+        </div>
+
+        <!-- Job Header -->
+        <div class="bg-white rounded-lg border border-slate-200 p-4 mb-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">{{.Job.Name}}</h1>
+                    {{if .Job.CustomerName.Valid}}
+                    <p class="text-slate-500">{{.Job.CustomerName.String}}</p>
+                    {{end}}
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-slate-500">Markup: {{formatPercent .Job.SurchargePercent}}</p>
+                    <p class="text-lg font-bold text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories Section -->
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-semibold text-slate-700 uppercase tracking-wide">Categories</h2>
+            <span class="text-sm text-slate-500">
+                <kbd class="px-1 bg-slate-200 rounded">c</kbd> new category
+            </span>
+        </div>
+
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <!-- Category Form Container -->
+            <div id="category-form-container" data-job-id="{{.Job.ID}}"></div>
+
+            {{if .Categories}}
+            <div id="categories-list">
+                {{range $i, $cat := .Categories}}
+                <div class="row flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50"
+                     data-index="{{$i}}">
+                    <a href="/k/categories/{{$cat.ID}}" class="flex-1">
+                        <span class="font-medium text-slate-900">{{$cat.Name}}</span>
+                    </a>
+                    <span class="text-slate-700 font-mono">{{formatMoney $cat.Total}}</span>
+                    <button data-delete-url="/k/categories/{{$cat.ID}}" class="ml-4 text-slate-400 hover:text-red-600">
+                        ×
+                    </button>
+                </div>
+                {{end}}
+            </div>
+            {{else}}
+            <div id="empty-state" class="px-4 py-8 text-center text-slate-500">
+                <p>No categories yet.</p>
+                <p class="text-sm mt-2">Press <kbd class="px-1 bg-slate-200 rounded">c</kbd> to create a category.</p>
+            </div>
+            {{end}}
+        </div>
+
+        <!-- Totals Summary -->
+        <div class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                    <span class="text-slate-500">Materials</span>
+                    <p class="font-mono font-medium text-forest-700">{{formatMoney .Totals.MaterialSubtotal}}</p>
+                </div>
+                <div>
+                    <span class="text-slate-500">Labor</span>
+                    <p class="font-mono font-medium text-copper-700">{{formatMoney .Totals.LaborSubtotal}}</p>
+                </div>
+                <div>
+                    <span class="text-slate-500">Equipment</span>
+                    <p class="font-mono font-medium text-slate-700">{{formatMoney .Totals.EquipmentSubtotal}}</p>
+                </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between">
+                <span class="text-slate-500">Grand Total</span>
+                <span class="font-mono font-bold text-lg">{{formatMoney .Totals.GrandTotal}}</span>
+            </div>
+        </div>
+    </main>
+
+    {{template "footer" .}}
+    {{template "help_overlay" .}}
+    {{template "scripts" .}}
+</body>
+</html>
+{{end}}
+
+{{define "shortcuts"}}
+<span><kbd class="px-1 bg-slate-100 rounded">↑↓</kbd> navigate</span>
+<span><kbd class="px-1 bg-slate-100 rounded">⏎</kbd> enter</span>
+<span><kbd class="px-1 bg-slate-100 rounded">c</kbd> new category</span>
+<span><kbd class="px-1 bg-slate-100 rounded">⌫</kbd> back</span>
+<span><kbd class="px-1 bg-slate-100 rounded">?</kbd> help</span>
+{{end}}

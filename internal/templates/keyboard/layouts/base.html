@@ -1,0 +1,401 @@
+{{define "head"}}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skalkaho - Keyboard Mode</title>
+<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+    theme: {
+        extend: {
+            colors: {
+                slate: {
+                    50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1',
+                    400: '#94a3b8', 500: '#64748b', 600: '#475569', 700: '#334155',
+                    800: '#1e293b', 900: '#0f172a', 950: '#020617',
+                },
+                forest: {
+                    50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac',
+                    400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d',
+                    800: '#166534', 900: '#14532d',
+                },
+                copper: {
+                    50: '#fdf4f3', 100: '#fce8e4', 200: '#fbd5cd', 300: '#f7b7a9',
+                    400: '#f08b76', 500: '#e4664b', 600: '#d14a2e', 700: '#af3c24',
+                    800: '#913522', 900: '#7a3122',
+                },
+            }
+        }
+    }
+}
+</script>
+<style>
+    body { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+    .selected { background-color: #f1f5f9; }
+    .selected::before { content: "▸ "; color: #334155; }
+    .row:not(.selected)::before { content: "  "; }
+    .help-overlay {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 100;
+        background: white;
+        border: 2px solid #334155;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    .help-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 99;
+    }
+    .inline-form {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
+</style>
+{{end}}
+
+{{define "header"}}
+<header class="border-b border-slate-200 px-4 py-2 flex items-center justify-between bg-slate-900 text-white">
+    <a href="/k/" class="font-bold tracking-wider">SKALKAHO</a>
+    <div class="flex items-center gap-4 text-sm">
+        <span class="text-slate-400">Keyboard Mode</span>
+        <button onclick="toggleHelp()" class="px-2 py-1 bg-slate-700 rounded text-xs hover:bg-slate-600">
+            ? Help
+        </button>
+    </div>
+</header>
+{{end}}
+
+{{define "footer"}}
+<footer id="shortcuts-bar" class="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white px-4 py-2">
+    <div class="flex items-center justify-center gap-6 text-xs text-slate-500">
+        {{block "shortcuts" .}}
+        <span><kbd class="px-1 bg-slate-100 rounded">↑↓</kbd> navigate</span>
+        <span><kbd class="px-1 bg-slate-100 rounded">⏎</kbd> select</span>
+        <span><kbd class="px-1 bg-slate-100 rounded">⌫</kbd> back</span>
+        <span><kbd class="px-1 bg-slate-100 rounded">?</kbd> help</span>
+        {{end}}
+    </div>
+</footer>
+{{end}}
+
+{{define "help_overlay"}}
+<div id="help-overlay" class="hidden">
+    <div class="help-backdrop" onclick="toggleHelp()"></div>
+    <div class="help-overlay p-6 rounded-lg max-w-md">
+        <h2 class="text-lg font-bold mb-4 text-center border-b pb-2">Keyboard Shortcuts</h2>
+
+        <div class="space-y-4 text-sm">
+            <div>
+                <h3 class="font-semibold text-slate-700 mb-2">Navigation</h3>
+                <div class="grid grid-cols-2 gap-1 text-slate-600">
+                    <span><kbd class="px-1 bg-slate-100 rounded">j</kbd> / <kbd class="px-1 bg-slate-100 rounded">↓</kbd></span>
+                    <span>Move down</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">k</kbd> / <kbd class="px-1 bg-slate-100 rounded">↑</kbd></span>
+                    <span>Move up</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">Enter</kbd></span>
+                    <span>Select / Edit</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">Backspace</kbd></span>
+                    <span>Go back</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">g</kbd> <kbd class="px-1 bg-slate-100 rounded">h</kbd></span>
+                    <span>Go home</span>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="font-semibold text-slate-700 mb-2">Actions</h3>
+                <div class="grid grid-cols-2 gap-1 text-slate-600">
+                    <span><kbd class="px-1 bg-slate-100 rounded">n</kbd></span>
+                    <span>New job</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">c</kbd></span>
+                    <span>New category</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">m</kbd></span>
+                    <span>New material</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">l</kbd></span>
+                    <span>New labor</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">e</kbd></span>
+                    <span>New equipment</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">d</kbd></span>
+                    <span>Delete selected</span>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="font-semibold text-slate-700 mb-2">Forms</h3>
+                <div class="grid grid-cols-2 gap-1 text-slate-600">
+                    <span><kbd class="px-1 bg-slate-100 rounded">Tab</kbd></span>
+                    <span>Next field</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">Enter</kbd></span>
+                    <span>Submit</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">Escape</kbd></span>
+                    <span>Cancel</span>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-slate-400 mt-4 pt-2 border-t">
+            Press <kbd class="px-1 bg-slate-100 rounded">?</kbd> or <kbd class="px-1 bg-slate-100 rounded">Escape</kbd> to close
+        </p>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script>
+// State
+let selectedIndex = 0;
+let rows = [];
+let pendingG = false;
+let formActive = false;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initKeyboard);
+document.addEventListener('htmx:afterSwap', initKeyboard);
+
+function initKeyboard() {
+    rows = Array.from(document.querySelectorAll('.row'));
+    selectedIndex = 0;
+    updateSelection();
+}
+
+function updateSelection() {
+    rows.forEach((row, i) => {
+        row.classList.toggle('selected', i === selectedIndex);
+    });
+    if (rows[selectedIndex]) {
+        rows[selectedIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function moveSelection(delta) {
+    if (rows.length === 0) return;
+    selectedIndex = Math.max(0, Math.min(rows.length - 1, selectedIndex + delta));
+    updateSelection();
+}
+
+function selectCurrent() {
+    if (rows[selectedIndex]) {
+        const link = rows[selectedIndex].querySelector('a');
+        if (link) {
+            window.location.href = link.href;
+        }
+    }
+}
+
+function goBack() {
+    const backLink = document.querySelector('[data-back-url]');
+    if (backLink) {
+        window.location.href = backLink.dataset.backUrl;
+    }
+}
+
+function toggleHelp() {
+    const overlay = document.getElementById('help-overlay');
+    overlay.classList.toggle('hidden');
+}
+
+function showInlineForm(type) {
+    const container = document.getElementById('inline-form-container');
+    if (!container) return;
+
+    const categoryID = container.dataset.categoryId;
+    htmx.ajax('GET', `/k/categories/${categoryID}/form?type=${type}`, {target: '#inline-form-container', swap: 'innerHTML'}).then(() => {
+        htmx.process(container);
+        const input = container.querySelector('input[name="name"]');
+        if (input) input.focus();
+    });
+    formActive = true;
+}
+
+function hideInlineForm() {
+    const container = document.getElementById('inline-form-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    formActive = false;
+}
+
+function showCategoryForm() {
+    const container = document.getElementById('category-form-container');
+    if (!container) return;
+
+    const jobID = container.dataset.jobId;
+    const parentID = container.dataset.parentId;
+
+    let url = '/k/category-form?';
+    if (parentID) {
+        url += `parent_id=${parentID}`;
+    } else if (jobID) {
+        url += `job_id=${jobID}`;
+    } else {
+        return;
+    }
+
+    htmx.ajax('GET', url, {target: '#category-form-container', swap: 'innerHTML'}).then(() => {
+        htmx.process(container);
+        const input = container.querySelector('input[name="name"]');
+        if (input) input.focus();
+    });
+    formActive = true;
+
+    // Hide empty state if present
+    const emptyState = document.getElementById('empty-state') || document.getElementById('subcat-empty-state');
+    if (emptyState) {
+        emptyState.style.display = 'none';
+    }
+}
+
+function hideCategoryForm() {
+    const container = document.getElementById('category-form-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    formActive = false;
+
+    // Show empty state if no categories
+    const emptyState = document.getElementById('empty-state') || document.getElementById('subcat-empty-state');
+    const list = document.getElementById('categories-list');
+    if (emptyState && (!list || list.children.length === 0)) {
+        emptyState.style.display = '';
+    }
+}
+
+function showJobForm() {
+    const container = document.getElementById('job-form-container');
+    if (!container) return;
+
+    htmx.ajax('GET', '/k/job-form', {target: '#job-form-container', swap: 'innerHTML'}).then(() => {
+        htmx.process(container);
+        const input = container.querySelector('input[name="name"]');
+        if (input) input.focus();
+    });
+    formActive = true;
+}
+
+function hideJobForm() {
+    const container = document.getElementById('job-form-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    formActive = false;
+}
+
+function deleteCurrent() {
+    if (rows[selectedIndex]) {
+        const deleteBtn = rows[selectedIndex].querySelector('[data-delete-url]');
+        if (deleteBtn && confirm('Delete this item?')) {
+            htmx.ajax('DELETE', deleteBtn.dataset.deleteUrl, {target: 'body'});
+        }
+    }
+}
+
+// Keyboard handler
+document.addEventListener('keydown', function(e) {
+    // Don't handle if in form element
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') {
+        if (e.key === 'Escape') {
+            hideInlineForm();
+            hideCategoryForm();
+            hideJobForm();
+            e.target.blur();
+        }
+        return;
+    }
+
+    // Help toggle
+    if (e.key === '?') {
+        e.preventDefault();
+        toggleHelp();
+        return;
+    }
+
+    // Close help with Escape
+    const helpOverlay = document.getElementById('help-overlay');
+    if (!helpOverlay.classList.contains('hidden')) {
+        if (e.key === 'Escape') {
+            toggleHelp();
+        }
+        return;
+    }
+
+    // g prefix for "go" commands
+    if (pendingG) {
+        pendingG = false;
+        if (e.key === 'h') {
+            window.location.href = '/k/';
+            return;
+        }
+    }
+
+    if (e.key === 'g') {
+        pendingG = true;
+        setTimeout(() => { pendingG = false; }, 500);
+        return;
+    }
+
+    // Navigation
+    switch (e.key) {
+        case 'j':
+        case 'ArrowDown':
+            e.preventDefault();
+            moveSelection(1);
+            break;
+        case 'k':
+        case 'ArrowUp':
+            e.preventDefault();
+            moveSelection(-1);
+            break;
+        case 'Enter':
+            e.preventDefault();
+            selectCurrent();
+            break;
+        case 'Backspace':
+            e.preventDefault();
+            goBack();
+            break;
+        case 'Escape':
+            e.preventDefault();
+            hideInlineForm();
+            hideCategoryForm();
+            hideJobForm();
+            break;
+
+        // Actions - context sensitive
+        case 'n':
+            e.preventDefault();
+            // New job - only on jobs list
+            if (document.querySelector('[data-context="jobs"]')) {
+                showJobForm();
+            }
+            break;
+        case 'c':
+            e.preventDefault();
+            // New category - show form
+            const catFormContainer = document.getElementById('category-form-container');
+            if (catFormContainer) {
+                showCategoryForm();
+            }
+            break;
+        case 'm':
+            e.preventDefault();
+            showInlineForm('material');
+            break;
+        case 'l':
+            e.preventDefault();
+            showInlineForm('labor');
+            break;
+        case 'e':
+            e.preventDefault();
+            showInlineForm('equipment');
+            break;
+        case 'd':
+            e.preventDefault();
+            deleteCurrent();
+            break;
+    }
+});
+</script>
+{{end}}

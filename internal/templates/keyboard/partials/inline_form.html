@@ -1,0 +1,60 @@
+{{define "inline_form"}}
+<div class="inline-form px-4 py-3 border-t border-slate-200">
+    <form hx-post="/k/categories/{{.CategoryID}}/items"
+          hx-target="body"
+          class="grid grid-cols-12 gap-2 items-center"
+          onsubmit="this.querySelector('input[name=name]').focus()">
+        <input type="hidden" name="type" value="{{.Type}}">
+
+        <div class="col-span-5 flex items-center gap-2">
+            <span class="{{if eq .Type "material"}}text-forest-600{{else if eq .Type "labor"}}text-copper-600{{else}}text-slate-600{{end}}">
+                {{typeIndicator .Type}}
+            </span>
+            <input type="text"
+                   name="name"
+                   placeholder="Item name..."
+                   class="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                   autofocus
+                   required>
+        </div>
+
+        <input type="number"
+               name="quantity"
+               value="1"
+               step="0.01"
+               min="0.01"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-slate-400">
+
+        <input type="text"
+               name="unit"
+               value="{{.DefaultUnit}}"
+               placeholder="unit"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+
+        <input type="number"
+               name="unit_price"
+               value="0"
+               step="0.01"
+               min="0"
+               placeholder="0.00"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-slate-400">
+
+        <div class="col-span-1 flex gap-1">
+            <button type="submit"
+                    class="px-2 py-1 bg-slate-900 text-white rounded text-xs hover:bg-slate-700">
+                ↵
+            </button>
+            <button type="button"
+                    onclick="hideInlineForm()"
+                    class="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs hover:bg-slate-300">
+                ×
+            </button>
+        </div>
+    </form>
+    <p class="text-xs text-slate-500 mt-1">
+        <kbd class="px-1 bg-slate-100 rounded">Tab</kbd> next field
+        <kbd class="px-1 bg-slate-100 rounded ml-2">Enter</kbd> save
+        <kbd class="px-1 bg-slate-100 rounded ml-2">Escape</kbd> cancel
+    </p>
+</div>
+{{end}}

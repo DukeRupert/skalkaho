@@ -12,11 +12,13 @@ import (
 	"github.com/pressly/goose/v3"
 
 	"github.com/dukerupert/skalkaho/internal/config"
+	"github.com/dukerupert/skalkaho/internal/handler/keyboard"
 	"github.com/dukerupert/skalkaho/internal/handler/quote"
 	"github.com/dukerupert/skalkaho/internal/middleware"
 	"github.com/dukerupert/skalkaho/internal/repository"
 	"github.com/dukerupert/skalkaho/internal/router"
 	"github.com/dukerupert/skalkaho/internal/templates"
+	keyboardtemplates "github.com/dukerupert/skalkaho/internal/templates/keyboard"
 )
 
 //go:embed migrations/*.sql
@@ -55,12 +57,19 @@ func main() {
 		log.Fatalf("Failed to initialize templates: %v", err)
 	}
 
+	// Initialize keyboard template renderer
+	keyboardRenderer, err := keyboardtemplates.NewRenderer()
+	if err != nil {
+		log.Fatalf("Failed to initialize keyboard templates: %v", err)
+	}
+
 	// Initialize handlers
 	quoteHandler := quote.NewHandler(queries, renderer, logger)
+	keyboardHandler := keyboard.NewHandler(queries, keyboardRenderer, logger)
 
 	// Setup router
 	mux := http.NewServeMux()
-	router.Register(mux, quoteHandler)
+	router.Register(mux, quoteHandler, keyboardHandler)
 
 	// Apply middleware
 	handler := middleware.Chain(mux,
