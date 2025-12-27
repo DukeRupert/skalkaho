@@ -31,9 +31,8 @@ tailwind.config = {
 </script>
 <style>
     body { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
-    .selected { background-color: #f1f5f9; }
-    .selected::before { content: "▸ "; color: #334155; }
-    .row:not(.selected)::before { content: "  "; }
+    .row { border-left: 2px solid transparent; }
+    .selected { border-left-color: #334155; box-shadow: inset 0 0 0 1px #334155; border-radius: 4px; }
     .help-overlay {
         position: fixed;
         top: 50%;
@@ -176,11 +175,21 @@ function moveSelection(delta) {
 
 function selectCurrent() {
     if (rows[selectedIndex]) {
-        const link = rows[selectedIndex].querySelector('a');
+        const row = rows[selectedIndex];
+        const link = row.querySelector('a');
+        const itemId = row.dataset.itemId;
+
         if (link) {
             window.location.href = link.href;
+        } else if (itemId) {
+            // Edit item inline
+            editItem(itemId, row);
         }
     }
+}
+
+function editItem(itemId, row) {
+    htmx.ajax('GET', `/k/items/${itemId}/edit`, {target: row, swap: 'outerHTML'});
 }
 
 function goBack() {

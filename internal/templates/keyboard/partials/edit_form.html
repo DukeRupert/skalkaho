@@ -1,0 +1,72 @@
+{{define "edit_form"}}
+<div class="edit-form px-4 py-3 border-b border-slate-200 {{if eq .Item.Type "material"}}bg-forest-100{{else if eq .Item.Type "labor"}}bg-copper-100{{else}}bg-slate-200{{end}}" data-item-id="{{.Item.ID}}">
+    <form hx-put="/k/items/{{.Item.ID}}"
+          hx-target="body"
+          class="grid grid-cols-12 gap-2 items-center"
+          id="edit-item-form">
+
+        <div class="col-span-5">
+            <input type="text"
+                   name="name"
+                   id="edit-name-input"
+                   value="{{.Item.Name}}"
+                   class="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+                   autofocus
+                   required>
+        </div>
+
+        <input type="number"
+               name="quantity"
+               id="edit-quantity"
+               value="{{printf "%.2f" .Item.Quantity}}"
+               step="0.01"
+               min="0.01"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+        <input type="text"
+               name="unit"
+               id="edit-unit"
+               value="{{.Item.Unit}}"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+        <div class="col-span-2 flex items-center border border-slate-300 rounded focus-within:ring-2 focus-within:ring-slate-400 overflow-hidden bg-white">
+            <span class="pl-2 text-slate-500 text-sm shrink-0">$</span>
+            <input type="number"
+                   name="unit_price"
+                   id="edit-price"
+                   value="{{printf "%.2f" .Item.UnitPrice}}"
+                   step="0.01"
+                   min="0"
+                   class="min-w-0 flex-1 px-1 py-1 text-sm text-right focus:outline-none border-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+        </div>
+
+        <div class="col-span-1 flex gap-1">
+            <button type="submit"
+                    class="px-2 py-1 bg-slate-900 text-white rounded text-xs hover:bg-slate-700">
+                ↵
+            </button>
+            <button type="button"
+                    onclick="cancelEdit()"
+                    class="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs hover:bg-slate-300">
+                ×
+            </button>
+        </div>
+    </form>
+</div>
+<script>
+(function() {
+    const form = document.getElementById('edit-item-form');
+    htmx.process(form);
+
+    const nameInput = document.getElementById('edit-name-input');
+    if (nameInput) {
+        nameInput.focus();
+        nameInput.select();
+    }
+})();
+
+function cancelEdit() {
+    window.location.reload();
+}
+</script>
+{{end}}

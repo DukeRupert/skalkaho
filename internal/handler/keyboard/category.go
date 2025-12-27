@@ -11,6 +11,94 @@ import (
 	"github.com/google/uuid"
 )
 
+// GetEditForm returns an inline form for editing an existing line item.
+func (h *Handler) GetEditForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	itemID := r.PathValue("id")
+
+	item, err := h.queries.GetLineItem(ctx, itemID)
+	if err != nil {
+		logger.Error("failed to get line item", "error", err)
+		http.Error(w, "Item not found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Item": item,
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "edit_form", data); err != nil {
+		logger.Error("failed to render edit form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(buf.Bytes())
+}
+
+// UpdateLineItem updates an existing line item.
+func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	itemID := r.PathValue("id")
+
+	item, err := h.queries.GetLineItem(ctx, itemID)
+	if err != nil {
+		logger.Error("failed to get line item", "error", err)
+		http.Error(w, "Item not found", http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	quantity, _ := strconv.ParseFloat(r.FormValue("quantity"), 64)
+	if quantity <= 0 {
+		quantity = 1
+	}
+
+	unitPrice, _ := strconv.ParseFloat(r.FormValue("unit_price"), 64)
+
+	name := r.FormValue("name")
+	if name == "" {
+		name = item.Name
+	}
+
+	unit := r.FormValue("unit")
+	if unit == "" {
+		unit = item.Unit
+	}
+
+	_, err = h.queries.UpdateLineItem(ctx, repository.UpdateLineItemParams{
+		ID:               itemID,
+		Type:             item.Type,
+		Name:             name,
+		Description:      item.Description,
+		Quantity:         quantity,
+		Unit:             unit,
+		UnitPrice:        unitPrice,
+		SurchargePercent: item.SurchargePercent,
+		SortOrder:        item.SortOrder,
+	})
+	if err != nil {
+		logger.Error("failed to update line item", "error", err)
+		http.Error(w, "Failed to update line item", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/k/categories/"+item.CategoryID)
+		return
+	}
+
+	http.Redirect(w, r, "/k/categories/"+item.CategoryID, http.StatusSeeOther)
+}
+
 // SearchItems searches for item templates by type and name.
 func (h *Handler) SearchItems(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

@@ -7,7 +7,7 @@
 <body class="bg-slate-50 pb-12" data-category-id="{{.Category.ID}}" {{if .CanAddSubcategory}}data-can-add-subcategory="true"{{end}}>
     {{template "header" .}}
 
-    <main class="max-w-2xl mx-auto p-4">
+    <main class="max-w-4xl mx-auto p-4">
         <!-- Back link -->
         {{$backURL := printf "/k/jobs/%s" .Job.ID}}
         {{range $i, $bc := .Breadcrumbs}}
@@ -110,14 +110,11 @@
                 </div>
                 {{$subcatCount := len .Subcategories}}
                 {{range $i, $item := .Items}}
-                <div class="row px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50 grid grid-cols-12 gap-2 items-center"
-                     data-index="{{add $subcatCount $i}}">
-                    <div class="col-span-5 flex items-center gap-2">
-                        <span class="{{if eq $item.Type "material"}}text-forest-600{{else if eq $item.Type "labor"}}text-copper-600{{else}}text-slate-600{{end}}">
-                            {{typeIndicator $item.Type}}
-                        </span>
-                        <span class="font-medium text-slate-900 truncate">{{$item.Name}}</span>
-                    </div>
+                <div class="row px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:brightness-95 grid grid-cols-12 gap-2 items-center {{if eq $item.Type "material"}}bg-forest-50{{else if eq $item.Type "labor"}}bg-copper-50{{else}}bg-slate-100{{end}}"
+                     data-index="{{add $subcatCount $i}}"
+                     data-item-id="{{$item.ID}}"
+                     id="item-row-{{$item.ID}}">
+                    <span class="col-span-5 font-medium text-slate-900 truncate">{{$item.Name}}</span>
                     <span class="col-span-2 text-right font-mono text-slate-700">{{printf "%.2f" $item.Quantity}}</span>
                     <span class="col-span-2 text-slate-500">{{$item.Unit}}</span>
                     <span class="col-span-2 text-right font-mono text-slate-700">{{formatMoney $item.UnitPrice}}</span>
@@ -159,6 +156,7 @@
 
 {{define "shortcuts"}}
 <span><kbd class="px-1 bg-slate-100 rounded">↑↓</kbd> navigate</span>
+<span><kbd class="px-1 bg-slate-100 rounded">⏎</kbd> edit</span>
 <span><kbd class="px-1 bg-slate-100 rounded">m</kbd> material</span>
 <span><kbd class="px-1 bg-slate-100 rounded">l</kbd> labor</span>
 <span><kbd class="px-1 bg-slate-100 rounded">e</kbd> equipment</span>
