@@ -13,11 +13,9 @@ import (
 
 	"github.com/dukerupert/skalkaho/internal/config"
 	"github.com/dukerupert/skalkaho/internal/handler/keyboard"
-	"github.com/dukerupert/skalkaho/internal/handler/quote"
 	"github.com/dukerupert/skalkaho/internal/middleware"
 	"github.com/dukerupert/skalkaho/internal/repository"
 	"github.com/dukerupert/skalkaho/internal/router"
-	"github.com/dukerupert/skalkaho/internal/templates"
 	keyboardtemplates "github.com/dukerupert/skalkaho/internal/templates/keyboard"
 )
 
@@ -52,27 +50,20 @@ func main() {
 	queries := repository.New(db)
 
 	// Initialize template renderer
-	renderer, err := templates.NewRenderer()
+	renderer, err := keyboardtemplates.NewRenderer()
 	if err != nil {
 		log.Fatalf("Failed to initialize templates: %v", err)
 	}
 
-	// Initialize keyboard template renderer
-	keyboardRenderer, err := keyboardtemplates.NewRenderer()
-	if err != nil {
-		log.Fatalf("Failed to initialize keyboard templates: %v", err)
-	}
-
-	// Initialize handlers
-	quoteHandler := quote.NewHandler(queries, renderer, logger)
-	keyboardHandler := keyboard.NewHandler(queries, keyboardRenderer, logger)
+	// Initialize handler
+	handler := keyboard.NewHandler(queries, renderer, logger)
 
 	// Setup router
 	mux := http.NewServeMux()
-	router.Register(mux, quoteHandler, keyboardHandler)
+	router.Register(mux, handler)
 
 	// Apply middleware
-	handler := middleware.Chain(mux,
+	httpHandler := middleware.Chain(mux,
 		middleware.Recover,
 		middleware.RequestID,
 		middleware.Logger(logger),
@@ -80,7 +71,7 @@ func main() {
 
 	// Start server
 	logger.Info("Starting server", "addr", cfg.Addr)
-	if err := http.ListenAndServe(cfg.Addr, handler); err != nil {
+	if err := http.ListenAndServe(cfg.Addr, httpHandler); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
