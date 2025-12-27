@@ -114,18 +114,18 @@
         }
 
         debounceTimer = setTimeout(() => {
-            fetch(`/k/items/search?type=${encodeURIComponent(itemType)}&q=${encodeURIComponent(query)}`)
-                .then(res => res.text())
-                .then(html => {
-                    container.innerHTML = html;
-                    selectedIndex = -1;
-                    positionDropdown();
+            htmx.ajax('GET', `/k/items/search?type=${encodeURIComponent(itemType)}&q=${encodeURIComponent(query)}`, {
+                target: '#autocomplete-container',
+                swap: 'innerHTML'
+            }).then(() => {
+                selectedIndex = -1;
+                positionDropdown();
 
-                    // Add click handlers to results
-                    getItems().forEach(item => {
-                        item.addEventListener('click', () => selectItem(item));
-                    });
+                // Add click handlers to results
+                getItems().forEach(item => {
+                    item.addEventListener('click', () => selectItem(item));
                 });
+            });
         }, 150);
     });
 
