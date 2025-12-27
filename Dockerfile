@@ -47,8 +47,9 @@ RUN addgroup -g 1000 -S skalkaho && \
 
 WORKDIR /app
 
-# Copy binary from builder
+# Copy binary and static files from builder
 COPY --from=builder /app/server /app/server
+COPY --from=builder /app/static /app/static
 
 # Create data directory for SQLite database
 RUN mkdir -p /app/data && chown -R skalkaho:skalkaho /app
