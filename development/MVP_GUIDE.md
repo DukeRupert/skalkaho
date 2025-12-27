@@ -21,10 +21,11 @@ Skalkaho is a construction quoting SaaS application designed to help small-mediu
 ### Included in MVP
 
 - Build quotes with hierarchical categories
-- Add line items (materials and labor)
+- Add line items (materials, labor, and equipment)
 - Apply surcharges at job, category, and line-item levels
 - Real-time total calculations
 - Configurable surcharge modes (stacking vs. override)
+- Order List and Site Materials reports
 
 ### Excluded from MVP (Future Phases)
 
@@ -33,7 +34,7 @@ Skalkaho is a construction quoting SaaS application designed to help small-mediu
 | User accounts / authentication | 2 |
 | Saving/loading quotes | 2 |
 | PDF export | 2 |
-| Material list generation | 3 |
+| ~~Material list generation~~ | ~~3~~ Done in MVP |
 | Supplier catalog imports | 3 |
 | Labor forecasting | 3 |
 | QuickBooks integration | 4 |
@@ -116,7 +117,7 @@ Individual materials or labor entries within a category.
 |-------|------|-------------|-------------|
 | `id` | UUID | PK | Unique identifier |
 | `category_id` | UUID | FK → Category | Parent category |
-| `type` | enum | "material" \| "labor" | Critical for future material list generation |
+| `type` | enum | "material" \| "labor" \| "equipment" | Critical for material list generation |
 | `name` | string | required | e.g., "2x4 Lumber", "Electrician" |
 | `description` | string | nullable | e.g., "8ft pressure treated" |
 | `quantity` | decimal | required | Supports partial units (e.g., 2.5) |
@@ -440,3 +441,4 @@ type LineItem struct {
 | Date | Version | Notes |
 |------|---------|-------|
 | 2024-12-22 | 0.1 | Initial MVP specification |
+| 2025-12-27 | 0.2 | MVP complete - added equipment type, reports |
