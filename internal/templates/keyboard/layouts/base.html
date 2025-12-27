@@ -2,6 +2,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Skalkaho - Keyboard Mode</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
 <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -61,7 +62,13 @@ tailwind.config = {
 
 {{define "header"}}
 <header class="border-b border-slate-200 px-4 py-2 flex items-center justify-between bg-slate-900 text-white">
-    <a href="/" class="font-bold tracking-wider">SKALKAHO</a>
+    <a href="/" class="flex items-center gap-2">
+        <svg width="28" height="22" viewBox="0 0 56 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 0 44 Q 9 38, 18 4 Q 27 38, 36 44 Z" fill="#ffffff" opacity="0.35"/>
+            <path d="M 20 44 Q 29 38, 38 4 Q 47 38, 56 44 Z" fill="#ffffff"/>
+        </svg>
+        <span class="font-bold tracking-wider">SKALKAHO</span>
+    </a>
     <div class="flex items-center gap-4 text-sm">
         <span class="text-slate-400">Keyboard Mode</span>
         <button onclick="toggleHelp()" class="px-2 py-1 bg-slate-700 rounded text-xs hover:bg-slate-600">
