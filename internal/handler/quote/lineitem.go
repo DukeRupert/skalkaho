@@ -41,7 +41,7 @@ func (h *Handler) writeTotalsOOB(w http.ResponseWriter, r *http.Request, jobID s
 		logger.Error("failed to render totals OOB", "error", err)
 		return
 	}
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 // CreateLineItem creates a new line item.

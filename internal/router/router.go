@@ -9,6 +9,12 @@ import (
 
 // Register sets up all routes.
 func Register(mux *http.ServeMux, h *quote.Handler, kh *keyboard.Handler) {
+	// Health check
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+
 	// Static files
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 

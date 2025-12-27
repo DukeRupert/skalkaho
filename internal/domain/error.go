@@ -7,12 +7,12 @@ import (
 
 // Error codes for mapping to HTTP status
 const (
-	EINVALID      = "invalid"       // 400
-	EUNAUTHORIZED = "unauthorized"  // 401
-	EFORBIDDEN    = "forbidden"     // 403
-	ENOTFOUND     = "not_found"     // 404
-	ECONFLICT     = "conflict"      // 409
-	EINTERNAL     = "internal"      // 500
+	EINVALID      = "invalid"      // 400
+	EUNAUTHORIZED = "unauthorized" // 401
+	EFORBIDDEN    = "forbidden"    // 403
+	ENOTFOUND     = "not_found"    // 404
+	ECONFLICT     = "conflict"     // 409
+	EINTERNAL     = "internal"     // 500
 )
 
 // Error represents a domain error with code, operation, and message.

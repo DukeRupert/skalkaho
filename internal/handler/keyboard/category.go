@@ -36,7 +36,7 @@ func (h *Handler) GetCategoryMarkupForm(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 // UpdateCategoryMarkup updates a category's markup percentage.
@@ -109,7 +109,7 @@ func (h *Handler) GetEditForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 // UpdateLineItem updates an existing line item.
@@ -186,7 +186,7 @@ func (h *Handler) SearchItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items, err := h.queries.SearchItemTemplatesByType(ctx, repository.SearchItemTemplatesByTypeParams{
-		Type:   itemType,
+		Type:    itemType,
 		Column2: sql.NullString{String: query, Valid: true},
 	})
 	if err != nil {
@@ -203,7 +203,7 @@ func (h *Handler) SearchItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 // GetCategory shows a category with its items and subcategories.
@@ -282,15 +282,15 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Job":              job,
-		"Category":         category,
-		"Subcategories":    subcatsWithTotals,
-		"Items":            categoryItems,
-		"Breadcrumbs":      breadcrumbs,
-		"Depth":            depth,
+		"Job":               job,
+		"Category":          category,
+		"Subcategories":     subcatsWithTotals,
+		"Items":             categoryItems,
+		"Breadcrumbs":       breadcrumbs,
+		"Depth":             depth,
 		"CanAddSubcategory": canAddSubcategory(depth),
-		"CategoryTotal":    catTotal,
-		"SelectedIndex":    0,
+		"CategoryTotal":     catTotal,
+		"SelectedIndex":     0,
 	}
 
 	if err := h.renderer.Render(w, "category", data); err != nil {
@@ -541,7 +541,7 @@ func (h *Handler) GetInlineForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 // GetCategoryForm returns an inline form for creating categories.
@@ -575,5 +575,5 @@ func (h *Handler) GetCategoryForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }

@@ -31,8 +31,11 @@ tailwind.config = {
 </script>
 <style>
     body { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
-    .row { border-left: 2px solid transparent; }
-    .selected { border-left-color: #334155; box-shadow: inset 0 0 0 1px #334155; border-radius: 4px; }
+    .row { position: relative; }
+    .selected {
+        z-index: 10;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(51, 65, 85, 0.3);
+    }
     .help-overlay {
         position: fixed;
         top: 50%;

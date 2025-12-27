@@ -53,9 +53,9 @@ func TestEffectiveSurcharge_StackingMode(t *testing.T) {
 				SurchargeMode:    domain.SurchargeModeStacking,
 			},
 			categoryChain: []*domain.Category{
-				{SurchargePercent: floatPtr(5)},  // top level
-				{SurchargePercent: floatPtr(3)},  // level 2
-				{SurchargePercent: floatPtr(2)},  // level 3
+				{SurchargePercent: floatPtr(5)}, // top level
+				{SurchargePercent: floatPtr(3)}, // level 2
+				{SurchargePercent: floatPtr(2)}, // level 3
 			},
 			lineItem: &domain.LineItem{
 				SurchargePercent: nil,
@@ -169,10 +169,10 @@ func TestEffectiveSurcharge_OverrideMode(t *testing.T) {
 
 func TestFinalPrice(t *testing.T) {
 	tests := []struct {
-		name              string
-		lineItem          *domain.LineItem
+		name               string
+		lineItem           *domain.LineItem
 		effectiveSurcharge float64
-		want              float64
+		want               float64
 	}{
 		{
 			name: "basic calculation",
@@ -255,7 +255,7 @@ func TestCalculateJobTotal(t *testing.T) {
 
 	result := domain.CalculateJobTotal(job, categories, lineItems)
 
-	expectedSubtotal := 1250.0  // 1000 + 250
+	expectedSubtotal := 1250.0   // 1000 + 250
 	expectedGrandTotal := 1437.5 // 1150 + 287.5
 	expectedMaterial := 1150.0
 	expectedLabor := 287.5
@@ -434,12 +434,12 @@ func TestCalculateJobTotal_MultipleCategories(t *testing.T) {
 
 func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 	tests := []struct {
-		name             string
-		lineItems        []*domain.LineItem
-		wantMaterial     float64
-		wantLabor        float64
-		wantEquipment    float64
-		wantGrandTotal   float64
+		name           string
+		lineItems      []*domain.LineItem
+		wantMaterial   float64
+		wantLabor      float64
+		wantEquipment  float64
+		wantGrandTotal float64
 	}{
 		{
 			name: "all materials",
@@ -467,8 +467,8 @@ func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 		{
 			name: "all equipment",
 			lineItems: []*domain.LineItem{
-				makeLineItem("e1", "cat-1", domain.LineItemTypeEquipment, 1, 500),  // 500 * 1.15 = 575
-				makeLineItem("e2", "cat-1", domain.LineItemTypeEquipment, 2, 250),  // 500 * 1.15 = 575
+				makeLineItem("e1", "cat-1", domain.LineItemTypeEquipment, 1, 500), // 500 * 1.15 = 575
+				makeLineItem("e2", "cat-1", domain.LineItemTypeEquipment, 2, 250), // 500 * 1.15 = 575
 			},
 			wantMaterial:   0,
 			wantLabor:      0,
@@ -478,9 +478,9 @@ func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 		{
 			name: "mixed types including equipment",
 			lineItems: []*domain.LineItem{
-				makeLineItem("m1", "cat-1", domain.LineItemTypeMaterial, 10, 10),   // 100 * 1.15 = 115
-				makeLineItem("l1", "cat-1", domain.LineItemTypeLabor, 5, 20),       // 100 * 1.15 = 115
-				makeLineItem("e1", "cat-1", domain.LineItemTypeEquipment, 1, 100),  // 100 * 1.15 = 115
+				makeLineItem("m1", "cat-1", domain.LineItemTypeMaterial, 10, 10),  // 100 * 1.15 = 115
+				makeLineItem("l1", "cat-1", domain.LineItemTypeLabor, 5, 20),      // 100 * 1.15 = 115
+				makeLineItem("e1", "cat-1", domain.LineItemTypeEquipment, 1, 100), // 100 * 1.15 = 115
 			},
 			wantMaterial:   115,
 			wantLabor:      115,

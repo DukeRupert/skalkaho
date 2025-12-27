@@ -1,0 +1,56 @@
+# =============================================================================
+# Production Docker Compose for Skalkaho
+# =============================================================================
+# Usage:
+#   docker compose up -d
+#
+# Environment variables (set in .env file on VPS):
+#   - IMAGE_TAG: Docker image tag to deploy (default: latest)
+#   - DOMAIN: Your domain name (e.g., skalkaho.example.com)
+# =============================================================================
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: skalkaho-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    depends_on:
+      - app
+
+  app:
+    image: dukerupert/skalkaho:${IMAGE_TAG:-latest}
+    container_name: skalkaho-app
+    restart: unless-stopped
+    expose:
+      - "8080"
+    volumes:
+      # Persist SQLite database
+      - skalkaho-data:/app/data
+    environment:
+      - ADDR=:8080
+      - DATABASE_PATH=/app/data/quotes.db
+      - ENVIRONMENT=production
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  skalkaho-data:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
+    driver: local

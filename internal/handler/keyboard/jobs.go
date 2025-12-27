@@ -41,7 +41,7 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Jobs":         jobsWithTotals,
+		"Jobs":          jobsWithTotals,
 		"SelectedIndex": 0,
 	}
 
@@ -233,7 +233,7 @@ func (h *Handler) GetJobForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 // GetMarkupForm returns an inline form for editing job markup.
@@ -261,7 +261,7 @@ func (h *Handler) GetMarkupForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(buf.Bytes())
+	_, _ = w.Write(buf.Bytes())
 }
 
 // UpdateMarkup updates a job's markup percentage.

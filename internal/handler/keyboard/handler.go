@@ -1,7 +1,6 @@
 package keyboard
 
 import (
-	"database/sql"
 	"log/slog"
 
 	"github.com/dukerupert/skalkaho/internal/domain"
@@ -176,12 +175,4 @@ type Breadcrumb struct {
 // helper to check if a category can have subcategories
 func canAddSubcategory(depth int) bool {
 	return depth < 3
-}
-
-// helper for nil string handling
-func nullStringValue(ns sql.NullString) string {
-	if ns.Valid {
-		return ns.String
-	}
-	return ""
 }

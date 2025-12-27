@@ -141,11 +141,11 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 	totals := h.calculateTotals(job, categories, lineItems)
 
 	data := map[string]interface{}{
-		"Job":                job,
-		"Categories":         topLevelCategories,
-		"ChildCategories":    childCategories,
+		"Job":                 job,
+		"Categories":          topLevelCategories,
+		"ChildCategories":     childCategories,
 		"LineItemsByCategory": lineItemsByCategory,
-		"Totals":             totals,
+		"Totals":              totals,
 	}
 
 	if err := h.renderer.Render(w, "job", data); err != nil {

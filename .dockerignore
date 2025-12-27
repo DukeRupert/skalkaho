@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# IDE and editor
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Claude Code
+.claude
+
+# Development
+development/
+CLAUDE.md
+README.md
+*.md
+
+# Build artifacts
+bin/
+server
+*.exe
+
+# Database files (we create fresh in container)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Spreadsheets and data files
+*.csv
+*.xlsx
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# CI/CD
+.github/
+
+# Catalyst UI kit (not needed in production)
+catalyst-ui-kit/
+
+# Temporary files
+*.log
+*.tmp

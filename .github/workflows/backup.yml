@@ -1,0 +1,90 @@
+# =============================================================================
+# Database Backup Workflow
+# =============================================================================
+# Runs daily at 2 AM UTC to backup the SQLite production database.
+# Can also be triggered manually.
+#
+# Required Secrets:
+#   - VPS_HOST: VPS IP address or hostname
+#   - VPS_USER: SSH username
+#   - VPS_SSH_KEY: Private SSH key
+# =============================================================================
+
+name: Database Backup
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      backup_name:
+        description: "Custom backup name suffix (optional)"
+        required: false
+        type: string
+
+jobs:
+  backup:
+    name: Backup Database
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run backup via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/skalkaho
+
+            # Create backup directory if it doesn't exist
+            mkdir -p backups
+
+            # Generate backup filename
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            SUFFIX="${{ inputs.backup_name }}"
+            if [ -n "$SUFFIX" ]; then
+              BACKUP_FILE="backups/skalkaho_${TIMESTAMP}_${SUFFIX}.db"
+            else
+              BACKUP_FILE="backups/skalkaho_${TIMESTAMP}.db"
+            fi
+
+            # Get the SQLite database path from the Docker volume
+            # Copy database using docker cp for a consistent backup
+            docker cp skalkaho-app:/app/data/quotes.db "$BACKUP_FILE"
+
+            # Verify backup was created
+            if [ ! -f "$BACKUP_FILE" ]; then
+              echo "Backup failed - no backup file created"
+              exit 1
+            fi
+
+            # Run integrity check on the backup
+            sqlite3 "$BACKUP_FILE" "PRAGMA integrity_check;"
+
+            BACKUP_SIZE=$(stat -c %s "$BACKUP_FILE")
+            echo "Backup created: $BACKUP_FILE (${BACKUP_SIZE} bytes)"
+
+            # Clean up old backups (keep last 7 days)
+            find backups -name "*.db" -mtime +7 -delete
+            echo "Cleaned up backups older than 7 days"
+
+            # List remaining backups
+            echo "Current backups:"
+            ls -lh backups/*.db 2>/dev/null || echo "No backups found"
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: 'Database Backup Failed',
+              body: `Database backup workflow failed at ${new Date().toISOString()}.\n\nSee [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.`,
+              labels: ['bug', 'ops']
+            });
