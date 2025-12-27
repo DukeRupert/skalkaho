@@ -41,7 +41,9 @@ tailwind.config = {
     .row { position: relative; }
     .selected {
         z-index: 10;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(51, 65, 85, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        outline: 2px solid #334155;
+        outline-offset: -2px;
     }
     .help-overlay {
         position: fixed;
