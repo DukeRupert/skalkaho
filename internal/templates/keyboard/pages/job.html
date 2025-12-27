@@ -49,6 +49,14 @@
                         <div class="text-right">
                             <p class="text-sm text-slate-500">Markup: {{formatPercent .Job.SurchargePercent}} <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">%</kbd></p>
                             <p class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
+                            <div class="mt-2 flex gap-2 justify-end">
+                                <a href="/jobs/{{.Job.ID}}/order-list" class="text-xs text-copper-700 hover:text-copper-500">
+                                    <kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">o</kbd> Order List
+                                </a>
+                                <a href="/jobs/{{.Job.ID}}/site-materials" class="text-xs text-copper-700 hover:text-copper-500">
+                                    <kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">s</kbd> Site Materials
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -128,7 +136,7 @@
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">↑↓</kbd> navigate</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">⏎</kbd> enter</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> category</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd> rename</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">o</kbd> order</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">s</kbd> site</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">?</kbd> help</span>
 {{end}}

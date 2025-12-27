@@ -28,6 +28,8 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("PUT /jobs/{id}/markup", h.UpdateMarkup)
 	mux.HandleFunc("GET /jobs/{id}/rename", h.GetJobRenameForm)
 	mux.HandleFunc("PUT /jobs/{id}/name", h.UpdateJobName)
+	mux.HandleFunc("GET /jobs/{id}/order-list", h.GetOrderList)
+	mux.HandleFunc("GET /jobs/{id}/site-materials", h.GetSiteMaterials)
 
 	// Categories
 	mux.HandleFunc("GET /categories/{id}", h.GetCategory)

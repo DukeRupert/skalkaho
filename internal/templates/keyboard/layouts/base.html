@@ -145,6 +145,16 @@ tailwind.config = {
             </div>
 
             <div>
+                <h3 class="text-sm font-semibold tracking-wide uppercase text-slate-700 mb-2">Reports (Job Page)</h3>
+                <div class="grid grid-cols-2 gap-1 text-slate-600">
+                    <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">o</kbd></span>
+                    <span>Order list</span>
+                    <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">s</kbd></span>
+                    <span>Site materials</span>
+                </div>
+            </div>
+
+            <div>
                 <h3 class="text-sm font-semibold tracking-wide uppercase text-slate-700 mb-2">Forms</h3>
                 <div class="grid grid-cols-2 gap-1 text-slate-600">
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">Tab</kbd></span>
@@ -519,6 +529,20 @@ document.addEventListener('keydown', function(e) {
         case 'r':
             e.preventDefault();
             showRenameForm();
+            break;
+        case 'o':
+            // Order list - only on job page
+            if (document.body.dataset.jobId) {
+                e.preventDefault();
+                window.location.href = '/jobs/' + document.body.dataset.jobId + '/order-list';
+            }
+            break;
+        case 's':
+            // Site materials - only on job page
+            if (document.body.dataset.jobId) {
+                e.preventDefault();
+                window.location.href = '/jobs/' + document.body.dataset.jobId + '/site-materials';
+            }
             break;
     }
 });

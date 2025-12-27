@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"database/sql"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/dukerupert/skalkaho/internal/middleware"
 	"github.com/dukerupert/skalkaho/internal/repository"
@@ -380,4 +382,169 @@ func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/jobs/"+jobID, http.StatusSeeOther)
+}
+
+// ReportItem represents a single item in a report (materials/equipment only).
+type ReportItem struct {
+	Name     string
+	Quantity float64
+	Unit     string
+}
+
+// CategoryReport represents a category with its items for the site materials report.
+type CategoryReport struct {
+	Name  string
+	Items []ReportItem
+}
+
+// GetOrderList shows an aggregated list of all materials and equipment for a job.
+func (h *Handler) GetOrderList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	jobID := r.PathValue("id")
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	lineItems, err := h.queries.ListLineItemsByJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to list line items", "error", err)
+		http.Error(w, "Failed to load items", http.StatusInternalServerError)
+		return
+	}
+
+	// Aggregate materials and equipment by name+unit
+	itemMap := make(map[string]*ReportItem)
+	for _, li := range lineItems {
+		if li.Type != "material" && li.Type != "equipment" {
+			continue
+		}
+		key := li.Name + "|" + li.Unit
+		if existing, ok := itemMap[key]; ok {
+			existing.Quantity += li.Quantity
+		} else {
+			itemMap[key] = &ReportItem{
+				Name:     li.Name,
+				Quantity: li.Quantity,
+				Unit:     li.Unit,
+			}
+		}
+	}
+
+	// Convert to slice and sort alphabetically
+	items := make([]ReportItem, 0, len(itemMap))
+	for _, item := range itemMap {
+		items = append(items, *item)
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Name < items[j].Name
+	})
+
+	data := map[string]interface{}{
+		"Job":   job,
+		"Items": items,
+	}
+
+	if err := h.renderer.Render(w, "order_list", data); err != nil {
+		logger.Error("failed to render order list", "error", err)
+	}
+}
+
+// GetSiteMaterials shows materials and equipment broken down by category.
+func (h *Handler) GetSiteMaterials(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	jobID := r.PathValue("id")
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	categories, err := h.queries.ListCategoriesByJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to list categories", "error", err)
+		http.Error(w, "Failed to load categories", http.StatusInternalServerError)
+		return
+	}
+
+	lineItems, err := h.queries.ListLineItemsByJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to list line items", "error", err)
+		http.Error(w, "Failed to load items", http.StatusInternalServerError)
+		return
+	}
+
+	// Build category name lookup (with full path)
+	categoryNames := make(map[string]string)
+	categoryParents := make(map[string]string)
+	for _, cat := range categories {
+		categoryNames[cat.ID] = cat.Name
+		if cat.ParentID.Valid {
+			categoryParents[cat.ID] = cat.ParentID.String
+		}
+	}
+
+	// Build full path for each category
+	getFullPath := func(catID string) string {
+		parts := []string{}
+		currentID := catID
+		for currentID != "" {
+			if name, ok := categoryNames[currentID]; ok {
+				parts = append([]string{name}, parts...)
+			}
+			currentID = categoryParents[currentID]
+		}
+		return strings.Join(parts, " > ")
+	}
+
+	// Group items by category
+	categoryItems := make(map[string][]ReportItem)
+	for _, li := range lineItems {
+		if li.Type != "material" && li.Type != "equipment" {
+			continue
+		}
+		categoryItems[li.CategoryID] = append(categoryItems[li.CategoryID], ReportItem{
+			Name:     li.Name,
+			Quantity: li.Quantity,
+			Unit:     li.Unit,
+		})
+	}
+
+	// Build category reports (only categories with items)
+	var reports []CategoryReport
+	for _, cat := range categories {
+		items, hasItems := categoryItems[cat.ID]
+		if !hasItems {
+			continue
+		}
+		// Sort items alphabetically
+		sort.Slice(items, func(i, j int) bool {
+			return items[i].Name < items[j].Name
+		})
+		reports = append(reports, CategoryReport{
+			Name:  getFullPath(cat.ID),
+			Items: items,
+		})
+	}
+
+	// Sort reports by category name
+	sort.Slice(reports, func(i, j int) bool {
+		return reports[i].Name < reports[j].Name
+	})
+
+	data := map[string]interface{}{
+		"Job":        job,
+		"Categories": reports,
+	}
+
+	if err := h.renderer.Render(w, "site_materials", data); err != nil {
+		logger.Error("failed to render site materials", "error", err)
+	}
 }

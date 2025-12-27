@@ -1,0 +1,94 @@
+{{define "site_materials"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head" .}}
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; }
+            .print-container { max-width: 100% !important; padding: 0 !important; }
+            .page-break { page-break-before: always; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 pb-12">
+    {{template "header" .}}
+
+    <!-- Back link (hidden, used by JS) -->
+    <a data-back-url="/jobs/{{.Job.ID}}" class="hidden"></a>
+
+    <main class="max-w-4xl mx-auto p-4 print-container">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-4 no-print">
+            <a href="/" class="text-copper-700 hover:text-copper-500">Jobs</a>
+            <span>/</span>
+            <a href="/jobs/{{.Job.ID}}" class="text-copper-700 hover:text-copper-500">{{.Job.Name}}</a>
+            <span>/</span>
+            <span class="text-slate-900 font-medium">Site Materials</span>
+        </nav>
+
+        <!-- Report Header -->
+        <div class="bg-white rounded-lg border border-slate-200 mb-4 p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-slate-900">Site Materials</h1>
+                    <p class="text-sm text-slate-500 mt-1">{{.Job.Name}}{{if .Job.CustomerName.Valid}} - {{.Job.CustomerName.String}}{{end}}</p>
+                </div>
+                <div class="no-print">
+                    <button onclick="window.print()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded text-sm text-slate-700">
+                        Print
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories with Items -->
+        {{if .Categories}}
+        {{range .Categories}}
+        <div class="bg-white rounded-lg border border-slate-200 mb-4 overflow-hidden">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-700">{{.Name}}</h2>
+            </div>
+            {{if .Items}}
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-slate-100">
+                        <th class="px-4 py-2 text-left text-xs font-medium tracking-wider uppercase text-slate-400">Name</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium tracking-wider uppercase text-slate-400 w-24">Qty</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium tracking-wider uppercase text-slate-400 w-24">Unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Items}}
+                    <tr class="border-b border-slate-100 last:border-b-0">
+                        <td class="px-4 py-2 text-sm text-slate-900">{{.Name}}</td>
+                        <td class="px-4 py-2 text-sm text-right tabular-nums text-slate-700">{{printf "%.2f" .Quantity}}</td>
+                        <td class="px-4 py-2 text-sm text-slate-500">{{.Unit}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{else}}
+            <div class="px-4 py-4 text-sm text-slate-400 text-center">
+                No materials or equipment
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+        {{else}}
+        <div class="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-500">
+            <p>No categories with materials or equipment.</p>
+        </div>
+        {{end}}
+    </main>
+
+    {{template "footer" .}}
+    {{template "scripts" .}}
+</body>
+</html>
+{{end}}
+
+{{define "shortcuts"}}
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">esc</kbd> back</span>
+{{end}}
