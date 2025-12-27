@@ -82,7 +82,7 @@ func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/jobs/"+jobID, http.StatusSeeOther)
+	http.Redirect(w, r, "/m/jobs/"+jobID, http.StatusSeeOther)
 }
 
 // CreateSubcategory creates a new subcategory under a parent.
@@ -154,7 +154,7 @@ func (h *Handler) CreateSubcategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/jobs/"+parent.JobID, http.StatusSeeOther)
+	http.Redirect(w, r, "/m/jobs/"+parent.JobID, http.StatusSeeOther)
 }
 
 // UpdateCategory updates a category.
@@ -220,7 +220,7 @@ func (h *Handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/jobs/"+category.JobID, http.StatusSeeOther)
+	http.Redirect(w, r, "/m/jobs/"+category.JobID, http.StatusSeeOther)
 }
 
 // DeleteCategory deletes a category.
@@ -241,5 +241,5 @@ func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/m/", http.StatusSeeOther)
 }

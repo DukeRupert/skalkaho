@@ -61,7 +61,7 @@ tailwind.config = {
 
 {{define "header"}}
 <header class="border-b border-slate-200 px-4 py-2 flex items-center justify-between bg-slate-900 text-white">
-    <a href="/k/" class="font-bold tracking-wider">SKALKAHO</a>
+    <a href="/" class="font-bold tracking-wider">SKALKAHO</a>
     <div class="flex items-center gap-4 text-sm">
         <span class="text-slate-400">Keyboard Mode</span>
         <button onclick="toggleHelp()" class="px-2 py-1 bg-slate-700 rounded text-xs hover:bg-slate-600">
@@ -194,7 +194,7 @@ function selectCurrent() {
 }
 
 function editItem(itemId, row) {
-    htmx.ajax('GET', `/k/items/${itemId}/edit`, {target: row, swap: 'outerHTML'});
+    htmx.ajax('GET', `/items/${itemId}/edit`, {target: row, swap: 'outerHTML'});
 }
 
 function goBack() {
@@ -214,7 +214,7 @@ function showInlineForm(type) {
     if (!container) return;
 
     const categoryID = container.dataset.categoryId;
-    htmx.ajax('GET', `/k/categories/${categoryID}/form?type=${type}`, {target: '#inline-form-container', swap: 'innerHTML'}).then(() => {
+    htmx.ajax('GET', `/categories/${categoryID}/form?type=${type}`, {target: '#inline-form-container', swap: 'innerHTML'}).then(() => {
         htmx.process(container);
         const input = container.querySelector('input[name="name"]');
         if (input) input.focus();
@@ -237,7 +237,7 @@ function showCategoryForm() {
     const jobID = container.dataset.jobId;
     const parentID = container.dataset.parentId;
 
-    let url = '/k/category-form?';
+    let url = '/category-form?';
     if (parentID) {
         url += `parent_id=${parentID}`;
     } else if (jobID) {
@@ -279,7 +279,7 @@ function showJobForm() {
     const container = document.getElementById('job-form-container');
     if (!container) return;
 
-    htmx.ajax('GET', '/k/job-form', {target: '#job-form-container', swap: 'innerHTML'}).then(() => {
+    htmx.ajax('GET', '/job-form', {target: '#job-form-container', swap: 'innerHTML'}).then(() => {
         htmx.process(container);
         const input = container.querySelector('input[name="name"]');
         if (input) input.focus();
@@ -314,9 +314,9 @@ function showMarkupForm() {
 
     let url;
     if (jobID) {
-        url = `/k/jobs/${jobID}/markup`;
+        url = `/jobs/${jobID}/markup`;
     } else if (categoryID) {
-        url = `/k/categories/${categoryID}/markup`;
+        url = `/categories/${categoryID}/markup`;
     } else {
         return;
     }
@@ -374,7 +374,7 @@ document.addEventListener('keydown', function(e) {
     if (pendingG) {
         pendingG = false;
         if (e.key === 'h') {
-            window.location.href = '/k/';
+            window.location.href = '/';
             return;
         }
     }

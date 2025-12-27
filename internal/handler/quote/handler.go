@@ -79,11 +79,11 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to the new job page
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/jobs/"+job.ID)
+		w.Header().Set("HX-Redirect", "/m/jobs/"+job.ID)
 		return
 	}
 
-	http.Redirect(w, r, "/jobs/"+job.ID, http.StatusSeeOther)
+	http.Redirect(w, r, "/m/jobs/"+job.ID, http.StatusSeeOther)
 }
 
 // GetJob shows a single job with all its details.
@@ -192,7 +192,7 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/jobs/"+jobID, http.StatusSeeOther)
+	http.Redirect(w, r, "/m/jobs/"+jobID, http.StatusSeeOther)
 }
 
 // DeleteJob deletes a job.
@@ -213,7 +213,7 @@ func (h *Handler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/m/", http.StatusSeeOther)
 }
 
 // calculateTotals computes job totals from repository types.

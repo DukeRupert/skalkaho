@@ -154,11 +154,11 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/jobs/"+job.ID)
+		w.Header().Set("HX-Redirect", "/jobs/"+job.ID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/jobs/"+job.ID, http.StatusSeeOther)
+	http.Redirect(w, r, "/jobs/"+job.ID, http.StatusSeeOther)
 }
 
 // UpdateJob updates a job's details.
@@ -193,11 +193,11 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/jobs/"+jobID)
+		w.Header().Set("HX-Redirect", "/jobs/"+jobID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/jobs/"+jobID, http.StatusSeeOther)
+	http.Redirect(w, r, "/jobs/"+jobID, http.StatusSeeOther)
 }
 
 // DeleteJob deletes a job.
@@ -213,11 +213,11 @@ func (h *Handler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/")
+		w.Header().Set("HX-Redirect", "/")
 		return
 	}
 
-	http.Redirect(w, r, "/k/", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // GetJobForm returns an inline form for creating jobs.
@@ -298,9 +298,9 @@ func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/jobs/"+jobID)
+		w.Header().Set("HX-Redirect", "/jobs/"+jobID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/jobs/"+jobID, http.StatusSeeOther)
+	http.Redirect(w, r, "/jobs/"+jobID, http.StatusSeeOther)
 }

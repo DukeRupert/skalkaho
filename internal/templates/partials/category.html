@@ -23,7 +23,7 @@
         </span>
 
         <!-- Delete Button -->
-        <button hx-delete="/categories/{{.Category.ID}}"
+        <button hx-delete="/m/categories/{{.Category.ID}}"
                 hx-target="#category-{{.Category.ID}}"
                 hx-swap="outerHTML"
                 hx-confirm="Delete this category and all its items?"
@@ -39,7 +39,7 @@
     <div class="{{if eq $depth 1}}ml-0{{end}}{{if eq $depth 2}}ml-4{{end}}{{if eq $depth 3}}ml-8{{end}}">
         <!-- Add Line Item Form -->
         <div class="p-4 border-l-4 border-slate-200 bg-white">
-            <form hx-post="/categories/{{.Category.ID}}/items"
+            <form hx-post="/m/categories/{{.Category.ID}}/items"
                   hx-target="#category-{{.Category.ID}} > div > .line-items"
                   hx-swap="beforeend"
                   hx-on::after-request="if(event.detail.requestConfig.verb === 'post') { this.reset(); this.querySelector('.search-results').innerHTML = ''; }"
@@ -47,7 +47,7 @@
                 <div class="col-span-2 relative">
                     <input type="text" name="name" required placeholder="Search items or type new..."
                            autocomplete="off"
-                           hx-get="/items/search"
+                           hx-get="/m/items/search"
                            hx-trigger="keyup changed delay:300ms"
                            hx-target="#search-results-{{.Category.ID}}"
                            hx-swap="innerHTML"
@@ -90,7 +90,7 @@
                 <input type="text" id="subcat-name-{{.Category.ID}}" placeholder="Subcategory name"
                        class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/20">
                 <button type="button"
-                        hx-post="/categories/{{.Category.ID}}/subcategories"
+                        hx-post="/m/categories/{{.Category.ID}}/subcategories"
                         hx-target="#category-{{.Category.ID}} > div > .subcategories"
                         hx-swap="beforeend"
                         hx-vals='js:{"name": document.getElementById("subcat-name-{{.Category.ID}}").value}'

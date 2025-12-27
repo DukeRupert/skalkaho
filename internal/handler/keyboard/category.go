@@ -77,11 +77,11 @@ func (h *Handler) UpdateCategoryMarkup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/categories/"+categoryID)
+		w.Header().Set("HX-Redirect", "/categories/"+categoryID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/categories/"+categoryID, http.StatusSeeOther)
+	http.Redirect(w, r, "/categories/"+categoryID, http.StatusSeeOther)
 }
 
 // GetEditForm returns an inline form for editing an existing line item.
@@ -165,11 +165,11 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/categories/"+item.CategoryID)
+		w.Header().Set("HX-Redirect", "/categories/"+item.CategoryID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/categories/"+item.CategoryID, http.StatusSeeOther)
+	http.Redirect(w, r, "/categories/"+item.CategoryID, http.StatusSeeOther)
 }
 
 // SearchItems searches for item templates by type and name.
@@ -329,11 +329,11 @@ func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/categories/"+category.ID)
+		w.Header().Set("HX-Redirect", "/categories/"+category.ID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/categories/"+category.ID, http.StatusSeeOther)
+	http.Redirect(w, r, "/categories/"+category.ID, http.StatusSeeOther)
 }
 
 // CreateSubcategory creates a subcategory under a parent.
@@ -382,11 +382,11 @@ func (h *Handler) CreateSubcategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/categories/"+category.ID)
+		w.Header().Set("HX-Redirect", "/categories/"+category.ID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/categories/"+category.ID, http.StatusSeeOther)
+	http.Redirect(w, r, "/categories/"+category.ID, http.StatusSeeOther)
 }
 
 // DeleteCategory deletes a category.
@@ -402,9 +402,9 @@ func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL := "/k/jobs/" + category.JobID
+	redirectURL := "/jobs/" + category.JobID
 	if category.ParentID.Valid {
-		redirectURL = "/k/categories/" + category.ParentID.String
+		redirectURL = "/categories/" + category.ParentID.String
 	}
 
 	if err := h.queries.DeleteCategory(ctx, categoryID); err != nil {
@@ -473,11 +473,11 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/categories/"+categoryID)
+		w.Header().Set("HX-Redirect", "/categories/"+categoryID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/categories/"+categoryID, http.StatusSeeOther)
+	http.Redirect(w, r, "/categories/"+categoryID, http.StatusSeeOther)
 }
 
 // DeleteLineItem deletes a line item.
@@ -500,11 +500,11 @@ func (h *Handler) DeleteLineItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/k/categories/"+item.CategoryID)
+		w.Header().Set("HX-Redirect", "/categories/"+item.CategoryID)
 		return
 	}
 
-	http.Redirect(w, r, "/k/categories/"+item.CategoryID, http.StatusSeeOther)
+	http.Redirect(w, r, "/categories/"+item.CategoryID, http.StatusSeeOther)
 }
 
 // GetInlineForm returns an inline form for creating items.
@@ -555,9 +555,9 @@ func (h *Handler) GetCategoryForm(w http.ResponseWriter, r *http.Request) {
 
 	var action string
 	if parentID != "" {
-		action = "/k/categories/" + parentID + "/subcategories"
+		action = "/categories/" + parentID + "/subcategories"
 	} else if jobID != "" {
-		action = "/k/jobs/" + jobID + "/categories"
+		action = "/jobs/" + jobID + "/categories"
 	} else {
 		http.Error(w, "Missing job_id or parent_id", http.StatusBadRequest)
 		return

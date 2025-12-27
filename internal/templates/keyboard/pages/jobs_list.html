@@ -24,14 +24,14 @@
                 {{range $i, $job := .Jobs}}
                 <div class="row flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50"
                      data-index="{{$i}}">
-                    <a href="/k/jobs/{{$job.ID}}" class="flex-1">
+                    <a href="/jobs/{{$job.ID}}" class="flex-1">
                         <span class="font-medium text-slate-900">{{$job.Name}}</span>
                         {{if $job.CustomerName.Valid}}
                         <span class="text-slate-500 ml-2">- {{$job.CustomerName.String}}</span>
                         {{end}}
                     </a>
                     <span class="text-slate-700 font-mono">{{formatMoney $job.GrandTotal}}</span>
-                    <button data-delete-url="/k/jobs/{{$job.ID}}" class="ml-4 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100">
+                    <button data-delete-url="/jobs/{{$job.ID}}" class="ml-4 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100">
                         ×
                     </button>
                 </div>

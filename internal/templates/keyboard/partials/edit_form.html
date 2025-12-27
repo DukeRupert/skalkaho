@@ -1,6 +1,6 @@
 {{define "edit_form"}}
 <div class="edit-form px-4 py-3 border-b border-slate-200 {{if eq .Item.Type "material"}}bg-forest-100{{else if eq .Item.Type "labor"}}bg-copper-100{{else}}bg-slate-200{{end}}" data-item-id="{{.Item.ID}}">
-    <form hx-put="/k/items/{{.Item.ID}}"
+    <form hx-put="/items/{{.Item.ID}}"
           hx-target="body"
           class="grid grid-cols-12 gap-2 items-center"
           id="edit-item-form">

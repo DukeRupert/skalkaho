@@ -9,27 +9,27 @@
 
     <main class="max-w-4xl mx-auto p-4">
         <!-- Back link -->
-        {{$backURL := printf "/k/jobs/%s" .Job.ID}}
+        {{$backURL := printf "/jobs/%s" .Job.ID}}
         {{range $i, $bc := .Breadcrumbs}}
             {{if eq (add $i 1) (len $.Breadcrumbs)}}
                 {{/* This is the current category, skip */}}
             {{else if eq $bc.Type "category"}}
-                {{$backURL = printf "/k/categories/%s" $bc.ID}}
+                {{$backURL = printf "/categories/%s" $bc.ID}}
             {{end}}
         {{end}}
         <a data-back-url="{{$backURL}}" class="hidden"></a>
 
         <!-- Breadcrumb -->
         <div class="flex items-center gap-2 text-sm text-slate-500 mb-4 flex-wrap">
-            <a href="/k/" class="hover:text-slate-700">Jobs</a>
+            <a href="/" class="hover:text-slate-700">Jobs</a>
             {{range $i, $bc := .Breadcrumbs}}
             <span>/</span>
             {{if eq (add $i 1) (len $.Breadcrumbs)}}
             <span class="text-slate-900 font-medium">{{$bc.Name}}</span>
             {{else if eq $bc.Type "job"}}
-            <a href="/k/jobs/{{$bc.ID}}" class="hover:text-slate-700">{{$bc.Name}}</a>
+            <a href="/jobs/{{$bc.ID}}" class="hover:text-slate-700">{{$bc.Name}}</a>
             {{else}}
-            <a href="/k/categories/{{$bc.ID}}" class="hover:text-slate-700">{{$bc.Name}}</a>
+            <a href="/categories/{{$bc.ID}}" class="hover:text-slate-700">{{$bc.Name}}</a>
             {{end}}
             {{end}}
         </div>
@@ -74,11 +74,11 @@
                 {{range $i, $sub := .Subcategories}}
                 <div class="row flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50"
                      data-index="{{$i}}">
-                    <a href="/k/categories/{{$sub.ID}}" class="flex-1">
+                    <a href="/categories/{{$sub.ID}}" class="flex-1">
                         <span class="font-medium text-slate-900">{{$sub.Name}}</span>
                     </a>
                     <span class="text-slate-700 font-mono">{{formatMoney $sub.Total}}</span>
-                    <button data-delete-url="/k/categories/{{$sub.ID}}" class="ml-4 text-slate-400 hover:text-red-600">
+                    <button data-delete-url="/categories/{{$sub.ID}}" class="ml-4 text-slate-400 hover:text-red-600">
                         ×
                     </button>
                 </div>
@@ -124,7 +124,7 @@
                     <span class="col-span-2 text-slate-500">{{$item.Unit}}</span>
                     <span class="col-span-2 text-right font-mono text-slate-700">{{formatMoney $item.UnitPrice}}</span>
                     <span class="col-span-1 text-right font-mono font-medium text-slate-900">{{formatMoney (mul $item.Quantity $item.UnitPrice)}}</span>
-                    <button data-delete-url="/k/items/{{$item.ID}}" class="hidden">×</button>
+                    <button data-delete-url="/items/{{$item.ID}}" class="hidden">×</button>
                 </div>
                 {{end}}
             </div>

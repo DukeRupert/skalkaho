@@ -99,7 +99,7 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/jobs/"+category.JobID, http.StatusSeeOther)
+	http.Redirect(w, r, "/m/jobs/"+category.JobID, http.StatusSeeOther)
 }
 
 // UpdateLineItem updates a line item.
@@ -201,7 +201,7 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/jobs/"+category.JobID, http.StatusSeeOther)
+	http.Redirect(w, r, "/m/jobs/"+category.JobID, http.StatusSeeOther)
 }
 
 // DeleteLineItem deletes a line item.
@@ -237,5 +237,5 @@ func (h *Handler) DeleteLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/m/", http.StatusSeeOther)
 }
