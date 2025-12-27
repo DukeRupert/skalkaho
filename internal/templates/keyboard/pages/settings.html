@@ -12,14 +12,14 @@
         <a data-back-url="/" class="hidden"></a>
 
         <!-- Breadcrumb -->
-        <div class="flex items-center gap-2 text-sm text-slate-500 mb-4">
-            <a href="/" class="hover:text-slate-700">← Jobs</a>
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-4">
+            <a href="/" class="text-copper-700 hover:text-copper-500">Jobs</a>
             <span>/</span>
             <span class="text-slate-900 font-medium">Settings</span>
-        </div>
+        </nav>
 
         <div class="bg-white rounded-lg border border-slate-200 p-6">
-            <h1 class="text-xl font-bold text-slate-900 mb-2">Settings</h1>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 mb-2">Settings</h1>
             <p class="text-sm text-slate-500 mb-6">Default settings for new quotes.</p>
 
             <form hx-put="/settings" hx-swap="none" class="space-y-6">
@@ -68,5 +68,5 @@
 {{end}}
 
 {{define "shortcuts"}}
-<span><kbd class="px-1 bg-slate-100 rounded">esc</kbd> back</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">esc</kbd> back</span>
 {{end}}
