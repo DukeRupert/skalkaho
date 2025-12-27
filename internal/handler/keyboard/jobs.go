@@ -235,3 +235,72 @@ func (h *Handler) GetJobForm(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(buf.Bytes())
 }
+
+// GetMarkupForm returns an inline form for editing job markup.
+func (h *Handler) GetMarkupForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	jobID := r.PathValue("id")
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Job": job,
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "markup_form", data); err != nil {
+		logger.Error("failed to render markup form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(buf.Bytes())
+}
+
+// UpdateMarkup updates a job's markup percentage.
+func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	jobID := r.PathValue("id")
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	surchargePercent, _ := strconv.ParseFloat(r.FormValue("surcharge_percent"), 64)
+
+	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
+		ID:               jobID,
+		Name:             job.Name,
+		CustomerName:     job.CustomerName,
+		SurchargePercent: surchargePercent,
+		SurchargeMode:    job.SurchargeMode,
+	})
+	if err != nil {
+		logger.Error("failed to update job markup", "error", err)
+		http.Error(w, "Failed to update markup", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/k/jobs/"+jobID)
+		return
+	}
+
+	http.Redirect(w, r, "/k/jobs/"+jobID, http.StatusSeeOther)
+}

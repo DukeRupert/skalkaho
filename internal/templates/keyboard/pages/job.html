@@ -19,19 +19,23 @@
         </div>
 
         <!-- Job Header -->
-        <div class="bg-white rounded-lg border border-slate-200 p-4 mb-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-xl font-bold text-slate-900">{{.Job.Name}}</h1>
-                    {{if .Job.CustomerName.Valid}}
-                    <p class="text-slate-500">{{.Job.CustomerName.String}}</p>
-                    {{end}}
-                </div>
-                <div class="text-right">
-                    <p class="text-sm text-slate-500">Markup: {{formatPercent .Job.SurchargePercent}}</p>
-                    <p class="text-lg font-bold text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
+        <div class="bg-white rounded-lg border border-slate-200 mb-4 overflow-hidden">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900">{{.Job.Name}}</h1>
+                        {{if .Job.CustomerName.Valid}}
+                        <p class="text-slate-500">{{.Job.CustomerName.String}}</p>
+                        {{end}}
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-slate-500">Markup: {{formatPercent .Job.SurchargePercent}} <kbd class="px-1 bg-slate-200 rounded text-xs">%</kbd></p>
+                        <p class="text-lg font-bold text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
+                    </div>
                 </div>
             </div>
+            <!-- Markup Form Container -->
+            <div id="markup-form-container" data-job-id="{{.Job.ID}}"></div>
         </div>
 
         <!-- Categories Section -->

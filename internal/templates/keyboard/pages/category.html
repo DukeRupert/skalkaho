@@ -35,19 +35,24 @@
         </div>
 
         <!-- Category Header -->
-        <div class="bg-white rounded-lg border border-slate-200 p-4 mb-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-xl font-bold text-slate-900">{{.Category.Name}}</h1>
-                    <p class="text-sm text-slate-500">Level {{.Depth}}</p>
-                </div>
-                <div class="text-right">
-                    {{if .Category.SurchargePercent.Valid}}
-                    <p class="text-sm text-slate-500">Category Markup: {{formatPercent .Category.SurchargePercent.Float64}}</p>
-                    {{end}}
-                    <p class="text-lg font-bold text-slate-900">{{formatMoney .CategoryTotal.Total}}</p>
+        <div class="bg-white rounded-lg border border-slate-200 mb-4 overflow-hidden">
+            <div class="p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900">{{.Category.Name}}</h1>
+                        <p class="text-sm text-slate-500">Level {{.Depth}}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-slate-500">
+                            Markup: {{if .Category.SurchargePercent.Valid}}{{formatPercent .Category.SurchargePercent.Float64}}{{else}}<span class="text-slate-400">inherit</span>{{end}}
+                            <kbd class="px-1 bg-slate-200 rounded text-xs">%</kbd>
+                        </p>
+                        <p class="text-lg font-bold text-slate-900">{{formatMoney .CategoryTotal.Total}}</p>
+                    </div>
                 </div>
             </div>
+            <!-- Markup Form Container -->
+            <div id="markup-form-container" data-category-id="{{.Category.ID}}"></div>
         </div>
 
         <!-- Subcategories Section -->

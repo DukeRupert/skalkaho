@@ -11,6 +11,79 @@ import (
 	"github.com/google/uuid"
 )
 
+// GetCategoryMarkupForm returns an inline form for editing category markup.
+func (h *Handler) GetCategoryMarkupForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	categoryID := r.PathValue("id")
+
+	category, err := h.queries.GetCategory(ctx, categoryID)
+	if err != nil {
+		logger.Error("failed to get category", "error", err)
+		http.Error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Category": category,
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "category_markup_form", data); err != nil {
+		logger.Error("failed to render markup form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(buf.Bytes())
+}
+
+// UpdateCategoryMarkup updates a category's markup percentage.
+func (h *Handler) UpdateCategoryMarkup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	categoryID := r.PathValue("id")
+
+	category, err := h.queries.GetCategory(ctx, categoryID)
+	if err != nil {
+		logger.Error("failed to get category", "error", err)
+		http.Error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	surchargeStr := r.FormValue("surcharge_percent")
+	var surchargePercent sql.NullFloat64
+	if surchargeStr != "" {
+		val, _ := strconv.ParseFloat(surchargeStr, 64)
+		surchargePercent = sql.NullFloat64{Float64: val, Valid: true}
+	}
+
+	_, err = h.queries.UpdateCategory(ctx, repository.UpdateCategoryParams{
+		ID:               categoryID,
+		Name:             category.Name,
+		SurchargePercent: surchargePercent,
+		SortOrder:        category.SortOrder,
+	})
+	if err != nil {
+		logger.Error("failed to update category markup", "error", err)
+		http.Error(w, "Failed to update markup", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/k/categories/"+categoryID)
+		return
+	}
+
+	http.Redirect(w, r, "/k/categories/"+categoryID, http.StatusSeeOther)
+}
+
 // GetEditForm returns an inline form for editing an existing line item.
 func (h *Handler) GetEditForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

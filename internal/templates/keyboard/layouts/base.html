@@ -119,6 +119,8 @@ tailwind.config = {
                     <span>New equipment</span>
                     <span><kbd class="px-1 bg-slate-100 rounded">d</kbd></span>
                     <span>Delete selected</span>
+                    <span><kbd class="px-1 bg-slate-100 rounded">%</kbd></span>
+                    <span>Edit markup</span>
                 </div>
             </div>
 
@@ -299,6 +301,42 @@ function deleteCurrent() {
     }
 }
 
+function showMarkupForm() {
+    const container = document.getElementById('markup-form-container');
+    if (!container) return;
+
+    // Determine if we're on a job or category page
+    const jobID = container.dataset.jobId;
+    const categoryID = container.dataset.categoryId;
+
+    let url;
+    if (jobID) {
+        url = `/k/jobs/${jobID}/markup`;
+    } else if (categoryID) {
+        url = `/k/categories/${categoryID}/markup`;
+    } else {
+        return;
+    }
+
+    htmx.ajax('GET', url, {target: '#markup-form-container', swap: 'innerHTML'}).then(() => {
+        htmx.process(container);
+        const input = container.querySelector('input[name="surcharge_percent"]');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    });
+    formActive = true;
+}
+
+function hideMarkupForm() {
+    const container = document.getElementById('markup-form-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    formActive = false;
+}
+
 // Keyboard handler
 document.addEventListener('keydown', function(e) {
     // Don't handle if in form element
@@ -307,6 +345,7 @@ document.addEventListener('keydown', function(e) {
             hideInlineForm();
             hideCategoryForm();
             hideJobForm();
+            hideMarkupForm();
             e.target.blur();
         }
         return;
@@ -369,13 +408,16 @@ document.addEventListener('keydown', function(e) {
             const jobForm = document.getElementById('job-form-container');
             const catForm = document.getElementById('category-form-container');
             const inlineForm = document.getElementById('inline-form-container');
+            const markupForm = document.getElementById('markup-form-container');
             const hasOpenForm = (jobForm && jobForm.innerHTML.trim()) ||
                                (catForm && catForm.innerHTML.trim()) ||
-                               (inlineForm && inlineForm.innerHTML.trim());
+                               (inlineForm && inlineForm.innerHTML.trim()) ||
+                               (markupForm && markupForm.innerHTML.trim());
             if (hasOpenForm) {
                 hideInlineForm();
                 hideCategoryForm();
                 hideJobForm();
+                hideMarkupForm();
             } else {
                 goBack();
             }
@@ -412,6 +454,10 @@ document.addEventListener('keydown', function(e) {
         case 'd':
             e.preventDefault();
             deleteCurrent();
+            break;
+        case '%':
+            e.preventDefault();
+            showMarkupForm();
             break;
     }
 });
