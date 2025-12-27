@@ -7,34 +7,49 @@
 <body class="bg-slate-50 pb-12" data-category-id="{{.Category.ID}}" {{if .CanAddSubcategory}}data-can-add-subcategory="true"{{end}}>
     {{template "header" .}}
 
-    <main class="max-w-4xl mx-auto p-4">
-        <!-- Back link -->
-        {{$backURL := printf "/jobs/%s" .Job.ID}}
-        {{range $i, $bc := .Breadcrumbs}}
-            {{if eq (add $i 1) (len $.Breadcrumbs)}}
-                {{/* This is the current category, skip */}}
-            {{else if eq $bc.Type "category"}}
-                {{$backURL = printf "/categories/%s" $bc.ID}}
-            {{end}}
+    <!-- Back link -->
+    {{$backURL := printf "/jobs/%s" .Job.ID}}
+    {{range $i, $bc := .Breadcrumbs}}
+        {{if eq (add $i 1) (len $.Breadcrumbs)}}
+            {{/* This is the current category, skip */}}
+        {{else if eq $bc.Type "category"}}
+            {{$backURL = printf "/categories/%s" $bc.ID}}
         {{end}}
-        <a data-back-url="{{$backURL}}" class="hidden"></a>
+    {{end}}
+    <a data-back-url="{{$backURL}}" class="hidden"></a>
 
-        <!-- Breadcrumb -->
-        <div class="flex items-center gap-2 text-sm text-slate-500 mb-4 flex-wrap">
-            <a href="/" class="hover:text-slate-700">Jobs</a>
-            {{range $i, $bc := .Breadcrumbs}}
-            <span>/</span>
-            {{if eq (add $i 1) (len $.Breadcrumbs)}}
-            <span class="text-slate-900 font-medium">{{$bc.Name}}</span>
-            {{else if eq $bc.Type "job"}}
-            <a href="/jobs/{{$bc.ID}}" class="hover:text-slate-700">{{$bc.Name}}</a>
-            {{else}}
-            <a href="/categories/{{$bc.ID}}" class="hover:text-slate-700">{{$bc.Name}}</a>
-            {{end}}
-            {{end}}
-        </div>
+    <div class="max-w-6xl mx-auto p-4 flex gap-4">
+        <!-- Sidebar: Category Tree -->
+        <aside class="w-56 shrink-0 hidden lg:block">
+            <div class="sticky top-4">
+                <a href="/jobs/{{.Job.ID}}" class="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-3">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    {{.Job.Name}}
+                </a>
+                {{template "category_tree" .}}
+            </div>
+        </aside>
 
-        <!-- Category Header -->
+        <!-- Main Content -->
+        <main class="flex-1 min-w-0">
+            <!-- Breadcrumb -->
+            <div class="flex items-center gap-2 text-sm text-slate-500 mb-4 flex-wrap">
+                <a href="/" class="hover:text-slate-700">Jobs</a>
+                {{range $i, $bc := .Breadcrumbs}}
+                <span>/</span>
+                {{if eq (add $i 1) (len $.Breadcrumbs)}}
+                <span class="text-slate-900 font-medium">{{$bc.Name}}</span>
+                {{else if eq $bc.Type "job"}}
+                <a href="/jobs/{{$bc.ID}}" class="hover:text-slate-700">{{$bc.Name}}</a>
+                {{else}}
+                <a href="/categories/{{$bc.ID}}" class="hover:text-slate-700">{{$bc.Name}}</a>
+                {{end}}
+                {{end}}
+            </div>
+
+            <!-- Category Header -->
         <div class="bg-white rounded-lg border border-slate-200 mb-4 overflow-hidden">
             <div class="p-4">
                 <div class="flex items-center justify-between">
@@ -143,14 +158,15 @@
             <div id="inline-form-container" data-category-id="{{.Category.ID}}"></div>
         </div>
 
-        <!-- Category Total -->
-        <div class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
-            <div class="flex justify-between">
-                <span class="text-slate-500">Category Total</span>
-                <span class="font-mono font-bold text-lg">{{formatMoney .CategoryTotal.Total}}</span>
+            <!-- Category Total -->
+            <div class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Category Total</span>
+                    <span class="font-mono font-bold text-lg">{{formatMoney .CategoryTotal.Total}}</span>
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     {{template "footer" .}}
     {{template "help_overlay" .}}

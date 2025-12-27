@@ -53,8 +53,26 @@ func templateFuncs() template.FuncMap {
 		"sub":           func(a, b int) int { return a - b },
 		"mul":           func(a, b float64) float64 { return a * b },
 		"eq":            func(a, b interface{}) bool { return a == b },
+		"gt":            func(a, b int) bool { return a > b },
 		"typeIndicator": typeIndicator,
+		"dict":          dict,
 	}
+}
+
+// dict creates a map from key-value pairs for passing to templates.
+func dict(values ...interface{}) map[string]interface{} {
+	if len(values)%2 != 0 {
+		return nil
+	}
+	d := make(map[string]interface{}, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].(string)
+		if !ok {
+			continue
+		}
+		d[key] = values[i+1]
+	}
+	return d
 }
 
 func formatMoney(amount float64) string {

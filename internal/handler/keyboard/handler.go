@@ -172,6 +172,50 @@ type Breadcrumb struct {
 	Type string // "job" or "category"
 }
 
+// CategoryTreeNode represents a category in the navigation tree.
+type CategoryTreeNode struct {
+	ID       string
+	Name     string
+	Children []CategoryTreeNode
+}
+
+// buildCategoryTree builds a hierarchical tree from a flat list of categories.
+func buildCategoryTree(categories []repository.Category) []CategoryTreeNode {
+	// Build a map for quick lookup
+	categoryByID := make(map[string]repository.Category)
+	childrenByParent := make(map[string][]repository.Category)
+
+	for _, cat := range categories {
+		categoryByID[cat.ID] = cat
+		if cat.ParentID.Valid {
+			childrenByParent[cat.ParentID.String] = append(childrenByParent[cat.ParentID.String], cat)
+		}
+	}
+
+	// Recursive function to build tree nodes
+	var buildNode func(cat repository.Category) CategoryTreeNode
+	buildNode = func(cat repository.Category) CategoryTreeNode {
+		node := CategoryTreeNode{
+			ID:   cat.ID,
+			Name: cat.Name,
+		}
+		for _, child := range childrenByParent[cat.ID] {
+			node.Children = append(node.Children, buildNode(child))
+		}
+		return node
+	}
+
+	// Build tree starting from root categories (no parent)
+	var tree []CategoryTreeNode
+	for _, cat := range categories {
+		if !cat.ParentID.Valid {
+			tree = append(tree, buildNode(cat))
+		}
+	}
+
+	return tree
+}
+
 // helper to check if a category can have subcategories
 func canAddSubcategory(depth int) bool {
 	return depth < 3

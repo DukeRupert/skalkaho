@@ -106,11 +106,16 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	totals := h.calculateTotals(job, categories, lineItems)
 
+	// Build category tree for sidebar navigation
+	categoryTree := buildCategoryTree(categories)
+
 	data := map[string]interface{}{
-		"Job":           job,
-		"Categories":    categoriesWithTotals,
-		"Totals":        totals,
-		"SelectedIndex": 0,
+		"Job":               job,
+		"Categories":        categoriesWithTotals,
+		"Totals":            totals,
+		"SelectedIndex":     0,
+		"CategoryTree":      categoryTree,
+		"CurrentCategoryID": "",
 	}
 
 	if err := h.renderer.Render(w, "job", data); err != nil {

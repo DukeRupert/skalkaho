@@ -281,6 +281,9 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Build category tree for sidebar navigation
+	categoryTree := buildCategoryTree(categories)
+
 	data := map[string]interface{}{
 		"Job":               job,
 		"Category":          category,
@@ -291,6 +294,8 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 		"CanAddSubcategory": canAddSubcategory(depth),
 		"CategoryTotal":     catTotal,
 		"SelectedIndex":     0,
+		"CategoryTree":      categoryTree,
+		"CurrentCategoryID": categoryID,
 	}
 
 	if err := h.renderer.Render(w, "category", data); err != nil {
