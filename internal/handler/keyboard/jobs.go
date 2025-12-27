@@ -269,6 +269,78 @@ func (h *Handler) GetMarkupForm(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(buf.Bytes())
 }
 
+// GetJobRenameForm returns an inline form for renaming a job.
+func (h *Handler) GetJobRenameForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	jobID := r.PathValue("id")
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Job": job,
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "job_rename_form", data); err != nil {
+		logger.Error("failed to render rename form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(buf.Bytes())
+}
+
+// UpdateJobName updates only a job's name.
+func (h *Handler) UpdateJobName(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	jobID := r.PathValue("id")
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	name := r.FormValue("name")
+	if name == "" {
+		name = job.Name
+	}
+
+	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
+		ID:               jobID,
+		Name:             name,
+		CustomerName:     job.CustomerName,
+		SurchargePercent: job.SurchargePercent,
+		SurchargeMode:    job.SurchargeMode,
+	})
+	if err != nil {
+		logger.Error("failed to update job name", "error", err)
+		http.Error(w, "Failed to update name", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/jobs/"+jobID)
+		return
+	}
+
+	http.Redirect(w, r, "/jobs/"+jobID, http.StatusSeeOther)
+}
+
 // UpdateMarkup updates a job's markup percentage.
 func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

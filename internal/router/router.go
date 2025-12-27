@@ -26,6 +26,8 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("GET /job-form", h.GetJobForm)
 	mux.HandleFunc("GET /jobs/{id}/markup", h.GetMarkupForm)
 	mux.HandleFunc("PUT /jobs/{id}/markup", h.UpdateMarkup)
+	mux.HandleFunc("GET /jobs/{id}/rename", h.GetJobRenameForm)
+	mux.HandleFunc("PUT /jobs/{id}/name", h.UpdateJobName)
 
 	// Categories
 	mux.HandleFunc("GET /categories/{id}", h.GetCategory)
@@ -35,6 +37,8 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("GET /category-form", h.GetCategoryForm)
 	mux.HandleFunc("GET /categories/{id}/markup", h.GetCategoryMarkupForm)
 	mux.HandleFunc("PUT /categories/{id}/markup", h.UpdateCategoryMarkup)
+	mux.HandleFunc("GET /categories/{id}/rename", h.GetCategoryRenameForm)
+	mux.HandleFunc("PUT /categories/{id}/name", h.UpdateCategoryName)
 
 	// Line Items
 	mux.HandleFunc("POST /categories/{categoryID}/items", h.CreateLineItem)

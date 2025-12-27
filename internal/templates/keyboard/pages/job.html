@@ -38,7 +38,10 @@
                 <div class="p-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{.Job.Name}}</h1>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{.Job.Name}}</h1>
+                                <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd>
+                            </div>
                             {{if .Job.CustomerName.Valid}}
                             <p class="text-sm text-slate-500 mt-1">{{.Job.CustomerName.String}}</p>
                             {{end}}
@@ -49,6 +52,8 @@
                         </div>
                     </div>
                 </div>
+                <!-- Rename Form Container -->
+                <div id="rename-form-container" data-job-id="{{.Job.ID}}"></div>
                 <!-- Markup Form Container -->
                 <div id="markup-form-container" data-job-id="{{.Job.ID}}"></div>
             </div>
@@ -122,8 +127,8 @@
 {{define "shortcuts"}}
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">↑↓</kbd> navigate</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">⏎</kbd> enter</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> new category</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> category</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd> rename</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">esc</kbd> back</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">?</kbd> help</span>
 {{end}}

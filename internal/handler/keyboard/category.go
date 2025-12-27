@@ -39,6 +39,77 @@ func (h *Handler) GetCategoryMarkupForm(w http.ResponseWriter, r *http.Request) 
 	_, _ = w.Write(buf.Bytes())
 }
 
+// GetCategoryRenameForm returns an inline form for renaming a category.
+func (h *Handler) GetCategoryRenameForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	categoryID := r.PathValue("id")
+
+	category, err := h.queries.GetCategory(ctx, categoryID)
+	if err != nil {
+		logger.Error("failed to get category", "error", err)
+		http.Error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Category": category,
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "category_rename_form", data); err != nil {
+		logger.Error("failed to render rename form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(buf.Bytes())
+}
+
+// UpdateCategoryName updates only a category's name.
+func (h *Handler) UpdateCategoryName(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	categoryID := r.PathValue("id")
+
+	category, err := h.queries.GetCategory(ctx, categoryID)
+	if err != nil {
+		logger.Error("failed to get category", "error", err)
+		http.Error(w, "Category not found", http.StatusNotFound)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	name := r.FormValue("name")
+	if name == "" {
+		name = category.Name
+	}
+
+	_, err = h.queries.UpdateCategory(ctx, repository.UpdateCategoryParams{
+		ID:               categoryID,
+		Name:             name,
+		SurchargePercent: category.SurchargePercent,
+		SortOrder:        category.SortOrder,
+	})
+	if err != nil {
+		logger.Error("failed to update category name", "error", err)
+		http.Error(w, "Failed to update name", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/categories/"+categoryID)
+		return
+	}
+
+	http.Redirect(w, r, "/categories/"+categoryID, http.StatusSeeOther)
+}
+
 // UpdateCategoryMarkup updates a category's markup percentage.
 func (h *Handler) UpdateCategoryMarkup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

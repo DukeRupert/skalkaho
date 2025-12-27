@@ -137,6 +137,8 @@ tailwind.config = {
                     <span>New equipment</span>
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd></span>
                     <span>Delete selected</span>
+                    <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd></span>
+                    <span>Rename</span>
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">%</kbd></span>
                     <span>Edit markup</span>
                 </div>
@@ -355,6 +357,42 @@ function hideMarkupForm() {
     formActive = false;
 }
 
+function showRenameForm() {
+    const container = document.getElementById('rename-form-container');
+    if (!container) return;
+
+    // Determine if we're on a job or category page
+    const jobID = container.dataset.jobId;
+    const categoryID = container.dataset.categoryId;
+
+    let url;
+    if (jobID) {
+        url = `/jobs/${jobID}/rename`;
+    } else if (categoryID) {
+        url = `/categories/${categoryID}/rename`;
+    } else {
+        return;
+    }
+
+    htmx.ajax('GET', url, {target: '#rename-form-container', swap: 'innerHTML'}).then(() => {
+        htmx.process(container);
+        const input = container.querySelector('input[name="name"]');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    });
+    formActive = true;
+}
+
+function hideRenameForm() {
+    const container = document.getElementById('rename-form-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    formActive = false;
+}
+
 // Keyboard handler
 document.addEventListener('keydown', function(e) {
     // Don't handle if in form element
@@ -364,6 +402,7 @@ document.addEventListener('keydown', function(e) {
             hideCategoryForm();
             hideJobForm();
             hideMarkupForm();
+            hideRenameForm();
             e.target.blur();
         }
         return;
@@ -476,6 +515,10 @@ document.addEventListener('keydown', function(e) {
         case '%':
             e.preventDefault();
             showMarkupForm();
+            break;
+        case 'r':
+            e.preventDefault();
+            showRenameForm();
             break;
     }
 });

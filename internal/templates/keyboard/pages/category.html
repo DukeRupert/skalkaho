@@ -54,7 +54,10 @@
                 <div class="p-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{.Category.Name}}</h1>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{.Category.Name}}</h1>
+                                <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd>
+                            </div>
                             <p class="text-sm text-slate-500 mt-1">Level {{.Depth}}</p>
                         </div>
                         <div class="text-right">
@@ -66,6 +69,8 @@
                         </div>
                     </div>
                 </div>
+                <!-- Rename Form Container -->
+                <div id="rename-form-container" data-category-id="{{.Category.ID}}"></div>
                 <!-- Markup Form Container -->
                 <div id="markup-form-container" data-category-id="{{.Category.ID}}"></div>
             </div>
@@ -181,6 +186,6 @@
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd> material</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd> labor</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> equipment</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd> rename</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">esc</kbd> back</span>
 {{end}}
