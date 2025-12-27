@@ -20,7 +20,7 @@
     <main class="max-w-4xl mx-auto p-4 print-container">
         <!-- Breadcrumb -->
         <nav class="flex items-center gap-2 text-sm text-slate-500 mb-4 no-print">
-            <a href="/" class="text-copper-700 hover:text-copper-500">Jobs</a>
+            <a href="/" class="text-copper-700 hover:text-copper-500">Quotes</a>
             <span>/</span>
             <a href="/jobs/{{.Job.ID}}" class="text-copper-700 hover:text-copper-500">{{.Job.Name}}</a>
             <span>/</span>
@@ -65,7 +65,7 @@
             </table>
             {{else}}
             <div class="px-4 py-8 text-center text-slate-500">
-                <p>No materials or equipment in this job.</p>
+                <p>No materials or equipment in this quote.</p>
             </div>
             {{end}}
         </div>
