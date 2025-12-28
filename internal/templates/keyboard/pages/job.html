@@ -35,29 +35,74 @@
 
             <!-- Job Header -->
             <div class="bg-white rounded-lg border border-slate-200 mb-4 overflow-hidden">
-                <div class="p-4">
+                <div class="p-4 space-y-3">
+                    <!-- Row 1: Title + Action Menu -->
                     <div class="flex items-center justify-between">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h1 class="text-2xl font-bold tracking-tight text-slate-900">{{.Job.Name}}</h1>
-                                <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd>
-                            </div>
-                            {{if .Job.CustomerName.Valid}}
-                            <p class="text-sm text-slate-500 mt-1">{{.Job.CustomerName.String}}</p>
-                            {{end}}
+                        <div class="flex items-center gap-2 min-w-0">
+                            <h1 class="text-2xl font-bold tracking-tight text-slate-900 truncate">{{.Job.Name}}</h1>
+                            <kbd class="hidden sm:inline font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 shrink-0">r</kbd>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm text-slate-500">Markup: {{formatPercent .Job.SurchargePercent}} <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">%</kbd></p>
-                            <p class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
-                            <div class="mt-2 flex gap-2 justify-end">
-                                <a href="/jobs/{{.Job.ID}}/order-list" class="text-xs text-copper-700 hover:text-copper-500">
-                                    <kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">o</kbd> Order List
-                                </a>
-                                <a href="/jobs/{{.Job.ID}}/site-materials" class="text-xs text-copper-700 hover:text-copper-500">
-                                    <kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">s</kbd> Site Materials
-                                </a>
+                        <!-- Job Action Menu -->
+                        <div class="relative shrink-0" x-data="{ open: false }">
+                            <button
+                                @click.stop.prevent="open = !open"
+                                class="touch-action rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                                aria-label="Job actions">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                </svg>
+                            </button>
+                            <div
+                                x-show="open"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                @click.away="open = false"
+                                class="action-menu absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                                <button
+                                    @click="showRenameForm(); open = false"
+                                    class="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    Rename
+                                </button>
+                                <button
+                                    @click="showMarkupForm(); open = false"
+                                    class="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                    </svg>
+                                    Edit Markup
+                                </button>
                             </div>
                         </div>
+                    </div>
+
+                    {{if .Job.CustomerName.Valid}}
+                    <p class="text-sm text-slate-500">{{.Job.CustomerName.String}}</p>
+                    {{end}}
+
+                    <!-- Row 2: Markup + Grand Total -->
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                        <p class="text-sm text-slate-500">
+                            Markup: {{formatPercent .Job.SurchargePercent}}
+                            <kbd class="hidden sm:inline font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">%</kbd>
+                        </p>
+                        <p class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
+                    </div>
+
+                    <!-- Row 3: Report Links -->
+                    <div class="flex gap-3 pt-2 border-t border-slate-100">
+                        <a href="/jobs/{{.Job.ID}}/order-list" class="text-sm text-copper-700 hover:text-copper-500">
+                            <kbd class="hidden sm:inline font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">o</kbd> Order List
+                        </a>
+                        <a href="/jobs/{{.Job.ID}}/site-materials" class="text-sm text-copper-700 hover:text-copper-500">
+                            <kbd class="hidden sm:inline font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">s</kbd> Site Materials
+                        </a>
                     </div>
                 </div>
                 <!-- Rename Form Container -->
@@ -69,9 +114,17 @@
             <!-- Categories Section -->
             <div class="flex items-center justify-between mb-2">
                 <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-700">Categories</h2>
-                <span class="text-sm text-slate-500">
-                    <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> new category
-                </span>
+                <div class="flex items-center gap-3">
+                    <span class="hidden sm:inline text-sm text-slate-500">
+                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> new category
+                    </span>
+                    <button onclick="showCategoryForm()"
+                            class="sm:hidden touch-action px-3 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
@@ -82,21 +135,63 @@
                 <div id="categories-list">
                     {{range $i, $cat := .Categories}}
                     <div class="row flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50"
-                         data-index="{{$i}}">
-                        <a href="/categories/{{$cat.ID}}" class="flex-1">
+                         data-index="{{$i}}"
+                         data-delete-url="/categories/{{$cat.ID}}">
+                        <a href="/categories/{{$cat.ID}}" class="flex-1 min-w-0">
                             <span class="font-medium text-slate-900">{{$cat.Name}}</span>
                         </a>
-                        <span class="text-sm tabular-nums text-slate-700">{{formatMoney $cat.Total}}</span>
-                        <button data-delete-url="/categories/{{$cat.ID}}" class="ml-4 text-slate-400 hover:text-red-600">
-                            ×
-                        </button>
+                        <span class="text-sm tabular-nums text-slate-700 mr-2">{{formatMoney $cat.Total}}</span>
+                        <!-- Action Menu -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button
+                                @click.stop.prevent="open = !open"
+                                class="touch-action rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                                aria-label="Actions">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                </svg>
+                            </button>
+                            <div
+                                x-show="open"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                @click.away="open = false"
+                                class="action-menu absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                                <a href="/categories/{{$cat.ID}}"
+                                   class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                    </svg>
+                                    Enter
+                                </a>
+                                <button
+                                    @click.stop="if(confirm('Delete this category?')) { htmx.ajax('DELETE', '/categories/{{$cat.ID}}', {target: 'body'}); open = false; }"
+                                    class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     {{end}}
                 </div>
                 {{else}}
                 <div id="empty-state" class="px-4 py-8 text-center text-slate-500">
                     <p>No categories yet.</p>
-                    <p class="text-sm mt-2">Press <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> to create a category.</p>
+                    <p class="text-sm mt-3 hidden sm:block">Press <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> to create a category.</p>
+                    <button onclick="showCategoryForm()"
+                            class="mt-4 sm:hidden px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg inline-flex items-center gap-2 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Create First Category
+                    </button>
                 </div>
                 {{end}}
             </div>
