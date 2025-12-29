@@ -13,12 +13,87 @@ import (
 	"github.com/google/uuid"
 )
 
-// ListJobs shows the keyboard-centric jobs list.
+const pageSize = 20
+
+// JobWithTotal wraps a Job with its calculated grand total.
+type JobWithTotal struct {
+	repository.Job
+	GrandTotal float64
+}
+
+// PaginationData holds pagination state for templates.
+type PaginationData struct {
+	CurrentPage int
+	TotalPages  int
+	TotalItems  int64
+	HasPrev     bool
+	HasNext     bool
+}
+
+// ListJobs shows the keyboard-centric jobs list with pagination and filtering.
 func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 
-	jobs, err := h.queries.ListJobs(ctx)
+	// Parse query parameters
+	pageStr := r.URL.Query().Get("page")
+	page := 1
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+
+	status := r.URL.Query().Get("status")
+	sortBy := r.URL.Query().Get("sort")
+	if sortBy == "" {
+		sortBy = "newest"
+	}
+
+	offset := int64((page - 1) * pageSize)
+
+	// Get total count for pagination
+	totalItems, err := h.queries.CountJobs(ctx, status)
+	if err != nil {
+		logger.Error("failed to count jobs", "error", err)
+		http.Error(w, "Failed to load jobs", http.StatusInternalServerError)
+		return
+	}
+
+	totalPages := int(totalItems+pageSize-1) / pageSize
+	if totalPages < 1 {
+		totalPages = 1
+	}
+
+	// Get jobs based on sort order
+	var jobs []repository.Job
+	params := repository.ListJobsPaginatedParams{
+		Status: status,
+		Offset: offset,
+		Limit:  pageSize,
+	}
+
+	switch sortBy {
+	case "oldest":
+		jobs, err = h.queries.ListJobsPaginatedOldest(ctx, repository.ListJobsPaginatedOldestParams{
+			Status: status,
+			Offset: offset,
+			Limit:  pageSize,
+		})
+	case "name_asc":
+		jobs, err = h.queries.ListJobsPaginatedByName(ctx, repository.ListJobsPaginatedByNameParams{
+			Status: status,
+			Offset: offset,
+			Limit:  pageSize,
+		})
+	case "name_desc":
+		jobs, err = h.queries.ListJobsPaginatedByNameDesc(ctx, repository.ListJobsPaginatedByNameDescParams{
+			Status: status,
+			Offset: offset,
+			Limit:  pageSize,
+		})
+	default: // newest
+		jobs, err = h.queries.ListJobsPaginated(ctx, params)
+	}
+
 	if err != nil {
 		logger.Error("failed to list jobs", "error", err)
 		http.Error(w, "Failed to load jobs", http.StatusInternalServerError)
@@ -26,11 +101,6 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Calculate totals for each job
-	type JobWithTotal struct {
-		repository.Job
-		GrandTotal float64
-	}
-
 	jobsWithTotals := make([]JobWithTotal, len(jobs))
 	for i, job := range jobs {
 		categories, _ := h.queries.ListCategoriesByJob(ctx, job.ID)
@@ -42,9 +112,20 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	pagination := PaginationData{
+		CurrentPage: page,
+		TotalPages:  totalPages,
+		TotalItems:  totalItems,
+		HasPrev:     page > 1,
+		HasNext:     page < totalPages,
+	}
+
 	data := map[string]interface{}{
 		"Jobs":          jobsWithTotals,
 		"SelectedIndex": 0,
+		"Pagination":    pagination,
+		"Status":        status,
+		"Sort":          sortBy,
 	}
 
 	if err := h.renderer.Render(w, "jobs_list", data); err != nil {
@@ -153,6 +234,8 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		CustomerName:     sql.NullString{},
 		SurchargePercent: settings.DefaultSurchargePercent,
 		SurchargeMode:    settings.DefaultSurchargeMode,
+		Status:           "draft",
+		ExpiresAt:        sql.NullString{},
 	})
 	if err != nil {
 		logger.Error("failed to create job", "error", err)
@@ -186,12 +269,34 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 		customerName = sql.NullString{String: cn, Valid: true}
 	}
 
-	_, err := h.queries.UpdateJob(ctx, repository.UpdateJobParams{
+	// Get existing job to preserve status if not provided
+	existingJob, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	status := r.FormValue("status")
+	if status == "" {
+		status = existingJob.Status
+	}
+
+	expiresAt := sql.NullString{}
+	if ea := r.FormValue("expires_at"); ea != "" {
+		expiresAt = sql.NullString{String: ea, Valid: true}
+	} else {
+		expiresAt = existingJob.ExpiresAt
+	}
+
+	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
 		ID:               jobID,
 		Name:             r.FormValue("name"),
 		CustomerName:     customerName,
 		SurchargePercent: surchargePercent,
 		SurchargeMode:    r.FormValue("surcharge_mode"),
+		Status:           status,
+		ExpiresAt:        expiresAt,
 	})
 	if err != nil {
 		logger.Error("failed to update job", "error", err)
@@ -328,6 +433,8 @@ func (h *Handler) UpdateJobName(w http.ResponseWriter, r *http.Request) {
 		CustomerName:     job.CustomerName,
 		SurchargePercent: job.SurchargePercent,
 		SurchargeMode:    job.SurchargeMode,
+		Status:           job.Status,
+		ExpiresAt:        job.ExpiresAt,
 	})
 	if err != nil {
 		logger.Error("failed to update job name", "error", err)
@@ -369,6 +476,8 @@ func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 		CustomerName:     job.CustomerName,
 		SurchargePercent: surchargePercent,
 		SurchargeMode:    job.SurchargeMode,
+		Status:           job.Status,
+		ExpiresAt:        job.ExpiresAt,
 	})
 	if err != nil {
 		logger.Error("failed to update job markup", "error", err)

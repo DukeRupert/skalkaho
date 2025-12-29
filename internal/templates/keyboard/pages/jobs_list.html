@@ -25,6 +25,41 @@
             </div>
         </div>
 
+        <!-- Filter/Sort Bar -->
+        <div class="bg-white rounded-lg border border-slate-200 p-4 mb-4">
+            <form id="filter-form" class="flex flex-col sm:flex-row gap-3">
+                <!-- Status Filter -->
+                <select name="status"
+                        class="flex-1 sm:flex-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-copper-500 focus:border-copper-500"
+                        hx-get="/"
+                        hx-trigger="change"
+                        hx-target="body"
+                        hx-push-url="true"
+                        hx-include="#filter-form">
+                    <option value="" {{if eq .Status ""}}selected{{end}}>All Statuses</option>
+                    <option value="draft" {{if eq .Status "draft"}}selected{{end}}>Draft</option>
+                    <option value="sent" {{if eq .Status "sent"}}selected{{end}}>Sent</option>
+                    <option value="accepted" {{if eq .Status "accepted"}}selected{{end}}>Accepted</option>
+                    <option value="rejected" {{if eq .Status "rejected"}}selected{{end}}>Rejected</option>
+                    <option value="expired" {{if eq .Status "expired"}}selected{{end}}>Expired</option>
+                </select>
+
+                <!-- Sort -->
+                <select name="sort"
+                        class="flex-1 sm:flex-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-copper-500 focus:border-copper-500"
+                        hx-get="/"
+                        hx-trigger="change"
+                        hx-target="body"
+                        hx-push-url="true"
+                        hx-include="#filter-form">
+                    <option value="newest" {{if eq .Sort "newest"}}selected{{end}}>Newest First</option>
+                    <option value="oldest" {{if eq .Sort "oldest"}}selected{{end}}>Oldest First</option>
+                    <option value="name_asc" {{if eq .Sort "name_asc"}}selected{{end}}>Name A-Z</option>
+                    <option value="name_desc" {{if eq .Sort "name_desc"}}selected{{end}}>Name Z-A</option>
+                </select>
+            </form>
+        </div>
+
         <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
             <!-- Job Form Container -->
             <div id="job-form-container"></div>
@@ -35,6 +70,22 @@
                 <div class="row flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50"
                      data-index="{{$i}}"
                      data-delete-url="/jobs/{{$job.ID}}">
+                    <!-- Status Badge -->
+                    <div class="mr-3">
+                        {{if eq $job.Status "draft"}}
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-slate-200 text-slate-700 text-xs font-semibold" title="Draft">D</span>
+                        {{else if eq $job.Status "sent"}}
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-blue-100 text-blue-700 text-xs font-semibold" title="Sent">S</span>
+                        {{else if eq $job.Status "accepted"}}
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-forest-100 text-forest-700 text-xs font-semibold" title="Accepted">A</span>
+                        {{else if eq $job.Status "rejected"}}
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-red-100 text-red-700 text-xs font-semibold" title="Rejected">R</span>
+                        {{else if eq $job.Status "expired"}}
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-orange-100 text-orange-700 text-xs font-semibold" title="Expired">E</span>
+                        {{else}}
+                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-slate-200 text-slate-700 text-xs font-semibold" title="Draft">D</span>
+                        {{end}}
+                    </div>
                     <a href="/jobs/{{$job.ID}}" class="flex-1 min-w-0">
                         <span class="font-medium text-slate-900">{{$job.Name}}</span>
                         {{if $job.CustomerName.Valid}}
@@ -83,8 +134,44 @@
                 </div>
                 {{end}}
             </div>
+
+            <!-- Pagination -->
+            {{if gt .Pagination.TotalPages 1}}
+            <div class="flex items-center justify-center gap-4 px-4 py-3 border-t border-slate-200 bg-slate-50">
+                {{if .Pagination.HasPrev}}
+                <a href="/?page={{sub .Pagination.CurrentPage 1}}{{if .Status}}&status={{.Status}}{{end}}{{if .Sort}}&sort={{.Sort}}{{end}}"
+                   class="px-3 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50">
+                    Prev
+                </a>
+                {{else}}
+                <span class="px-3 py-1 text-sm font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded cursor-not-allowed">
+                    Prev
+                </span>
+                {{end}}
+
+                <span class="text-sm text-slate-600">
+                    Page {{.Pagination.CurrentPage}} of {{.Pagination.TotalPages}}
+                </span>
+
+                {{if .Pagination.HasNext}}
+                <a href="/?page={{add .Pagination.CurrentPage 1}}{{if .Status}}&status={{.Status}}{{end}}{{if .Sort}}&sort={{.Sort}}{{end}}"
+                   class="px-3 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50">
+                    Next
+                </a>
+                {{else}}
+                <span class="px-3 py-1 text-sm font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded cursor-not-allowed">
+                    Next
+                </span>
+                {{end}}
+            </div>
+            {{end}}
+
             {{else}}
             <div class="px-4 py-8 text-center text-slate-500">
+                {{if .Status}}
+                <p>No quotes with status "{{.Status}}".</p>
+                <a href="/" class="text-copper-600 hover:text-copper-700 text-sm mt-2 inline-block">Clear filter</a>
+                {{else}}
                 <p>No quotes yet.</p>
                 <p class="text-sm mt-3 hidden sm:block">Press <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">n</kbd> to create your first quote.</p>
                 <button onclick="showJobForm()"
@@ -94,6 +181,7 @@
                     </svg>
                     Create First Quote
                 </button>
+                {{end}}
             </div>
             {{end}}
         </div>

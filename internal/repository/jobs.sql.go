@@ -10,10 +10,22 @@ import (
 	"database/sql"
 )
 
+const countJobs = `-- name: CountJobs :one
+SELECT COUNT(*) FROM jobs
+WHERE (?1 = '' OR status = ?1)
+`
+
+func (q *Queries) CountJobs(ctx context.Context, status interface{}) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countJobs, status)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createJob = `-- name: CreateJob :one
-INSERT INTO jobs (id, name, customer_name, surcharge_percent, surcharge_mode)
-VALUES (?, ?, ?, ?, ?)
-RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at
+INSERT INTO jobs (id, name, customer_name, surcharge_percent, surcharge_mode, status, expires_at)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at
 `
 
 type CreateJobParams struct {
@@ -22,6 +34,8 @@ type CreateJobParams struct {
 	CustomerName     sql.NullString `json:"customer_name"`
 	SurchargePercent float64        `json:"surcharge_percent"`
 	SurchargeMode    string         `json:"surcharge_mode"`
+	Status           string         `json:"status"`
+	ExpiresAt        sql.NullString `json:"expires_at"`
 }
 
 func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, error) {
@@ -31,6 +45,8 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, erro
 		arg.CustomerName,
 		arg.SurchargePercent,
 		arg.SurchargeMode,
+		arg.Status,
+		arg.ExpiresAt,
 	)
 	var i Job
 	err := row.Scan(
@@ -40,6 +56,8 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, erro
 		&i.SurchargePercent,
 		&i.SurchargeMode,
 		&i.CreatedAt,
+		&i.Status,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
@@ -55,7 +73,7 @@ func (q *Queries) DeleteJob(ctx context.Context, id string) error {
 }
 
 const getJob = `-- name: GetJob :one
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
 WHERE id = ?
 `
 
@@ -69,12 +87,14 @@ func (q *Queries) GetJob(ctx context.Context, id string) (Job, error) {
 		&i.SurchargePercent,
 		&i.SurchargeMode,
 		&i.CreatedAt,
+		&i.Status,
+		&i.ExpiresAt,
 	)
 	return i, err
 }
 
 const listJobs = `-- name: ListJobs :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
 ORDER BY created_at DESC
 `
 
@@ -94,6 +114,188 @@ func (q *Queries) ListJobs(ctx context.Context) ([]Job, error) {
 			&i.SurchargePercent,
 			&i.SurchargeMode,
 			&i.CreatedAt,
+			&i.Status,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsPaginated = `-- name: ListJobsPaginated :many
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+WHERE (?1 = '' OR status = ?1)
+ORDER BY created_at DESC
+LIMIT ?3 OFFSET ?2
+`
+
+type ListJobsPaginatedParams struct {
+	Status interface{} `json:"status"`
+	Offset int64       `json:"offset"`
+	Limit  int64       `json:"limit"`
+}
+
+func (q *Queries) ListJobsPaginated(ctx context.Context, arg ListJobsPaginatedParams) ([]Job, error) {
+	rows, err := q.db.QueryContext(ctx, listJobsPaginated, arg.Status, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Job{}
+	for rows.Next() {
+		var i Job
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CustomerName,
+			&i.SurchargePercent,
+			&i.SurchargeMode,
+			&i.CreatedAt,
+			&i.Status,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsPaginatedByName = `-- name: ListJobsPaginatedByName :many
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+WHERE (?1 = '' OR status = ?1)
+ORDER BY name ASC
+LIMIT ?3 OFFSET ?2
+`
+
+type ListJobsPaginatedByNameParams struct {
+	Status interface{} `json:"status"`
+	Offset int64       `json:"offset"`
+	Limit  int64       `json:"limit"`
+}
+
+func (q *Queries) ListJobsPaginatedByName(ctx context.Context, arg ListJobsPaginatedByNameParams) ([]Job, error) {
+	rows, err := q.db.QueryContext(ctx, listJobsPaginatedByName, arg.Status, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Job{}
+	for rows.Next() {
+		var i Job
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CustomerName,
+			&i.SurchargePercent,
+			&i.SurchargeMode,
+			&i.CreatedAt,
+			&i.Status,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsPaginatedByNameDesc = `-- name: ListJobsPaginatedByNameDesc :many
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+WHERE (?1 = '' OR status = ?1)
+ORDER BY name DESC
+LIMIT ?3 OFFSET ?2
+`
+
+type ListJobsPaginatedByNameDescParams struct {
+	Status interface{} `json:"status"`
+	Offset int64       `json:"offset"`
+	Limit  int64       `json:"limit"`
+}
+
+func (q *Queries) ListJobsPaginatedByNameDesc(ctx context.Context, arg ListJobsPaginatedByNameDescParams) ([]Job, error) {
+	rows, err := q.db.QueryContext(ctx, listJobsPaginatedByNameDesc, arg.Status, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Job{}
+	for rows.Next() {
+		var i Job
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CustomerName,
+			&i.SurchargePercent,
+			&i.SurchargeMode,
+			&i.CreatedAt,
+			&i.Status,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobsPaginatedOldest = `-- name: ListJobsPaginatedOldest :many
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+WHERE (?1 = '' OR status = ?1)
+ORDER BY created_at ASC
+LIMIT ?3 OFFSET ?2
+`
+
+type ListJobsPaginatedOldestParams struct {
+	Status interface{} `json:"status"`
+	Offset int64       `json:"offset"`
+	Limit  int64       `json:"limit"`
+}
+
+func (q *Queries) ListJobsPaginatedOldest(ctx context.Context, arg ListJobsPaginatedOldestParams) ([]Job, error) {
+	rows, err := q.db.QueryContext(ctx, listJobsPaginatedOldest, arg.Status, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Job{}
+	for rows.Next() {
+		var i Job
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CustomerName,
+			&i.SurchargePercent,
+			&i.SurchargeMode,
+			&i.CreatedAt,
+			&i.Status,
+			&i.ExpiresAt,
 		); err != nil {
 			return nil, err
 		}
@@ -113,9 +315,11 @@ UPDATE jobs SET
     name = ?,
     customer_name = ?,
     surcharge_percent = ?,
-    surcharge_mode = ?
+    surcharge_mode = ?,
+    status = ?,
+    expires_at = ?
 WHERE id = ?
-RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at
+RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at
 `
 
 type UpdateJobParams struct {
@@ -123,6 +327,8 @@ type UpdateJobParams struct {
 	CustomerName     sql.NullString `json:"customer_name"`
 	SurchargePercent float64        `json:"surcharge_percent"`
 	SurchargeMode    string         `json:"surcharge_mode"`
+	Status           string         `json:"status"`
+	ExpiresAt        sql.NullString `json:"expires_at"`
 	ID               string         `json:"id"`
 }
 
@@ -132,6 +338,8 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		arg.CustomerName,
 		arg.SurchargePercent,
 		arg.SurchargeMode,
+		arg.Status,
+		arg.ExpiresAt,
 		arg.ID,
 	)
 	var i Job
@@ -142,6 +350,33 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		&i.SurchargePercent,
 		&i.SurchargeMode,
 		&i.CreatedAt,
+		&i.Status,
+		&i.ExpiresAt,
+	)
+	return i, err
+}
+
+const updateJobStatus = `-- name: UpdateJobStatus :one
+UPDATE jobs SET status = ? WHERE id = ? RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at
+`
+
+type UpdateJobStatusParams struct {
+	Status string `json:"status"`
+	ID     string `json:"id"`
+}
+
+func (q *Queries) UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) (Job, error) {
+	row := q.db.QueryRowContext(ctx, updateJobStatus, arg.Status, arg.ID)
+	var i Job
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CustomerName,
+		&i.SurchargePercent,
+		&i.SurchargeMode,
+		&i.CreatedAt,
+		&i.Status,
+		&i.ExpiresAt,
 	)
 	return i, err
 }

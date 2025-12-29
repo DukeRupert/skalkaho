@@ -33,6 +33,8 @@ type Job struct {
 	SurchargePercent float64        `json:"surcharge_percent"`
 	SurchargeMode    string         `json:"surcharge_mode"`
 	CreatedAt        string         `json:"created_at"`
+	Status           string         `json:"status"`
+	ExpiresAt        sql.NullString `json:"expires_at"`
 }
 
 type LineItem struct {
