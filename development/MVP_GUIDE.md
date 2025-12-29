@@ -49,7 +49,7 @@ Skalkaho is a construction quoting SaaS application designed to help small-mediu
 ```
 Settings (singleton)
     │
-    └── provides defaults for ──▶ Job
+    └── provides defaults for ──▶ Job ◀── belongs to ── Client
                                    │
                                    └── has many ──▶ Category
                                                       │
@@ -57,6 +57,27 @@ Settings (singleton)
                                                       │
                                                       └── has many ──▶ LineItem
 ```
+
+---
+
+### Client
+
+Represents a customer who receives quotes.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `id` | UUID | PK | Unique identifier |
+| `name` | string | required, unique | Primary display name |
+| `company` | string | nullable | Business/company name |
+| `email` | string | nullable | Contact email |
+| `phone` | string | nullable | Contact phone |
+| `address` | string | nullable | Street address |
+| `city` | string | nullable | City |
+| `state` | string | nullable | State/Province |
+| `zip` | string | nullable | Postal code |
+| `tax_id` | string | nullable | Tax ID for invoicing |
+| `notes` | string | nullable | Internal notes |
+| `created_at` | timestamp | auto | Creation timestamp |
 
 ---
 
@@ -68,14 +89,18 @@ The top-level container for a quote.
 |-------|------|-------------|-------------|
 | `id` | UUID | PK | Unique identifier |
 | `name` | string | required | e.g., "Smith Kitchen Remodel" |
-| `customer_name` | string | nullable | Reference only, not for invoicing |
+| `customer_name` | string | nullable | Legacy field, prefer client_id |
 | `surcharge_percent` | decimal | default: 0 | Job-level surcharge (e.g., 15.0 for 15%) |
 | `surcharge_mode` | enum | "stacking" \| "override" | How surcharges combine |
+| `status` | enum | "draft" \| "sent" \| "accepted" \| "rejected" | Quote lifecycle status |
+| `expires_at` | timestamp | nullable | Quote expiration date |
+| `client_id` | UUID | FK → Client, nullable | Associated client |
 | `created_at` | timestamp | auto | Creation timestamp |
 
 **Notes:**
 - `surcharge_mode` defaults to value from Settings when creating new jobs
-- `customer_name` is informal reference; formal customer management is future scope
+- `client_id` links to client record; `customer_name` kept for backwards compatibility
+- Client can only be changed when status is "draft"
 
 ---
 
@@ -442,3 +467,4 @@ type LineItem struct {
 |------|---------|-------|
 | 2024-12-22 | 0.1 | Initial MVP specification |
 | 2025-12-27 | 0.2 | MVP complete - added equipment type, reports |
+| 2025-12-28 | 0.3 | Added client management, quote status, item templates |

@@ -16,6 +16,22 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 - [x] Surcharge modes: stacking and override
 - [x] Real-time total calculations
 - [x] Settings page for defaults
+- [x] Quote status tracking (draft, sent, accepted, rejected)
+- [x] Quote pagination with filtering by status
+- [x] Quote sorting (newest, oldest, name A-Z/Z-A)
+
+### Client Management
+- [x] Client CRUD with pagination and search
+- [x] Client fields: name, company, email, phone, address, tax ID, notes
+- [x] Associate quotes with clients
+- [x] Client card display on quote detail page
+- [x] Restrict client changes to draft quotes only
+- [x] Auto-migrate legacy customer_name to clients
+
+### Item Templates
+- [x] Save commonly used items as templates
+- [x] Search templates when adding line items
+- [x] Template management page (/items)
 
 ### Reports
 - [x] Order List - aggregated materials/equipment for entire quote
@@ -30,6 +46,8 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 - [x] Help overlay (? key)
 - [x] Autocomplete search for line items
 - [x] Print-friendly report layouts
+- [x] Touch-friendly action menus (44px tap targets)
+- [x] Mobile-responsive new quote button
 
 ### Infrastructure
 - [x] Docker deployment with multi-stage build
@@ -44,13 +62,13 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 
 ---
 
-## Phase 2: Persistence & Export
+## Phase 2: Quote Workflow & Export
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
+| Send quote to client | High | Email quote to client, update status |
 | PDF export | High | Generate professional quote PDFs |
 | Quote duplication | Medium | Copy existing quote as template |
-| Quote archiving | Medium | Mark quotes as won/lost/archived |
 | Data backup/restore | Medium | Export/import database |
 
 ---
@@ -59,7 +77,6 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| Product catalog | High | Saved materials with pricing |
 | Labor rate presets | High | Common labor types with rates |
 | Category templates | Medium | Reusable category structures |
 | Supplier price imports | Low | CSV/Excel import for pricing |
@@ -70,8 +87,8 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| Customer management | Medium | Track customers and their quotes |
 | Quote versioning | Medium | Track revisions |
+| Client reports | Medium | Quote history by client |
 | QuickBooks integration | Low | Export to accounting |
 | User accounts | Low | Multi-user support |
 
@@ -100,3 +117,4 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 | Date | Notes |
 |------|-------|
 | 2025-12-27 | Initial roadmap - MVP feature complete |
+| 2025-12-28 | Added client management, quote status, item templates, touch UI |
