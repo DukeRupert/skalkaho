@@ -307,11 +307,9 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 		status = existingJob.Status
 	}
 
-	expiresAt := sql.NullString{}
+	expiresAt := existingJob.ExpiresAt
 	if ea := r.FormValue("expires_at"); ea != "" {
 		expiresAt = sql.NullString{String: ea, Valid: true}
-	} else {
-		expiresAt = existingJob.ExpiresAt
 	}
 
 	clientID := existingJob.ClientID
