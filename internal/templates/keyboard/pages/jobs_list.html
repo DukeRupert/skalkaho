@@ -88,8 +88,8 @@
                     </div>
                     <a href="/jobs/{{$job.ID}}" class="flex-1 min-w-0">
                         <span class="font-medium text-slate-900">{{$job.Name}}</span>
-                        {{if $job.CustomerName.Valid}}
-                        <span class="text-sm text-slate-500 ml-2">- {{$job.CustomerName.String}}</span>
+                        {{if $job.ClientName}}
+                        <span class="text-sm text-slate-500 ml-2">- {{$job.ClientName}}</span>
                         {{end}}
                     </a>
                     <span class="text-sm tabular-nums text-slate-700 mr-2">{{formatMoney $job.GrandTotal}}</span>

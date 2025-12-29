@@ -1,37 +1,32 @@
-{{define "job_form"}}
-<div class="inline-form px-4 py-3 border-b border-slate-200 bg-slate-50">
-    <form hx-post="/jobs"
+{{define "job_client_form"}}
+<div class="inline-form px-4 py-3 border-t border-slate-200 bg-slate-50">
+    <form hx-put="/jobs/{{.Job.ID}}/client"
           hx-target="body"
           class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div class="flex gap-3 flex-1">
-            <input type="text"
-                   name="name"
-                   placeholder="Quote name..."
-                   class="flex-1 px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-                   autofocus
-                   required>
             <select name="client_id"
-                    class="px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+                    class="flex-1 px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+                    autofocus>
                 <option value="">No client</option>
                 {{range .Clients}}
-                <option value="{{.ID}}">{{.Name}}</option>
+                <option value="{{.ID}}" {{if and $.Job.ClientID.Valid (eq $.Job.ClientID.String .ID)}}selected{{end}}>{{.Name}}</option>
                 {{end}}
             </select>
         </div>
         <div class="flex gap-2">
             <button type="submit"
                     class="flex-1 sm:flex-none px-3 py-2 bg-slate-900 text-white rounded text-sm hover:bg-slate-700">
-                Create<span class="hidden sm:inline"> ↵</span>
+                Save
             </button>
             <button type="button"
-                    onclick="hideJobForm()"
+                    onclick="hideClientEditForm()"
                     class="flex-1 sm:flex-none px-3 py-2 bg-slate-200 text-slate-700 rounded text-sm hover:bg-slate-300">
                 Cancel
             </button>
         </div>
     </form>
     <p class="hidden sm:block text-xs text-slate-500 mt-1">
-        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">Enter</kbd> create
+        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">Enter</kbd> save
         <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-2">Escape</kbd> cancel
     </p>
 </div>

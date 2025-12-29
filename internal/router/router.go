@@ -30,6 +30,8 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("PUT /jobs/{id}/name", h.UpdateJobName)
 	mux.HandleFunc("GET /jobs/{id}/order-list", h.GetOrderList)
 	mux.HandleFunc("GET /jobs/{id}/site-materials", h.GetSiteMaterials)
+	mux.HandleFunc("GET /jobs/{id}/client", h.GetJobClientForm)
+	mux.HandleFunc("PUT /jobs/{id}/client", h.UpdateJobClient)
 
 	// Categories
 	mux.HandleFunc("GET /categories/{id}", h.GetCategory)
@@ -57,6 +59,15 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("GET /item-templates/{id}/edit", h.GetItemTemplateEditForm)
 	mux.HandleFunc("PUT /item-templates/{id}", h.UpdateItemTemplate)
 	mux.HandleFunc("DELETE /item-templates/{id}", h.DeleteItemTemplate)
+
+	// Clients
+	mux.HandleFunc("GET /clients", h.ListClients)
+	mux.HandleFunc("GET /clients/{id}", h.GetClient)
+	mux.HandleFunc("POST /clients", h.CreateClient)
+	mux.HandleFunc("PUT /clients/{id}", h.UpdateClient)
+	mux.HandleFunc("DELETE /clients/{id}", h.DeleteClient)
+	mux.HandleFunc("GET /client-form", h.GetClientForm)
+	mux.HandleFunc("GET /clients/{id}/edit", h.GetClientEditForm)
 
 	// Settings
 	mux.HandleFunc("GET /settings", h.GetSettings)

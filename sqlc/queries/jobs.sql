@@ -1,6 +1,6 @@
 -- name: CreateJob :one
-INSERT INTO jobs (id, name, customer_name, surcharge_percent, surcharge_mode, status, expires_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO jobs (id, name, customer_name, surcharge_percent, surcharge_mode, status, expires_at, client_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetJob :one
@@ -49,7 +49,8 @@ UPDATE jobs SET
     surcharge_percent = ?,
     surcharge_mode = ?,
     status = ?,
-    expires_at = ?
+    expires_at = ?,
+    client_id = ?
 WHERE id = ?
 RETURNING *;
 

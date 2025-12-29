@@ -82,9 +82,60 @@
                         </div>
                     </div>
 
-                    {{if .Job.CustomerName.Valid}}
-                    <p class="text-sm text-slate-500">{{.Job.CustomerName.String}}</p>
+                    <!-- Client Card -->
+                    <div id="client-card-container">
+                    {{if .Client}}
+                    <div class="flex items-center gap-2">
+                        <a href="/clients/{{.Client.ID}}" class="flex-1 flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-slate-50 transition-colors">
+                            <div class="w-10 h-10 rounded-full bg-copper-100 text-copper-700 flex items-center justify-center font-semibold text-sm">
+                                {{slice .Client.Name 0 1}}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="font-medium text-slate-900">{{.Client.Name}}</div>
+                                {{if .Client.Company.Valid}}
+                                <div class="text-sm text-slate-500 truncate">{{.Client.Company.String}}</div>
+                                {{else if .Client.Email.Valid}}
+                                <div class="text-sm text-slate-500 truncate">{{.Client.Email.String}}</div>
+                                {{end}}
+                            </div>
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        {{if eq .Job.Status "draft"}}
+                        <button onclick="showClientEditForm()"
+                                class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                title="Change client">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                        {{end}}
+                    </div>
+                    {{else if .Job.CustomerName.Valid}}
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm text-slate-500">{{.Job.CustomerName.String}}</p>
+                        {{if eq .Job.Status "draft"}}
+                        <button onclick="showClientEditForm()"
+                                class="text-sm text-copper-600 hover:text-copper-700">
+                            Assign client
+                        </button>
+                        {{end}}
+                    </div>
+                    {{else}}
+                    <div class="flex items-center justify-between">
+                        <p class="text-sm text-slate-400 italic">No client assigned</p>
+                        {{if eq .Job.Status "draft"}}
+                        <button onclick="showClientEditForm()"
+                                class="text-sm text-copper-600 hover:text-copper-700">
+                            Assign client
+                        </button>
+                        {{end}}
+                    </div>
                     {{end}}
+                    </div>
+                    <!-- Client Edit Form Container -->
+                    <div id="client-edit-form-container" data-job-id="{{.Job.ID}}"></div>
 
                     <!-- Row 2: Markup + Grand Total -->
                     <div class="flex items-center justify-between pt-2 border-t border-slate-100">

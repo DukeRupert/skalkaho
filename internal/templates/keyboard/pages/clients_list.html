@@ -1,0 +1,227 @@
+{{define "clients_list"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head" .}}
+</head>
+<body class="bg-slate-50 pb-12" data-context="clients">
+    {{template "header" .}}
+
+    <main class="max-w-4xl mx-auto p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Clients</h1>
+            <div class="flex items-center gap-3">
+                <span class="hidden sm:inline text-sm text-slate-500">
+                    <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">n</kbd> new client
+                </span>
+                <button onclick="showClientForm()"
+                        class="sm:hidden touch-action px-3 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="bg-white rounded-lg border border-slate-200 p-4 mb-4">
+            <form id="filter-form" class="flex gap-3">
+                <input type="text"
+                       name="q"
+                       value="{{.Search}}"
+                       placeholder="Search clients..."
+                       class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-copper-500 focus:border-copper-500"
+                       hx-get="/clients"
+                       hx-trigger="keyup changed delay:300ms"
+                       hx-target="body"
+                       hx-push-url="true"
+                       hx-include="#filter-form">
+            </form>
+        </div>
+
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <!-- New Client Form Container -->
+            <div id="client-form-container"></div>
+
+            {{if .Clients}}
+            <div id="clients-list">
+                {{range $i, $client := .Clients}}
+                <div class="row px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50"
+                     data-index="{{$i}}"
+                     data-client-id="{{$client.ID}}"
+                     data-delete-url="/clients/{{$client.ID}}">
+                    <div class="flex items-center justify-between">
+                        <a href="/clients/{{$client.ID}}" class="flex-1 min-w-0">
+                            <div class="flex items-center gap-3">
+                                <!-- Client Avatar/Icon -->
+                                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-copper-100 text-copper-700 flex items-center justify-center font-semibold">
+                                    {{slice $client.Name 0 1}}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <div class="font-medium text-slate-900 truncate">{{$client.Name}}</div>
+                                    {{if $client.Company.Valid}}
+                                    <div class="text-sm text-slate-500 truncate">{{$client.Company.String}}</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                        </a>
+                        <div class="flex items-center gap-4 ml-4">
+                            <!-- Contact Info -->
+                            <div class="hidden sm:block text-right text-sm">
+                                {{if $client.Email.Valid}}
+                                <div class="text-slate-600">{{$client.Email.String}}</div>
+                                {{end}}
+                                {{if $client.Phone.Valid}}
+                                <div class="text-slate-500">{{$client.Phone.String}}</div>
+                                {{end}}
+                            </div>
+                            <!-- Action Menu -->
+                            <div class="relative" x-data="{ open: false }">
+                                <button
+                                    @click.stop.prevent="open = !open"
+                                    class="touch-action rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                                    aria-label="Actions">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                    </svg>
+                                </button>
+                                <div
+                                    x-show="open"
+                                    x-transition:enter="transition ease-out duration-100"
+                                    x-transition:enter-start="opacity-0 scale-95"
+                                    x-transition:enter-end="opacity-100 scale-100"
+                                    x-transition:leave="transition ease-in duration-75"
+                                    x-transition:leave-start="opacity-100 scale-100"
+                                    x-transition:leave-end="opacity-0 scale-95"
+                                    @click.away="open = false"
+                                    class="action-menu absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                                    <a href="/clients/{{$client.ID}}"
+                                       class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                        View
+                                    </a>
+                                    <button
+                                        @click.stop="deleteClient('{{$client.ID}}'); open = false;"
+                                        class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+
+            <!-- Pagination -->
+            {{if gt .Pagination.TotalPages 1}}
+            <div class="flex items-center justify-center gap-4 px-4 py-3 border-t border-slate-200 bg-slate-50">
+                {{if .Pagination.HasPrev}}
+                <a href="/clients?page={{sub .Pagination.CurrentPage 1}}{{if .Search}}&q={{.Search}}{{end}}"
+                   class="px-3 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50">
+                    Prev
+                </a>
+                {{else}}
+                <span class="px-3 py-1 text-sm font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded cursor-not-allowed">
+                    Prev
+                </span>
+                {{end}}
+
+                <span class="text-sm text-slate-600">
+                    Page {{.Pagination.CurrentPage}} of {{.Pagination.TotalPages}}
+                </span>
+
+                {{if .Pagination.HasNext}}
+                <a href="/clients?page={{add .Pagination.CurrentPage 1}}{{if .Search}}&q={{.Search}}{{end}}"
+                   class="px-3 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50">
+                    Next
+                </a>
+                {{else}}
+                <span class="px-3 py-1 text-sm font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded cursor-not-allowed">
+                    Next
+                </span>
+                {{end}}
+            </div>
+            {{end}}
+
+            {{else}}
+            <div class="px-4 py-8 text-center text-slate-500">
+                {{if .Search}}
+                <p>No clients matching "{{.Search}}".</p>
+                <a href="/clients" class="text-copper-600 hover:text-copper-700 text-sm mt-2 inline-block">Clear search</a>
+                {{else}}
+                <p>No clients yet.</p>
+                <p class="text-sm mt-3 hidden sm:block">Press <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">n</kbd> to create your first client.</p>
+                <button onclick="showClientForm()"
+                        class="mt-4 sm:hidden px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg inline-flex items-center gap-2 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Create First Client
+                </button>
+                {{end}}
+            </div>
+            {{end}}
+        </div>
+    </main>
+
+    {{template "footer" .}}
+    {{template "help_overlay" .}}
+    {{template "scripts" .}}
+
+    <script>
+    function showClientForm() {
+        const container = document.getElementById('client-form-container');
+        if (!container) return;
+
+        htmx.ajax('GET', '/client-form', {target: '#client-form-container', swap: 'innerHTML'}).then(() => {
+            htmx.process(container);
+            const input = container.querySelector('input[name="name"]');
+            if (input) input.focus();
+        });
+        formActive = true;
+    }
+
+    function hideClientForm() {
+        const container = document.getElementById('client-form-container');
+        if (container) {
+            container.innerHTML = '';
+        }
+        formActive = false;
+    }
+
+    function deleteClient(id) {
+        if (confirm('Delete this client? This cannot be undone.')) {
+            htmx.ajax('DELETE', '/clients/' + id, {target: 'body'});
+        }
+    }
+
+    // Override keyboard handler for this page
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            return;
+        }
+
+        if (e.key === 'n' && document.querySelector('[data-context="clients"]')) {
+            e.preventDefault();
+            showClientForm();
+        }
+    }, true);
+    </script>
+</body>
+</html>
+{{end}}
+
+{{define "shortcuts"}}
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">↑↓</kbd> navigate</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">⏎</kbd> open</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">n</kbd> new</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">?</kbd> help</span>
+{{end}}

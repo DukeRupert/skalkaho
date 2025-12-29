@@ -23,9 +23,9 @@ func (q *Queries) CountJobs(ctx context.Context, status interface{}) (int64, err
 }
 
 const createJob = `-- name: CreateJob :one
-INSERT INTO jobs (id, name, customer_name, surcharge_percent, surcharge_mode, status, expires_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at
+INSERT INTO jobs (id, name, customer_name, surcharge_percent, surcharge_mode, status, expires_at, client_id)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id
 `
 
 type CreateJobParams struct {
@@ -36,6 +36,7 @@ type CreateJobParams struct {
 	SurchargeMode    string         `json:"surcharge_mode"`
 	Status           string         `json:"status"`
 	ExpiresAt        sql.NullString `json:"expires_at"`
+	ClientID         sql.NullString `json:"client_id"`
 }
 
 func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, error) {
@@ -47,6 +48,7 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, erro
 		arg.SurchargeMode,
 		arg.Status,
 		arg.ExpiresAt,
+		arg.ClientID,
 	)
 	var i Job
 	err := row.Scan(
@@ -58,6 +60,7 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, erro
 		&i.CreatedAt,
 		&i.Status,
 		&i.ExpiresAt,
+		&i.ClientID,
 	)
 	return i, err
 }
@@ -73,7 +76,7 @@ func (q *Queries) DeleteJob(ctx context.Context, id string) error {
 }
 
 const getJob = `-- name: GetJob :one
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id FROM jobs
 WHERE id = ?
 `
 
@@ -89,12 +92,13 @@ func (q *Queries) GetJob(ctx context.Context, id string) (Job, error) {
 		&i.CreatedAt,
 		&i.Status,
 		&i.ExpiresAt,
+		&i.ClientID,
 	)
 	return i, err
 }
 
 const listJobs = `-- name: ListJobs :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id FROM jobs
 ORDER BY created_at DESC
 `
 
@@ -116,6 +120,7 @@ func (q *Queries) ListJobs(ctx context.Context) ([]Job, error) {
 			&i.CreatedAt,
 			&i.Status,
 			&i.ExpiresAt,
+			&i.ClientID,
 		); err != nil {
 			return nil, err
 		}
@@ -131,7 +136,7 @@ func (q *Queries) ListJobs(ctx context.Context) ([]Job, error) {
 }
 
 const listJobsPaginated = `-- name: ListJobsPaginated :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id FROM jobs
 WHERE (?1 = '' OR status = ?1)
 ORDER BY created_at DESC
 LIMIT ?3 OFFSET ?2
@@ -161,6 +166,7 @@ func (q *Queries) ListJobsPaginated(ctx context.Context, arg ListJobsPaginatedPa
 			&i.CreatedAt,
 			&i.Status,
 			&i.ExpiresAt,
+			&i.ClientID,
 		); err != nil {
 			return nil, err
 		}
@@ -176,7 +182,7 @@ func (q *Queries) ListJobsPaginated(ctx context.Context, arg ListJobsPaginatedPa
 }
 
 const listJobsPaginatedByName = `-- name: ListJobsPaginatedByName :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id FROM jobs
 WHERE (?1 = '' OR status = ?1)
 ORDER BY name ASC
 LIMIT ?3 OFFSET ?2
@@ -206,6 +212,7 @@ func (q *Queries) ListJobsPaginatedByName(ctx context.Context, arg ListJobsPagin
 			&i.CreatedAt,
 			&i.Status,
 			&i.ExpiresAt,
+			&i.ClientID,
 		); err != nil {
 			return nil, err
 		}
@@ -221,7 +228,7 @@ func (q *Queries) ListJobsPaginatedByName(ctx context.Context, arg ListJobsPagin
 }
 
 const listJobsPaginatedByNameDesc = `-- name: ListJobsPaginatedByNameDesc :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id FROM jobs
 WHERE (?1 = '' OR status = ?1)
 ORDER BY name DESC
 LIMIT ?3 OFFSET ?2
@@ -251,6 +258,7 @@ func (q *Queries) ListJobsPaginatedByNameDesc(ctx context.Context, arg ListJobsP
 			&i.CreatedAt,
 			&i.Status,
 			&i.ExpiresAt,
+			&i.ClientID,
 		); err != nil {
 			return nil, err
 		}
@@ -266,7 +274,7 @@ func (q *Queries) ListJobsPaginatedByNameDesc(ctx context.Context, arg ListJobsP
 }
 
 const listJobsPaginatedOldest = `-- name: ListJobsPaginatedOldest :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id FROM jobs
 WHERE (?1 = '' OR status = ?1)
 ORDER BY created_at ASC
 LIMIT ?3 OFFSET ?2
@@ -296,6 +304,7 @@ func (q *Queries) ListJobsPaginatedOldest(ctx context.Context, arg ListJobsPagin
 			&i.CreatedAt,
 			&i.Status,
 			&i.ExpiresAt,
+			&i.ClientID,
 		); err != nil {
 			return nil, err
 		}
@@ -317,9 +326,10 @@ UPDATE jobs SET
     surcharge_percent = ?,
     surcharge_mode = ?,
     status = ?,
-    expires_at = ?
+    expires_at = ?,
+    client_id = ?
 WHERE id = ?
-RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at
+RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id
 `
 
 type UpdateJobParams struct {
@@ -329,6 +339,7 @@ type UpdateJobParams struct {
 	SurchargeMode    string         `json:"surcharge_mode"`
 	Status           string         `json:"status"`
 	ExpiresAt        sql.NullString `json:"expires_at"`
+	ClientID         sql.NullString `json:"client_id"`
 	ID               string         `json:"id"`
 }
 
@@ -340,6 +351,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		arg.SurchargeMode,
 		arg.Status,
 		arg.ExpiresAt,
+		arg.ClientID,
 		arg.ID,
 	)
 	var i Job
@@ -352,12 +364,13 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		&i.CreatedAt,
 		&i.Status,
 		&i.ExpiresAt,
+		&i.ClientID,
 	)
 	return i, err
 }
 
 const updateJobStatus = `-- name: UpdateJobStatus :one
-UPDATE jobs SET status = ? WHERE id = ? RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at
+UPDATE jobs SET status = ? WHERE id = ? RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id
 `
 
 type UpdateJobStatusParams struct {
@@ -377,6 +390,7 @@ func (q *Queries) UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams
 		&i.CreatedAt,
 		&i.Status,
 		&i.ExpiresAt,
+		&i.ClientID,
 	)
 	return i, err
 }

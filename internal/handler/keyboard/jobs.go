@@ -15,10 +15,11 @@ import (
 
 const pageSize = 20
 
-// JobWithTotal wraps a Job with its calculated grand total.
+// JobWithTotal wraps a Job with its calculated grand total and client info.
 type JobWithTotal struct {
 	repository.Job
 	GrandTotal float64
+	ClientName string
 }
 
 // PaginationData holds pagination state for templates.
@@ -100,15 +101,26 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate totals for each job
+	// Calculate totals for each job and get client names
 	jobsWithTotals := make([]JobWithTotal, len(jobs))
 	for i, job := range jobs {
 		categories, _ := h.queries.ListCategoriesByJob(ctx, job.ID)
 		lineItems, _ := h.queries.ListLineItemsByJob(ctx, job.ID)
 		totals := h.calculateTotals(job, categories, lineItems)
+
+		var clientName string
+		if job.ClientID.Valid {
+			if client, err := h.queries.GetClient(ctx, job.ClientID.String); err == nil {
+				clientName = client.Name
+			}
+		} else if job.CustomerName.Valid {
+			clientName = job.CustomerName.String
+		}
+
 		jobsWithTotals[i] = JobWithTotal{
 			Job:        job,
 			GrandTotal: totals.GrandTotal,
+			ClientName: clientName,
 		}
 	}
 
@@ -192,6 +204,15 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 	// Build category tree for sidebar navigation
 	categoryTree := buildCategoryTree(categories)
 
+	// Get client if associated
+	var client *repository.Client
+	if job.ClientID.Valid {
+		c, err := h.queries.GetClient(ctx, job.ClientID.String)
+		if err == nil {
+			client = &c
+		}
+	}
+
 	data := map[string]interface{}{
 		"Job":               job,
 		"Categories":        categoriesWithTotals,
@@ -199,6 +220,7 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 		"SelectedIndex":     0,
 		"CategoryTree":      categoryTree,
 		"CurrentCategoryID": "",
+		"Client":            client,
 	}
 
 	if err := h.renderer.Render(w, "job", data); err != nil {
@@ -221,6 +243,8 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		name = "New Quote"
 	}
 
+	clientID := r.FormValue("client_id")
+
 	settings, err := h.queries.GetSettings(ctx)
 	if err != nil {
 		logger.Error("failed to get settings", "error", err)
@@ -236,6 +260,7 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 		SurchargeMode:    settings.DefaultSurchargeMode,
 		Status:           "draft",
 		ExpiresAt:        sql.NullString{},
+		ClientID:         toNullString(clientID),
 	})
 	if err != nil {
 		logger.Error("failed to create job", "error", err)
@@ -289,6 +314,14 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 		expiresAt = existingJob.ExpiresAt
 	}
 
+	clientID := existingJob.ClientID
+	if cid := r.FormValue("client_id"); cid != "" {
+		clientID = sql.NullString{String: cid, Valid: true}
+	} else if cid == "" && r.Form.Has("client_id") {
+		// Explicitly cleared
+		clientID = sql.NullString{}
+	}
+
 	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
 		ID:               jobID,
 		Name:             r.FormValue("name"),
@@ -297,6 +330,7 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 		SurchargeMode:    r.FormValue("surcharge_mode"),
 		Status:           status,
 		ExpiresAt:        expiresAt,
+		ClientID:         clientID,
 	})
 	if err != nil {
 		logger.Error("failed to update job", "error", err)
@@ -337,8 +371,19 @@ func (h *Handler) GetJobForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 
+	// Get clients for dropdown
+	clients, err := h.queries.ListClients(ctx)
+	if err != nil {
+		logger.Error("failed to list clients", "error", err)
+		clients = nil
+	}
+
+	data := map[string]interface{}{
+		"Clients": clients,
+	}
+
 	var buf bytes.Buffer
-	if err := h.renderer.RenderPartial(&buf, "job_form", nil); err != nil {
+	if err := h.renderer.RenderPartial(&buf, "job_form", data); err != nil {
 		logger.Error("failed to render job form", "error", err)
 		http.Error(w, "Failed to render form", http.StatusInternalServerError)
 		return
@@ -435,6 +480,7 @@ func (h *Handler) UpdateJobName(w http.ResponseWriter, r *http.Request) {
 		SurchargeMode:    job.SurchargeMode,
 		Status:           job.Status,
 		ExpiresAt:        job.ExpiresAt,
+		ClientID:         job.ClientID,
 	})
 	if err != nil {
 		logger.Error("failed to update job name", "error", err)
@@ -478,6 +524,7 @@ func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 		SurchargeMode:    job.SurchargeMode,
 		Status:           job.Status,
 		ExpiresAt:        job.ExpiresAt,
+		ClientID:         job.ClientID,
 	})
 	if err != nil {
 		logger.Error("failed to update job markup", "error", err)
@@ -561,6 +608,100 @@ func (h *Handler) GetOrderList(w http.ResponseWriter, r *http.Request) {
 	if err := h.renderer.Render(w, "order_list", data); err != nil {
 		logger.Error("failed to render order list", "error", err)
 	}
+}
+
+// GetJobClientForm returns an inline form for changing the job's client.
+func (h *Handler) GetJobClientForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	jobID := r.PathValue("id")
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	// Only allow editing client in draft status
+	if job.Status != "draft" {
+		http.Error(w, "Client can only be changed for draft quotes", http.StatusForbidden)
+		return
+	}
+
+	clients, err := h.queries.ListClients(ctx)
+	if err != nil {
+		logger.Error("failed to list clients", "error", err)
+		clients = nil
+	}
+
+	data := map[string]interface{}{
+		"Job":     job,
+		"Clients": clients,
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "job_client_form", data); err != nil {
+		logger.Error("failed to render client form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(buf.Bytes())
+}
+
+// UpdateJobClient updates only a job's client assignment.
+func (h *Handler) UpdateJobClient(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	jobID := r.PathValue("id")
+
+	job, err := h.queries.GetJob(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Job not found", http.StatusNotFound)
+		return
+	}
+
+	// Only allow editing client in draft status
+	if job.Status != "draft" {
+		http.Error(w, "Client can only be changed for draft quotes", http.StatusForbidden)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	clientID := sql.NullString{}
+	if cid := r.FormValue("client_id"); cid != "" {
+		clientID = sql.NullString{String: cid, Valid: true}
+	}
+
+	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
+		ID:               jobID,
+		Name:             job.Name,
+		CustomerName:     job.CustomerName,
+		SurchargePercent: job.SurchargePercent,
+		SurchargeMode:    job.SurchargeMode,
+		Status:           job.Status,
+		ExpiresAt:        job.ExpiresAt,
+		ClientID:         clientID,
+	})
+	if err != nil {
+		logger.Error("failed to update job client", "error", err)
+		http.Error(w, "Failed to update client", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/jobs/"+jobID)
+		return
+	}
+
+	http.Redirect(w, r, "/jobs/"+jobID, http.StatusSeeOther)
 }
 
 // GetSiteMaterials shows materials and equipment broken down by category.

@@ -102,6 +102,7 @@ tailwind.config = {
         <span class="font-bold tracking-wider">SKALKAHO</span>
     </a>
     <div class="flex items-center gap-4 text-sm">
+        <a href="/clients" class="text-slate-400 hover:text-white transition-colors">Clients</a>
         <a href="/items" class="text-slate-400 hover:text-white transition-colors">Items</a>
         <a href="/settings" class="text-slate-400 hover:text-white transition-colors">Settings</a>
         <button onclick="toggleHelp()" class="px-2 py-1 bg-slate-700 rounded text-xs hover:bg-slate-600">
@@ -428,6 +429,41 @@ function hideRenameForm() {
     formActive = false;
 }
 
+function showClientEditForm() {
+    const container = document.getElementById('client-edit-form-container');
+    if (!container) return;
+
+    const jobID = container.dataset.jobId;
+    if (!jobID) return;
+
+    htmx.ajax('GET', `/jobs/${jobID}/client`, {target: '#client-edit-form-container', swap: 'innerHTML'}).then(() => {
+        htmx.process(container);
+        const select = container.querySelector('select[name="client_id"]');
+        if (select) select.focus();
+    });
+    formActive = true;
+
+    // Hide the client card while editing
+    const cardContainer = document.getElementById('client-card-container');
+    if (cardContainer) {
+        cardContainer.style.display = 'none';
+    }
+}
+
+function hideClientEditForm() {
+    const container = document.getElementById('client-edit-form-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+    formActive = false;
+
+    // Show the client card again
+    const cardContainer = document.getElementById('client-card-container');
+    if (cardContainer) {
+        cardContainer.style.display = '';
+    }
+}
+
 // Keyboard handler
 document.addEventListener('keydown', function(e) {
     // Don't handle if in form element
@@ -438,6 +474,7 @@ document.addEventListener('keydown', function(e) {
             hideJobForm();
             hideMarkupForm();
             hideRenameForm();
+            hideClientEditForm();
             e.target.blur();
         }
         return;
@@ -501,15 +538,18 @@ document.addEventListener('keydown', function(e) {
             const catForm = document.getElementById('category-form-container');
             const inlineForm = document.getElementById('inline-form-container');
             const markupForm = document.getElementById('markup-form-container');
+            const clientForm = document.getElementById('client-edit-form-container');
             const hasOpenForm = (jobForm && jobForm.innerHTML.trim()) ||
                                (catForm && catForm.innerHTML.trim()) ||
                                (inlineForm && inlineForm.innerHTML.trim()) ||
-                               (markupForm && markupForm.innerHTML.trim());
+                               (markupForm && markupForm.innerHTML.trim()) ||
+                               (clientForm && clientForm.innerHTML.trim());
             if (hasOpenForm) {
                 hideInlineForm();
                 hideCategoryForm();
                 hideJobForm();
                 hideMarkupForm();
+                hideClientEditForm();
             } else {
                 goBack();
             }

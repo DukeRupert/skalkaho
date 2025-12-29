@@ -17,6 +17,21 @@ type Category struct {
 	SortOrder        int64           `json:"sort_order"`
 }
 
+type Client struct {
+	ID        string         `json:"id"`
+	Name      string         `json:"name"`
+	Company   sql.NullString `json:"company"`
+	Email     sql.NullString `json:"email"`
+	Phone     sql.NullString `json:"phone"`
+	Address   sql.NullString `json:"address"`
+	City      sql.NullString `json:"city"`
+	State     sql.NullString `json:"state"`
+	Zip       sql.NullString `json:"zip"`
+	TaxID     sql.NullString `json:"tax_id"`
+	Notes     sql.NullString `json:"notes"`
+	CreatedAt string         `json:"created_at"`
+}
+
 type ItemTemplate struct {
 	ID           int64   `json:"id"`
 	Type         string  `json:"type"`
@@ -35,6 +50,7 @@ type Job struct {
 	CreatedAt        string         `json:"created_at"`
 	Status           string         `json:"status"`
 	ExpiresAt        sql.NullString `json:"expires_at"`
+	ClientID         sql.NullString `json:"client_id"`
 }
 
 type LineItem struct {
