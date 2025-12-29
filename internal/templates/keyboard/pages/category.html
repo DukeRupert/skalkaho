@@ -70,6 +70,7 @@
                             </button>
                             <div
                                 x-show="open"
+                                x-cloak
                                 x-transition:enter="transition ease-out duration-100"
                                 x-transition:enter-start="opacity-0 scale-95"
                                 x-transition:enter-end="opacity-100 scale-100"
@@ -159,6 +160,7 @@
                             </button>
                             <div
                                 x-show="open"
+                                x-cloak
                                 x-transition:enter="transition ease-out duration-100"
                                 x-transition:enter-start="opacity-0 scale-95"
                                 x-transition:enter-end="opacity-100 scale-100"
@@ -216,6 +218,7 @@
                         </button>
                         <div
                             x-show="open"
+                            x-cloak
                             x-transition
                             @click.away="open = false"
                             class="action-menu absolute right-4 mt-12 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
@@ -290,6 +293,7 @@
                             </button>
                             <div
                                 x-show="open"
+                                x-cloak
                                 x-transition:enter="transition ease-out duration-100"
                                 x-transition:enter-start="opacity-0 scale-95"
                                 x-transition:enter-end="opacity-100 scale-100"
