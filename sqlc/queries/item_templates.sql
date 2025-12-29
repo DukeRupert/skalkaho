@@ -31,3 +31,9 @@ RETURNING *;
 -- name: DeleteItemTemplate :exec
 DELETE FROM item_templates
 WHERE id = ?;
+
+-- name: UpdateItemTemplate :one
+UPDATE item_templates
+SET type = ?, category = ?, name = ?, default_unit = ?, default_price = ?
+WHERE id = ?
+RETURNING *;

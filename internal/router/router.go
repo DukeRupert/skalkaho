@@ -50,6 +50,14 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("PUT /items/{id}", h.UpdateLineItem)
 	mux.HandleFunc("DELETE /items/{id}", h.DeleteLineItem)
 
+	// Item Templates
+	mux.HandleFunc("GET /items", h.ListItemTemplates)
+	mux.HandleFunc("POST /items", h.CreateItemTemplate)
+	mux.HandleFunc("GET /items/new", h.GetItemTemplateForm)
+	mux.HandleFunc("GET /item-templates/{id}/edit", h.GetItemTemplateEditForm)
+	mux.HandleFunc("PUT /item-templates/{id}", h.UpdateItemTemplate)
+	mux.HandleFunc("DELETE /item-templates/{id}", h.DeleteItemTemplate)
+
 	// Settings
 	mux.HandleFunc("GET /settings", h.GetSettings)
 	mux.HandleFunc("PUT /settings", h.UpdateSettings)

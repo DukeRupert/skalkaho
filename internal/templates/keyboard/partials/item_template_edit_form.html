@@ -1,0 +1,86 @@
+{{define "item_template_edit_form"}}
+<div class="edit-form grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-100 {{if eq .Item.Type "material"}}bg-forest-100{{else if eq .Item.Type "labor"}}bg-copper-100{{else}}bg-slate-200{{end}}" data-item-id="{{.Item.ID}}">
+    <form hx-put="/item-templates/{{.Item.ID}}"
+          hx-target="body"
+          class="col-span-12 grid grid-cols-12 gap-2 items-center"
+          id="edit-template-form">
+
+        <!-- Type Select -->
+        <select name="type"
+                class="col-span-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+            <option value="material" {{if eq .Item.Type "material"}}selected{{end}}>M</option>
+            <option value="labor" {{if eq .Item.Type "labor"}}selected{{end}}>L</option>
+            <option value="equipment" {{if eq .Item.Type "equipment"}}selected{{end}}>E</option>
+        </select>
+
+        <!-- Category Input -->
+        <input type="text"
+               name="category"
+               value="{{.Item.Category}}"
+               list="category-list"
+               placeholder="Category"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+               required>
+        <datalist id="category-list">
+            {{range .Categories}}
+            <option value="{{.}}">
+            {{end}}
+        </datalist>
+
+        <!-- Name Input -->
+        <input type="text"
+               name="name"
+               id="edit-template-name-input"
+               value="{{.Item.Name}}"
+               class="col-span-4 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+               autofocus
+               required>
+
+        <!-- Default Unit -->
+        <input type="text"
+               name="default_unit"
+               value="{{.Item.DefaultUnit}}"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+        <!-- Default Price -->
+        <div class="col-span-2 flex items-center border border-slate-300 rounded focus-within:ring-2 focus-within:ring-slate-400 overflow-hidden bg-white">
+            <span class="pl-2 text-slate-500 text-sm shrink-0">$</span>
+            <input type="number"
+                   name="default_price"
+                   value="{{printf "%.2f" .Item.DefaultPrice}}"
+                   step="0.01"
+                   min="0"
+                   class="min-w-0 flex-1 px-1 py-1 text-sm text-right focus:outline-none border-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+        </div>
+
+        <!-- Actions -->
+        <div class="col-span-1 flex gap-1">
+            <button type="submit"
+                    class="px-2 py-1 bg-slate-900 text-white rounded text-xs hover:bg-slate-700">
+                Save
+            </button>
+            <button type="button"
+                    onclick="cancelTemplateEdit()"
+                    class="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs hover:bg-slate-300">
+                X
+            </button>
+        </div>
+    </form>
+</div>
+<script>
+(function() {
+    const form = document.getElementById('edit-template-form');
+    htmx.process(form);
+
+    const nameInput = document.getElementById('edit-template-name-input');
+    if (nameInput) {
+        nameInput.focus();
+        nameInput.select();
+    }
+})();
+
+function cancelTemplateEdit() {
+    window.location.reload();
+}
+</script>
+{{end}}

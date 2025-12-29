@@ -222,3 +222,40 @@ func (q *Queries) SearchItemTemplatesByType(ctx context.Context, arg SearchItemT
 	}
 	return items, nil
 }
+
+const updateItemTemplate = `-- name: UpdateItemTemplate :one
+UPDATE item_templates
+SET type = ?, category = ?, name = ?, default_unit = ?, default_price = ?
+WHERE id = ?
+RETURNING id, type, category, name, default_unit, default_price
+`
+
+type UpdateItemTemplateParams struct {
+	Type         string  `json:"type"`
+	Category     string  `json:"category"`
+	Name         string  `json:"name"`
+	DefaultUnit  string  `json:"default_unit"`
+	DefaultPrice float64 `json:"default_price"`
+	ID           int64   `json:"id"`
+}
+
+func (q *Queries) UpdateItemTemplate(ctx context.Context, arg UpdateItemTemplateParams) (ItemTemplate, error) {
+	row := q.db.QueryRowContext(ctx, updateItemTemplate,
+		arg.Type,
+		arg.Category,
+		arg.Name,
+		arg.DefaultUnit,
+		arg.DefaultPrice,
+		arg.ID,
+	)
+	var i ItemTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Category,
+		&i.Name,
+		&i.DefaultUnit,
+		&i.DefaultPrice,
+	)
+	return i, err
+}

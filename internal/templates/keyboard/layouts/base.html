@@ -78,6 +78,17 @@ tailwind.config = {
     .action-menu {
         min-width: 140px;
     }
+    /* Fix mobile select dropdown positioning */
+    select {
+        -webkit-appearance: menulist;
+        appearance: menulist;
+    }
+    @supports (-webkit-touch-callout: none) {
+        /* iOS-specific fixes */
+        select {
+            font-size: 16px; /* Prevents iOS zoom on focus */
+        }
+    }
 </style>
 {{end}}
 
@@ -91,6 +102,7 @@ tailwind.config = {
         <span class="font-bold tracking-wider">SKALKAHO</span>
     </a>
     <div class="flex items-center gap-4 text-sm">
+        <a href="/items" class="text-slate-400 hover:text-white transition-colors">Items</a>
         <a href="/settings" class="text-slate-400 hover:text-white transition-colors">Settings</a>
         <button onclick="toggleHelp()" class="px-2 py-1 bg-slate-700 rounded text-xs hover:bg-slate-600">
             ? Help
