@@ -3,8 +3,10 @@ package keyboard
 import (
 	"log/slog"
 
+	"github.com/dukerupert/skalkaho/internal/config"
 	"github.com/dukerupert/skalkaho/internal/domain"
 	"github.com/dukerupert/skalkaho/internal/repository"
+	"github.com/dukerupert/skalkaho/internal/service/claude"
 	"github.com/dukerupert/skalkaho/internal/templates/keyboard"
 )
 
@@ -13,14 +15,22 @@ type Handler struct {
 	queries  *repository.Queries
 	renderer *keyboard.Renderer
 	logger   *slog.Logger
+	matcher  *claude.Matcher
+	config   *config.Config
 }
 
 // NewHandler creates a new keyboard UI handler.
-func NewHandler(queries *repository.Queries, renderer *keyboard.Renderer, logger *slog.Logger) *Handler {
+func NewHandler(queries *repository.Queries, renderer *keyboard.Renderer, logger *slog.Logger, cfg *config.Config) *Handler {
+	var matcher *claude.Matcher
+	if cfg.AnthropicAPIKey != "" {
+		matcher = claude.NewMatcher(cfg.AnthropicAPIKey)
+	}
 	return &Handler{
 		queries:  queries,
 		renderer: renderer,
 		logger:   logger,
+		matcher:  matcher,
+		config:   cfg,
 	}
 }
 

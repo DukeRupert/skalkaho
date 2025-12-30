@@ -37,3 +37,6 @@ UPDATE item_templates
 SET type = ?, category = ?, name = ?, default_unit = ?, default_price = ?
 WHERE id = ?
 RETURNING *;
+
+-- name: UpdateItemTemplatePrice :exec
+UPDATE item_templates SET default_price = ? WHERE id = ?;

@@ -72,4 +72,13 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	// Settings
 	mux.HandleFunc("GET /settings", h.GetSettings)
 	mux.HandleFunc("PUT /settings", h.UpdateSettings)
+
+	// Price Import
+	mux.HandleFunc("GET /price-import", h.GetPriceImportPage)
+	mux.HandleFunc("POST /price-import/auth", h.ValidatePriceImportToken)
+	mux.HandleFunc("POST /price-import/upload", h.UploadPriceFile)
+	mux.HandleFunc("GET /price-import/{id}/review", h.GetImportReview)
+	mux.HandleFunc("PUT /price-import/matches/{id}", h.UpdateMatchStatus)
+	mux.HandleFunc("POST /price-import/{id}/bulk-approve", h.BulkApproveMatches)
+	mux.HandleFunc("POST /price-import/{id}/apply", h.ApplyPriceUpdates)
 }

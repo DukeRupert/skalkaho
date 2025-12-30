@@ -66,6 +66,31 @@ type LineItem struct {
 	SortOrder        int64           `json:"sort_order"`
 }
 
+type PriceImport struct {
+	ID           string         `json:"id"`
+	Filename     string         `json:"filename"`
+	Status       string         `json:"status"`
+	TotalRows    int64          `json:"total_rows"`
+	MatchedRows  int64          `json:"matched_rows"`
+	ErrorMessage sql.NullString `json:"error_message"`
+	CreatedAt    string         `json:"created_at"`
+	AppliedAt    sql.NullString `json:"applied_at"`
+}
+
+type PriceImportMatch struct {
+	ID                int64          `json:"id"`
+	ImportID          string         `json:"import_id"`
+	RowNumber         int64          `json:"row_number"`
+	SourceName        string         `json:"source_name"`
+	SourceUnit        sql.NullString `json:"source_unit"`
+	SourcePrice       float64        `json:"source_price"`
+	MatchedTemplateID sql.NullInt64  `json:"matched_template_id"`
+	Confidence        float64        `json:"confidence"`
+	MatchReason       sql.NullString `json:"match_reason"`
+	Status            string         `json:"status"`
+	CreatedAt         string         `json:"created_at"`
+}
+
 type Setting struct {
 	ID                      string  `json:"id"`
 	DefaultSurchargeMode    string  `json:"default_surcharge_mode"`

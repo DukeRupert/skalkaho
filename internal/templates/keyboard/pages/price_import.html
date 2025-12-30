@@ -1,0 +1,143 @@
+{{define "price_import"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head" .}}
+</head>
+<body class="bg-slate-50 pb-12">
+    {{template "header" .}}
+
+    <main class="max-w-4xl mx-auto p-4">
+        <!-- Back link -->
+        <a data-back-url="/" class="hidden"></a>
+
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-4">
+            <a href="/" class="text-copper-700 hover:text-copper-500">Quotes</a>
+            <span>/</span>
+            <span class="text-slate-900 font-medium">Price Import</span>
+        </nav>
+
+        <div class="bg-white rounded-lg border border-slate-200 p-6">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 mb-2">Import Supplier Prices</h1>
+            <p class="text-sm text-slate-500 mb-6">Upload an Excel spreadsheet from a supplier to update item template prices.</p>
+
+            {{if and .RequiresToken (not .IsAuthenticated)}}
+            <!-- Token Authentication Form -->
+            <div class="max-w-md">
+                {{if .TokenError}}
+                <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-sm text-red-700">{{.TokenError}}</p>
+                </div>
+                {{end}}
+
+                <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                        <div>
+                            <h3 class="font-medium text-blue-800">Authentication Required</h3>
+                            <p class="text-sm text-blue-700 mt-1">
+                                This feature requires a secret token to prevent unauthorized API usage.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <form hx-post="/price-import/auth" hx-target="body" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Access Token</label>
+                        <input type="password"
+                               name="token"
+                               required
+                               autocomplete="off"
+                               placeholder="Enter your access token"
+                               class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500/20">
+                    </div>
+                    <button type="submit"
+                            class="inline-flex items-center justify-center rounded-lg bg-copper-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500 focus:ring-offset-2 transition-colors">
+                        Authenticate
+                    </button>
+                </form>
+            </div>
+
+            {{else if not .HasClaudeAPI}}
+            <div class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    <div>
+                        <h3 class="font-medium text-amber-800">API Key Required</h3>
+                        <p class="text-sm text-amber-700 mt-1">
+                            Set the <code class="bg-amber-100 px-1 rounded">ANTHROPIC_API_KEY</code> environment variable to enable AI-powered price matching.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {{else}}
+            <form hx-post="/price-import/upload"
+                  hx-encoding="multipart/form-data"
+                  hx-indicator="#upload-indicator"
+                  class="space-y-6">
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Excel File</label>
+                    <div class="flex items-center gap-4">
+                        <input type="file"
+                               name="file"
+                               accept=".xlsx,.xls"
+                               required
+                               class="block w-full text-sm text-slate-500
+                                      file:mr-4 file:py-2 file:px-4
+                                      file:rounded-lg file:border-0
+                                      file:text-sm file:font-semibold
+                                      file:bg-copper-50 file:text-copper-700
+                                      hover:file:bg-copper-100
+                                      cursor-pointer">
+                    </div>
+                    <p class="mt-2 text-sm text-slate-500">
+                        Upload .xlsx or .xls files. The system will detect columns for item name, unit, and price.
+                    </p>
+                </div>
+
+                <div class="bg-slate-50 rounded-lg p-4">
+                    <h3 class="font-medium text-slate-900 mb-2">How it works</h3>
+                    <ol class="text-sm text-slate-600 space-y-2 list-decimal list-inside">
+                        <li>Upload your supplier's price list Excel file</li>
+                        <li>AI matches items to your existing item templates</li>
+                        <li>High-confidence matches (90%+) are auto-approved</li>
+                        <li>Review uncertain matches and approve or reject</li>
+                        <li>Apply updates to update template prices</li>
+                    </ol>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100">
+                    <button type="submit"
+                            class="inline-flex items-center justify-center rounded-lg bg-copper-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-copper-500 focus:outline-none focus:ring-2 focus:ring-copper-500 focus:ring-offset-2 transition-colors">
+                        <span id="upload-indicator" class="htmx-indicator mr-2">
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                        Upload and Match
+                    </button>
+                    <p class="mt-2 text-xs text-slate-500">
+                        This may take a moment while the AI analyzes your file.
+                    </p>
+                </div>
+            </form>
+            {{end}}
+        </div>
+    </main>
+
+    {{template "footer" .}}
+</body>
+</html>
+{{end}}
+
+{{define "shortcuts"}}
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">esc</kbd> back</span>
+{{end}}

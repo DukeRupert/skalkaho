@@ -56,7 +56,7 @@ func main() {
 	}
 
 	// Initialize handler
-	handler := keyboard.NewHandler(queries, renderer, logger)
+	handler := keyboard.NewHandler(queries, renderer, logger, cfg)
 
 	// Setup router
 	mux := http.NewServeMux()
