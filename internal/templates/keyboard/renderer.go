@@ -49,13 +49,44 @@ func templateFuncs() template.FuncMap {
 	return template.FuncMap{
 		"formatMoney":   formatMoney,
 		"formatPercent": formatPercent,
-		"add":           func(a, b int) int { return a + b },
-		"sub":           func(a, b int) int { return a - b },
+		"add":           add,
+		"sub":           sub,
 		"mul":           func(a, b float64) float64 { return a * b },
 		"eq":            func(a, b interface{}) bool { return a == b },
-		"gt":            func(a, b int) bool { return a > b },
+		"gt":            gt,
 		"typeIndicator": typeIndicator,
 		"dict":          dict,
+	}
+}
+
+// add handles both int and int64 types
+func add(a, b interface{}) int64 {
+	return toInt64(a) + toInt64(b)
+}
+
+// sub handles both int and int64 types
+func sub(a, b interface{}) int64 {
+	return toInt64(a) - toInt64(b)
+}
+
+// gt handles both int and int64 types
+func gt(a, b interface{}) bool {
+	return toInt64(a) > toInt64(b)
+}
+
+// toInt64 converts various numeric types to int64
+func toInt64(v interface{}) int64 {
+	switch n := v.(type) {
+	case int:
+		return int64(n)
+	case int64:
+		return n
+	case int32:
+		return int64(n)
+	case float64:
+		return int64(n)
+	default:
+		return 0
 	}
 }
 

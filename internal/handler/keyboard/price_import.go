@@ -2,7 +2,6 @@ package keyboard
 
 import (
 	"bytes"
-	"context"
 	"crypto/subtle"
 	"database/sql"
 	"net/http"
@@ -146,26 +145,12 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse Excel file
+	// Convert Excel file to text for Claude to parse
 	parser := excel.NewParser()
-	result, err := parser.Parse(file, header.Filename)
+	spreadsheet, err := parser.ParseToText(file, header.Filename)
 	if err != nil {
 		logger.Error("failed to parse excel file", "error", err)
 		http.Error(w, "Failed to parse Excel file: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// Create import record
-	importID := uuid.New().String()
-	_, err = h.queries.CreatePriceImport(ctx, repository.CreatePriceImportParams{
-		ID:        importID,
-		Filename:  header.Filename,
-		Status:    "processing",
-		TotalRows: int64(len(result.Rows)),
-	})
-	if err != nil {
-		logger.Error("failed to create import record", "error", err)
-		http.Error(w, "Failed to create import", http.StatusInternalServerError)
 		return
 	}
 
@@ -173,17 +158,29 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 	templates, err := h.queries.ListItemTemplates(ctx)
 	if err != nil {
 		logger.Error("failed to list templates", "error", err)
-		h.updateImportError(ctx, importID, "Failed to load item templates")
 		http.Error(w, "Failed to load item templates", http.StatusInternalServerError)
 		return
 	}
 
-	// Call Claude API for matching
-	matchResult, err := h.matcher.MatchItems(ctx, result.Rows, templates)
+	// Call Claude API to extract items and match them
+	extractResult, err := h.matcher.ExtractAndMatchItems(ctx, spreadsheet, templates)
 	if err != nil {
-		logger.Error("failed to match items with Claude", "error", err)
-		h.updateImportError(ctx, importID, "AI matching failed: "+err.Error())
-		http.Error(w, "AI matching failed: "+err.Error(), http.StatusInternalServerError)
+		logger.Error("failed to extract and match items with Claude", "error", err)
+		http.Error(w, "AI extraction/matching failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Create import record (now we know actual row count from Claude)
+	importID := uuid.New().String()
+	_, err = h.queries.CreatePriceImport(ctx, repository.CreatePriceImportParams{
+		ID:        importID,
+		Filename:  header.Filename,
+		Status:    "processing",
+		TotalRows: int64(len(extractResult.Items)),
+	})
+	if err != nil {
+		logger.Error("failed to create import record", "error", err)
+		http.Error(w, "Failed to create import", http.StatusInternalServerError)
 		return
 	}
 
@@ -191,53 +188,44 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 	matchedCount := 0
 	autoApproveThreshold := h.config.AutoApproveThreshold
 
-	for _, match := range matchResult.Matches {
-		// Find the corresponding source row
-		var sourceRow excel.Row
-		for _, row := range result.Rows {
-			if row.RowNumber == match.RowNumber {
-				sourceRow = row
-				break
-			}
-		}
-
+	for _, item := range extractResult.Items {
 		status := "pending"
-		if match.Confidence >= autoApproveThreshold && match.TemplateID != nil {
+		if item.Confidence >= autoApproveThreshold && item.TemplateID != nil {
 			status = "auto_approved"
 		}
 
 		var templateID sql.NullInt64
-		if match.TemplateID != nil {
-			templateID = sql.NullInt64{Int64: *match.TemplateID, Valid: true}
+		if item.TemplateID != nil {
+			templateID = sql.NullInt64{Int64: *item.TemplateID, Valid: true}
 		}
 
 		var sourceUnit sql.NullString
-		if sourceRow.Unit != "" {
-			sourceUnit = sql.NullString{String: sourceRow.Unit, Valid: true}
+		if item.Unit != "" {
+			sourceUnit = sql.NullString{String: item.Unit, Valid: true}
 		}
 
 		var matchReason sql.NullString
-		if match.Reason != "" {
-			matchReason = sql.NullString{String: match.Reason, Valid: true}
+		if item.Reason != "" {
+			matchReason = sql.NullString{String: item.Reason, Valid: true}
 		}
 
 		_, err = h.queries.CreatePriceImportMatch(ctx, repository.CreatePriceImportMatchParams{
 			ImportID:          importID,
-			RowNumber:         int64(sourceRow.RowNumber),
-			SourceName:        sourceRow.Name,
+			RowNumber:         int64(item.RowNumber),
+			SourceName:        item.Name,
 			SourceUnit:        sourceUnit,
-			SourcePrice:       sourceRow.Price,
+			SourcePrice:       item.Price,
 			MatchedTemplateID: templateID,
-			Confidence:        match.Confidence,
+			Confidence:        item.Confidence,
 			MatchReason:       matchReason,
 			Status:            status,
 		})
 		if err != nil {
-			logger.Error("failed to create match", "error", err, "row", sourceRow.RowNumber)
+			logger.Error("failed to create match", "error", err, "row", item.RowNumber)
 			continue
 		}
 
-		if match.TemplateID != nil {
+		if item.TemplateID != nil {
 			matchedCount++
 		}
 	}
@@ -258,14 +246,6 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/price-import/"+importID+"/review", http.StatusSeeOther)
-}
-
-func (h *Handler) updateImportError(ctx context.Context, importID string, errMsg string) {
-	_, _ = h.queries.UpdatePriceImportStatus(ctx, repository.UpdatePriceImportStatusParams{
-		ID:           importID,
-		Status:       "failed",
-		ErrorMessage: sql.NullString{String: errMsg, Valid: true},
-	})
 }
 
 // GetImportReview shows the review page for matched items.

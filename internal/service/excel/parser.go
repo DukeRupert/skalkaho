@@ -23,12 +23,57 @@ type ParseResult struct {
 	Filename string
 }
 
+// RawSpreadsheet contains the raw text representation for AI parsing.
+type RawSpreadsheet struct {
+	Content  string
+	Filename string
+}
+
 // Parser handles Excel file parsing.
 type Parser struct{}
 
 // NewParser creates a new Excel parser.
 func NewParser() *Parser {
 	return &Parser{}
+}
+
+// ParseToText reads an Excel file and returns a text representation for AI processing.
+func (p *Parser) ParseToText(r io.Reader, filename string) (*RawSpreadsheet, error) {
+	f, err := excelize.OpenReader(r)
+	if err != nil {
+		return nil, fmt.Errorf("opening excel file: %w", err)
+	}
+	defer f.Close()
+
+	// Get the first sheet
+	sheets := f.GetSheetList()
+	if len(sheets) == 0 {
+		return nil, fmt.Errorf("no sheets found in excel file")
+	}
+	sheetName := sheets[0]
+
+	// Get all rows
+	rows, err := f.GetRows(sheetName)
+	if err != nil {
+		return nil, fmt.Errorf("reading rows: %w", err)
+	}
+
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("no data found in sheet")
+	}
+
+	// Convert to text representation (TSV-like format with row numbers)
+	var sb strings.Builder
+	for i, row := range rows {
+		sb.WriteString(fmt.Sprintf("Row %d: ", i+1))
+		sb.WriteString(strings.Join(row, "\t"))
+		sb.WriteString("\n")
+	}
+
+	return &RawSpreadsheet{
+		Content:  sb.String(),
+		Filename: filename,
+	}, nil
 }
 
 // Parse reads an Excel file and extracts item data.
@@ -73,6 +118,10 @@ func (p *Parser) Parse(r io.Reader, filename string) (*ParseResult, error) {
 		startRow = 0
 	}
 
+	// Track current category for hierarchical spreadsheets
+	// Category rows have a name but no price
+	currentCategory := ""
+
 	for i := startRow; i < len(rows); i++ {
 		row := rows[i]
 		if len(row) == 0 {
@@ -97,14 +146,26 @@ func (p *Parser) Parse(r io.Reader, filename string) (*ParseResult, error) {
 			price = p.parsePrice(row[priceCol])
 		}
 
-		// Only include rows with valid price
+		// Check if this is a category header row (has name but no price)
 		if price <= 0 {
+			// This might be a category header
+			// Only treat as category if it looks like a category name
+			// (not too long, doesn't look like a product with missing price)
+			if len(name) < 50 && !p.looksLikeProduct(name) {
+				currentCategory = name
+			}
 			continue
+		}
+
+		// Build the full item name
+		fullName := name
+		if currentCategory != "" && !strings.HasPrefix(strings.ToLower(name), strings.ToLower(currentCategory)) {
+			fullName = currentCategory + " " + name
 		}
 
 		parsedRows = append(parsedRows, Row{
 			RowNumber: i + 1, // 1-indexed for user display
-			Name:      name,
+			Name:      fullName,
 			Unit:      unit,
 			Price:     price,
 		})
@@ -262,4 +323,33 @@ func (p *Parser) parsePrice(s string) float64 {
 		return 0
 	}
 	return f
+}
+
+// looksLikeProduct checks if a name looks like a product rather than a category.
+// Products typically have specific dimensions, sizes, or detailed descriptions.
+func (p *Parser) looksLikeProduct(name string) bool {
+	nameLower := strings.ToLower(name)
+
+	// Common patterns that indicate a product, not a category
+	productPatterns := []string{
+		"x", // dimensions like 2x4, 4x8
+		"/",  // fractions like 1/2, 3/4
+		"\"", // inches
+		"'",  // feet
+		"ft",
+		"in",
+		"mm",
+		"lb",
+		"oz",
+		"gal",
+		"#",  // size numbers like #8
+	}
+
+	for _, pattern := range productPatterns {
+		if strings.Contains(nameLower, pattern) {
+			return true
+		}
+	}
+
+	return false
 }
