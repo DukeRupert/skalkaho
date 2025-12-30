@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pressly/goose/v3"
 
@@ -23,6 +24,9 @@ import (
 var migrations embed.FS
 
 func main() {
+	// Load .env file if present (ignore error if not found)
+	_ = godotenv.Load()
+
 	// Load configuration
 	cfg := config.Load()
 
