@@ -88,6 +88,7 @@ type PriceImportMatch struct {
 	Confidence        float64        `json:"confidence"`
 	MatchReason       sql.NullString `json:"match_reason"`
 	Status            string         `json:"status"`
+	NewName           sql.NullString `json:"new_name"`
 	CreatedAt         string         `json:"created_at"`
 }
 

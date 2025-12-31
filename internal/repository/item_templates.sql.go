@@ -273,3 +273,18 @@ func (q *Queries) UpdateItemTemplatePrice(ctx context.Context, arg UpdateItemTem
 	_, err := q.db.ExecContext(ctx, updateItemTemplatePrice, arg.DefaultPrice, arg.ID)
 	return err
 }
+
+const updateItemTemplatePriceAndName = `-- name: UpdateItemTemplatePriceAndName :exec
+UPDATE item_templates SET default_price = ?, name = ? WHERE id = ?
+`
+
+type UpdateItemTemplatePriceAndNameParams struct {
+	DefaultPrice float64 `json:"default_price"`
+	Name         string  `json:"name"`
+	ID           int64   `json:"id"`
+}
+
+func (q *Queries) UpdateItemTemplatePriceAndName(ctx context.Context, arg UpdateItemTemplatePriceAndNameParams) error {
+	_, err := q.db.ExecContext(ctx, updateItemTemplatePriceAndName, arg.DefaultPrice, arg.Name, arg.ID)
+	return err
+}

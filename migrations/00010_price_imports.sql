@@ -20,7 +20,8 @@ CREATE TABLE price_import_matches (
     matched_template_id INTEGER REFERENCES item_templates(id),
     confidence REAL NOT NULL DEFAULT 0,
     match_reason TEXT,
-    status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'auto_approved')) DEFAULT 'pending',
+    status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'auto_approved', 'created')) DEFAULT 'pending',
+    new_name TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

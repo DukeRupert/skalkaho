@@ -1,5 +1,5 @@
 {{define "match_row"}}
-<tr id="match-{{.ID}}" class="{{if eq .Status "auto_approved"}}bg-forest-50{{else if eq .Status "approved"}}bg-blue-50{{else if eq .Status "rejected"}}bg-slate-50 opacity-60{{else}}bg-amber-50{{end}}">
+<tr id="match-{{.ID}}" class="{{if eq .Status "auto_approved"}}bg-forest-50{{else if eq .Status "approved"}}bg-blue-50{{else if eq .Status "rejected"}}bg-slate-50 opacity-60{{else if eq .Status "created"}}bg-purple-50{{else}}bg-amber-50{{end}}">
     <td class="px-3 py-3">
         <div class="font-medium text-slate-900 text-sm">{{.SourceName}}</div>
         {{if .SourceUnit.Valid}}
@@ -8,7 +8,12 @@
     </td>
     <td class="px-3 py-3">
         {{if .MatchedTemplateID.Valid}}
-        <div class="font-medium text-slate-900 text-sm">Template #{{.MatchedTemplateID.Int64}}</div>
+        <div class="font-medium text-slate-900 text-sm">
+            {{if .NewName.Valid}}{{.NewName.String}}{{else}}Template #{{.MatchedTemplateID.Int64}}{{end}}
+        </div>
+        {{if eq .Status "created"}}
+        <div class="text-xs text-purple-600">New template created</div>
+        {{end}}
         {{else}}
         <span class="text-sm text-slate-400 italic">No match</span>
         {{end}}
@@ -33,10 +38,12 @@
             {{if eq .Status "auto_approved"}}bg-forest-100 text-forest-700
             {{else if eq .Status "approved"}}bg-blue-100 text-blue-700
             {{else if eq .Status "rejected"}}bg-slate-200 text-slate-600
+            {{else if eq .Status "created"}}bg-purple-100 text-purple-700
             {{else}}bg-amber-100 text-amber-700{{end}}">
             {{if eq .Status "auto_approved"}}Auto
             {{else if eq .Status "approved"}}Approved
             {{else if eq .Status "rejected"}}Rejected
+            {{else if eq .Status "created"}}Created
             {{else}}Pending{{end}}
         </span>
     </td>

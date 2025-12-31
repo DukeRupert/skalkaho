@@ -2,8 +2,11 @@ package keyboard
 
 import (
 	"bytes"
+	"context"
 	"crypto/subtle"
 	"database/sql"
+	"io"
+	"log/slog"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -45,10 +48,35 @@ func (h *Handler) GetPriceImportPage(w http.ResponseWriter, r *http.Request) {
 	// Check if Claude API is configured
 	hasAPI := h.matcher != nil
 
+	// Get list of imports
+	imports, err := h.queries.ListPriceImports(ctx, repository.ListPriceImportsParams{
+		Limit:  20,
+		Offset: 0,
+	})
+	if err != nil {
+		logger.Error("failed to list imports", "error", err)
+		imports = []repository.PriceImport{}
+	}
+
+	// Check if any imports are still processing (for auto-refresh)
+	hasProcessing := false
+	for _, imp := range imports {
+		if imp.Status == "processing" {
+			hasProcessing = true
+			break
+		}
+	}
+
+	// Check for success message
+	successCount := r.URL.Query().Get("success")
+
 	data := map[string]interface{}{
 		"HasClaudeAPI":    hasAPI,
 		"RequiresToken":   requiresToken,
 		"IsAuthenticated": isAuthenticated,
+		"Imports":         imports,
+		"HasProcessing":   hasProcessing,
+		"SuccessCount":    successCount,
 	}
 
 	if err := h.renderer.Render(w, "price_import", data); err != nil {
@@ -145,42 +173,69 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Read file into memory so we can process in background
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		logger.Error("failed to read file", "error", err)
+		http.Error(w, "Failed to read file", http.StatusInternalServerError)
+		return
+	}
+	filename := header.Filename
+
+	// Create import record immediately with "processing" status
+	importID := uuid.New().String()
+	_, err = h.queries.CreatePriceImport(ctx, repository.CreatePriceImportParams{
+		ID:        importID,
+		Filename:  filename,
+		Status:    "processing",
+		TotalRows: 0, // Will be updated after processing
+	})
+	if err != nil {
+		logger.Error("failed to create import record", "error", err)
+		http.Error(w, "Failed to create import", http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("starting background price import processing", "import_id", importID, "filename", filename)
+
+	// Process in background goroutine
+	go h.processImportInBackground(importID, filename, fileBytes, logger)
+
+	// Return immediately to the imports list page
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/price-import")
+		return
+	}
+	http.Redirect(w, r, "/price-import", http.StatusSeeOther)
+}
+
+// processImportInBackground handles the Claude API call and match storage.
+func (h *Handler) processImportInBackground(importID, filename string, fileBytes []byte, logger *slog.Logger) {
+	// Use background context since the request context is gone
+	ctx := context.Background()
+
 	// Convert Excel file to text for Claude to parse
 	parser := excel.NewParser()
-	spreadsheet, err := parser.ParseToText(file, header.Filename)
+	spreadsheet, err := parser.ParseToText(bytes.NewReader(fileBytes), filename)
 	if err != nil {
-		logger.Error("failed to parse excel file", "error", err)
-		http.Error(w, "Failed to parse Excel file: "+err.Error(), http.StatusBadRequest)
+		logger.Error("failed to parse excel file", "error", err, "import_id", importID)
+		h.updateImportError(ctx, importID, "Failed to parse Excel file: "+err.Error())
 		return
 	}
 
 	// Get all item templates for matching
 	templates, err := h.queries.ListItemTemplates(ctx)
 	if err != nil {
-		logger.Error("failed to list templates", "error", err)
-		http.Error(w, "Failed to load item templates", http.StatusInternalServerError)
+		logger.Error("failed to list templates", "error", err, "import_id", importID)
+		h.updateImportError(ctx, importID, "Failed to load item templates")
 		return
 	}
 
 	// Call Claude API to extract items and match them
 	extractResult, err := h.matcher.ExtractAndMatchItems(ctx, spreadsheet, templates)
 	if err != nil {
-		logger.Error("failed to extract and match items with Claude", "error", err)
-		http.Error(w, "AI extraction/matching failed: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Create import record (now we know actual row count from Claude)
-	importID := uuid.New().String()
-	_, err = h.queries.CreatePriceImport(ctx, repository.CreatePriceImportParams{
-		ID:        importID,
-		Filename:  header.Filename,
-		Status:    "processing",
-		TotalRows: int64(len(extractResult.Items)),
-	})
-	if err != nil {
-		logger.Error("failed to create import record", "error", err)
-		http.Error(w, "Failed to create import", http.StatusInternalServerError)
+		logger.Error("failed to extract and match items with Claude", "error", err, "import_id", importID)
+		h.updateImportError(ctx, importID, "AI extraction/matching failed: "+err.Error())
 		return
 	}
 
@@ -221,7 +276,7 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 			Status:            status,
 		})
 		if err != nil {
-			logger.Error("failed to create match", "error", err, "row", item.RowNumber)
+			logger.Error("failed to create match", "error", err, "row", item.RowNumber, "import_id", importID)
 			continue
 		}
 
@@ -230,22 +285,30 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Update import status
+	// Update import status to ready
 	_, err = h.queries.UpdatePriceImportStatus(ctx, repository.UpdatePriceImportStatusParams{
 		ID:          importID,
 		Status:      "ready",
 		MatchedRows: int64(matchedCount),
+		TotalRows:   int64(len(extractResult.Items)),
 	})
 	if err != nil {
-		logger.Error("failed to update import status", "error", err)
-	}
-
-	// Redirect to review page
-	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/price-import/"+importID+"/review")
+		logger.Error("failed to update import status", "error", err, "import_id", importID)
 		return
 	}
-	http.Redirect(w, r, "/price-import/"+importID+"/review", http.StatusSeeOther)
+
+	logger.Info("completed price import processing", "import_id", importID, "total_items", len(extractResult.Items), "matched", matchedCount)
+}
+
+// updateImportError marks an import as failed with an error message.
+func (h *Handler) updateImportError(ctx context.Context, importID string, errMsg string) {
+	_, _ = h.queries.UpdatePriceImportStatus(ctx, repository.UpdatePriceImportStatusParams{
+		ID:           importID,
+		Status:       "failed",
+		ErrorMessage: sql.NullString{String: errMsg, Valid: true},
+		TotalRows:    0,
+		MatchedRows:  0,
+	})
 }
 
 // GetImportReview shows the review page for matched items.
@@ -290,16 +353,25 @@ func (h *Handler) GetImportReview(w http.ResponseWriter, r *http.Request) {
 		"approved":      0,
 		"rejected":      0,
 		"auto_approved": 0,
+		"created":       0,
 	}
 	for _, sc := range statusCounts {
 		counts[sc.Status] = sc.Count
 	}
 
+	// Count unmatched items (pending with no template)
+	unmatched, err := h.queries.ListUnmatchedItems(ctx, importID)
+	if err != nil {
+		logger.Error("failed to count unmatched", "error", err)
+	}
+	unmatchedCount := int64(len(unmatched))
+
 	data := map[string]interface{}{
-		"Import":       priceImport,
-		"Matches":      matches,
-		"StatusCounts": counts,
-		"Threshold":    h.config.AutoApproveThreshold,
+		"Import":         priceImport,
+		"Matches":        matches,
+		"StatusCounts":   counts,
+		"Threshold":      h.config.AutoApproveThreshold,
+		"UnmatchedCount": unmatchedCount,
 	}
 
 	if err := h.renderer.Render(w, "price_import_review", data); err != nil {
@@ -307,7 +379,7 @@ func (h *Handler) GetImportReview(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UpdateMatchStatus approves or rejects a single match.
+// UpdateMatchStatus approves or rejects a single match, optionally with a new name.
 func (h *Handler) UpdateMatchStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
@@ -335,15 +407,114 @@ func (h *Handler) UpdateMatchStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	match, err := h.queries.UpdateMatchStatus(ctx, repository.UpdateMatchStatusParams{
-		ID:     id,
-		Status: status,
-	})
+	// Check if a new name was provided
+	newName := strings.TrimSpace(r.FormValue("new_name"))
+	var match repository.PriceImportMatch
+
+	if newName != "" {
+		match, err = h.queries.UpdateMatchWithName(ctx, repository.UpdateMatchWithNameParams{
+			ID:      id,
+			Status:  status,
+			NewName: sql.NullString{String: newName, Valid: true},
+		})
+	} else {
+		match, err = h.queries.UpdateMatchStatus(ctx, repository.UpdateMatchStatusParams{
+			ID:     id,
+			Status: status,
+		})
+	}
 	if err != nil {
 		logger.Error("failed to update match status", "error", err)
 		http.Error(w, "Failed to update status", http.StatusInternalServerError)
 		return
 	}
+
+	// Return updated row partial
+	if r.Header.Get("HX-Request") == "true" {
+		var buf bytes.Buffer
+		if err := h.renderer.RenderPartial(&buf, "match_row", match); err != nil {
+			logger.Error("failed to render match row", "error", err)
+			http.Error(w, "Failed to render", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write(buf.Bytes())
+		return
+	}
+
+	// Redirect back to review page
+	http.Redirect(w, r, "/price-import/"+match.ImportID+"/review", http.StatusSeeOther)
+}
+
+// CreateTemplateFromMatch creates a new item template from an unmatched import row.
+func (h *Handler) CreateTemplateFromMatch(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+
+	matchID := r.PathValue("id")
+	if matchID == "" {
+		http.Error(w, "Match ID required", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.ParseInt(matchID, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid match ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get form values
+	name := strings.TrimSpace(r.FormValue("name"))
+	unit := strings.TrimSpace(r.FormValue("unit"))
+	category := strings.TrimSpace(r.FormValue("category"))
+	itemType := r.FormValue("type")
+	if itemType == "" {
+		itemType = "material" // default
+	}
+
+	priceStr := r.FormValue("price")
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		http.Error(w, "Invalid price", http.StatusBadRequest)
+		return
+	}
+
+	if name == "" {
+		http.Error(w, "Name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Create the new template
+	template, err := h.queries.CreateItemTemplate(ctx, repository.CreateItemTemplateParams{
+		Type:         itemType,
+		Category:     category,
+		Name:         name,
+		DefaultUnit:  unit,
+		DefaultPrice: price,
+	})
+	if err != nil {
+		logger.Error("failed to create template", "error", err)
+		http.Error(w, "Failed to create template", http.StatusInternalServerError)
+		return
+	}
+
+	// Mark the match as created and link to the new template
+	match, err := h.queries.MarkMatchAsCreated(ctx, repository.MarkMatchAsCreatedParams{
+		ID:                id,
+		MatchedTemplateID: sql.NullInt64{Int64: template.ID, Valid: true},
+	})
+	if err != nil {
+		logger.Error("failed to update match", "error", err)
+		http.Error(w, "Failed to update match", http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("created template from import", "template_id", template.ID, "name", name)
 
 	// Return updated row partial
 	if r.Header.Get("HX-Request") == "true" {
@@ -399,6 +570,70 @@ func (h *Handler) BulkApproveMatches(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/price-import/"+importID+"/review", http.StatusSeeOther)
 }
 
+// BulkCreateTemplates creates new item templates from all unmatched items.
+func (h *Handler) BulkCreateTemplates(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+
+	importID := r.PathValue("id")
+	if importID == "" {
+		http.Error(w, "Import ID required", http.StatusBadRequest)
+		return
+	}
+
+	// Get default type from form or use material
+	itemType := r.FormValue("type")
+	if itemType == "" {
+		itemType = "material"
+	}
+
+	// Get all unmatched items
+	unmatched, err := h.queries.ListUnmatchedItems(ctx, importID)
+	if err != nil {
+		logger.Error("failed to list unmatched items", "error", err)
+		http.Error(w, "Failed to load unmatched items", http.StatusInternalServerError)
+		return
+	}
+
+	// Create templates for each unmatched item
+	createdCount := 0
+	for _, item := range unmatched {
+		// Create the new template
+		template, err := h.queries.CreateItemTemplate(ctx, repository.CreateItemTemplateParams{
+			Type:         itemType,
+			Category:     "", // No category for bulk create
+			Name:         item.SourceName,
+			DefaultUnit:  item.SourceUnit.String,
+			DefaultPrice: item.SourcePrice,
+		})
+		if err != nil {
+			logger.Error("failed to create template", "error", err, "name", item.SourceName)
+			continue
+		}
+
+		// Mark the match as created and link to the new template
+		_, err = h.queries.MarkMatchAsCreated(ctx, repository.MarkMatchAsCreatedParams{
+			ID:                item.ID,
+			MatchedTemplateID: sql.NullInt64{Int64: template.ID, Valid: true},
+		})
+		if err != nil {
+			logger.Error("failed to update match", "error", err, "match_id", item.ID)
+			continue
+		}
+
+		createdCount++
+	}
+
+	logger.Info("bulk created templates from import", "import_id", importID, "created", createdCount)
+
+	// Redirect back to review page
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/price-import/"+importID+"/review")
+		return
+	}
+	http.Redirect(w, r, "/price-import/"+importID+"/review", http.StatusSeeOther)
+}
+
 // ApplyPriceUpdates applies approved matches to item templates.
 func (h *Handler) ApplyPriceUpdates(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -425,12 +660,24 @@ func (h *Handler) ApplyPriceUpdates(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		if err := h.queries.UpdateItemTemplatePrice(ctx, repository.UpdateItemTemplatePriceParams{
-			ID:           match.MatchedTemplateID.Int64,
-			DefaultPrice: match.SourcePrice,
-		}); err != nil {
-			logger.Error("failed to update template price", "error", err, "template_id", match.MatchedTemplateID.Int64)
-			continue
+		// If a new name was specified, update both name and price
+		if match.NewName.Valid && match.NewName.String != "" {
+			if err := h.queries.UpdateItemTemplatePriceAndName(ctx, repository.UpdateItemTemplatePriceAndNameParams{
+				ID:           match.MatchedTemplateID.Int64,
+				DefaultPrice: match.SourcePrice,
+				Name:         match.NewName.String,
+			}); err != nil {
+				logger.Error("failed to update template price and name", "error", err, "template_id", match.MatchedTemplateID.Int64)
+				continue
+			}
+		} else {
+			if err := h.queries.UpdateItemTemplatePrice(ctx, repository.UpdateItemTemplatePriceParams{
+				ID:           match.MatchedTemplateID.Int64,
+				DefaultPrice: match.SourcePrice,
+			}); err != nil {
+				logger.Error("failed to update template price", "error", err, "template_id", match.MatchedTemplateID.Int64)
+				continue
+			}
 		}
 		updatedCount++
 	}

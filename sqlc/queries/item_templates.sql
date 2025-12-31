@@ -40,3 +40,6 @@ RETURNING *;
 
 -- name: UpdateItemTemplatePrice :exec
 UPDATE item_templates SET default_price = ? WHERE id = ?;
+
+-- name: UpdateItemTemplatePriceAndName :exec
+UPDATE item_templates SET default_price = ?, name = ? WHERE id = ?;

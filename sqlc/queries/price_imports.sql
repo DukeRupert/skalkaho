@@ -13,7 +13,7 @@ LIMIT ? OFFSET ?;
 
 -- name: UpdatePriceImportStatus :one
 UPDATE price_imports
-SET status = ?, matched_rows = ?, error_message = ?
+SET status = ?, matched_rows = ?, error_message = ?, total_rows = ?
 WHERE id = ?
 RETURNING *;
 
@@ -62,3 +62,20 @@ SELECT status, COUNT(*) as count
 FROM price_import_matches
 WHERE import_id = ?
 GROUP BY status;
+
+-- name: UpdateMatchWithName :one
+UPDATE price_import_matches
+SET status = ?, new_name = ?
+WHERE id = ?
+RETURNING *;
+
+-- name: ListUnmatchedItems :many
+SELECT * FROM price_import_matches
+WHERE import_id = ? AND matched_template_id IS NULL AND status = 'pending'
+ORDER BY row_number;
+
+-- name: MarkMatchAsCreated :one
+UPDATE price_import_matches
+SET status = 'created', matched_template_id = ?
+WHERE id = ?
+RETURNING *;

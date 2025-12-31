@@ -4,7 +4,7 @@
 <head>
     {{template "head" .}}
 </head>
-<body class="bg-slate-50 pb-12">
+<body class="bg-slate-50 pb-12" {{if .HasProcessing}}hx-get="/price-import" hx-trigger="every 5s" hx-select="main" hx-target="main" hx-swap="outerHTML"{{end}}>
     {{template "header" .}}
 
     <main class="max-w-4xl mx-auto p-4">
@@ -18,7 +18,18 @@
             <span class="text-slate-900 font-medium">Price Import</span>
         </nav>
 
-        <div class="bg-white rounded-lg border border-slate-200 p-6">
+        {{if .SuccessCount}}
+        <div class="mb-4 p-4 bg-forest-50 border border-forest-200 rounded-lg">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-forest-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <p class="text-sm text-forest-800">Successfully updated {{.SuccessCount}} item template prices.</p>
+            </div>
+        </div>
+        {{end}}
+
+        <div class="bg-white rounded-lg border border-slate-200 p-6 mb-6">
             <h1 class="text-2xl font-bold tracking-tight text-slate-900 mb-2">Import Supplier Prices</h1>
             <p class="text-sm text-slate-500 mb-6">Upload an Excel spreadsheet from a supplier to update item template prices.</p>
 
@@ -98,7 +109,7 @@
                                       cursor-pointer">
                     </div>
                     <p class="mt-2 text-sm text-slate-500">
-                        Upload .xlsx or .xls files. The system will detect columns for item name, unit, and price.
+                        Upload .xlsx or .xls files. The AI will detect columns for item name, unit, and price.
                     </p>
                 </div>
 
@@ -106,7 +117,7 @@
                     <h3 class="font-medium text-slate-900 mb-2">How it works</h3>
                     <ol class="text-sm text-slate-600 space-y-2 list-decimal list-inside">
                         <li>Upload your supplier's price list Excel file</li>
-                        <li>AI matches items to your existing item templates</li>
+                        <li>AI extracts items and matches to your templates (runs in background)</li>
                         <li>High-confidence matches (90%+) are auto-approved</li>
                         <li>Review uncertain matches and approve or reject</li>
                         <li>Apply updates to update template prices</li>
@@ -122,15 +133,100 @@
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                         </span>
-                        Upload and Match
+                        Upload File
                     </button>
-                    <p class="mt-2 text-xs text-slate-500">
-                        This may take a moment while the AI analyzes your file.
-                    </p>
                 </div>
             </form>
             {{end}}
         </div>
+
+        {{if .Imports}}
+        <!-- Imports History -->
+        <div class="bg-white rounded-lg border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">Import History</h2>
+
+            {{if .HasProcessing}}
+            <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="text-sm text-blue-700">Processing import... This page will auto-refresh.</span>
+                </div>
+            </div>
+            {{end}}
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead>
+                        <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            <th class="px-3 py-3">Filename</th>
+                            <th class="px-3 py-3">Status</th>
+                            <th class="px-3 py-3 text-right">Items</th>
+                            <th class="px-3 py-3 text-right">Matched</th>
+                            <th class="px-3 py-3">Date</th>
+                            <th class="px-3 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {{range .Imports}}
+                        <tr class="{{if eq .Status "processing"}}bg-blue-50{{else if eq .Status "failed"}}bg-red-50{{end}}">
+                            <td class="px-3 py-3">
+                                <div class="text-sm font-medium text-slate-900">{{.Filename}}</div>
+                            </td>
+                            <td class="px-3 py-3">
+                                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium
+                                    {{if eq .Status "processing"}}bg-blue-100 text-blue-700
+                                    {{else if eq .Status "ready"}}bg-amber-100 text-amber-700
+                                    {{else if eq .Status "applied"}}bg-forest-100 text-forest-700
+                                    {{else if eq .Status "failed"}}bg-red-100 text-red-700
+                                    {{else}}bg-slate-100 text-slate-600{{end}}">
+                                    {{if eq .Status "processing"}}
+                                    <svg class="animate-spin -ml-0.5 mr-1.5 h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Processing
+                                    {{else if eq .Status "ready"}}Ready for Review
+                                    {{else if eq .Status "applied"}}Applied
+                                    {{else if eq .Status "failed"}}Failed
+                                    {{else}}{{.Status}}{{end}}
+                                </span>
+                            </td>
+                            <td class="px-3 py-3 text-right">
+                                <span class="text-sm text-slate-600">{{if gt .TotalRows 0}}{{.TotalRows}}{{else}}-{{end}}</span>
+                            </td>
+                            <td class="px-3 py-3 text-right">
+                                <span class="text-sm text-slate-600">{{if gt .MatchedRows 0}}{{.MatchedRows}}{{else}}-{{end}}</span>
+                            </td>
+                            <td class="px-3 py-3">
+                                <span class="text-sm text-slate-500">{{.CreatedAt}}</span>
+                            </td>
+                            <td class="px-3 py-3 text-right">
+                                {{if eq .Status "ready"}}
+                                <a href="/price-import/{{.ID}}/review"
+                                   class="inline-flex items-center rounded-lg bg-copper-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-copper-500">
+                                    Review
+                                </a>
+                                {{else if eq .Status "applied"}}
+                                <a href="/price-import/{{.ID}}/review"
+                                   class="text-xs text-copper-700 hover:text-copper-500">
+                                    View
+                                </a>
+                                {{else if eq .Status "failed"}}
+                                {{if .ErrorMessage.Valid}}
+                                <span class="text-xs text-red-600" title="{{.ErrorMessage.String}}">Error</span>
+                                {{end}}
+                                {{end}}
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {{end}}
     </main>
 
     {{template "footer" .}}

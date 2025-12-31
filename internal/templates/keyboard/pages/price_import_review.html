@@ -35,6 +35,14 @@
                             Approve All Pending
                         </button>
                     </form>
+                    {{if gt .UnmatchedCount 0}}
+                    <form hx-post="/price-import/{{.Import.ID}}/bulk-create" hx-target="body">
+                        <button type="submit"
+                                class="inline-flex items-center rounded-lg border border-purple-300 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 shadow-sm hover:bg-purple-100">
+                            Create {{.UnmatchedCount}} New Items
+                        </button>
+                    </form>
+                    {{end}}
                     <form hx-post="/price-import/{{.Import.ID}}/apply" hx-target="body">
                         <button type="submit"
                                 class="inline-flex items-center rounded-lg bg-copper-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-copper-500">
@@ -50,7 +58,7 @@
             </div>
 
             <!-- Status Summary -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
                 <div class="bg-forest-50 rounded-lg p-3 text-center">
                     <div class="text-2xl font-bold text-forest-700">{{index .StatusCounts "auto_approved"}}</div>
                     <div class="text-xs text-forest-600">Auto-Approved</div>
@@ -58,6 +66,10 @@
                 <div class="bg-blue-50 rounded-lg p-3 text-center">
                     <div class="text-2xl font-bold text-blue-700">{{index .StatusCounts "approved"}}</div>
                     <div class="text-xs text-blue-600">Approved</div>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-3 text-center">
+                    <div class="text-2xl font-bold text-purple-700">{{index .StatusCounts "created"}}</div>
+                    <div class="text-xs text-purple-600">Created</div>
                 </div>
                 <div class="bg-amber-50 rounded-lg p-3 text-center">
                     <div class="text-2xl font-bold text-amber-700">{{index .StatusCounts "pending"}}</div>
@@ -75,7 +87,7 @@
                     <thead>
                         <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                             <th class="px-3 py-3">Source Item</th>
-                            <th class="px-3 py-3">Matched Template</th>
+                            <th class="px-3 py-3">Template Name</th>
                             <th class="px-3 py-3 text-right">New Price</th>
                             <th class="px-3 py-3 text-right">Old Price</th>
                             <th class="px-3 py-3 text-center">Confidence</th>
@@ -85,7 +97,8 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         {{range .Matches}}
-                        <tr id="match-{{.ID}}" class="{{if eq .Status "auto_approved"}}bg-forest-50{{else if eq .Status "approved"}}bg-blue-50{{else if eq .Status "rejected"}}bg-slate-50 opacity-60{{else if ge .Confidence 0.5}}bg-amber-50{{else}}bg-slate-50{{end}}">
+                        <tr id="match-{{.ID}}" class="{{if eq .Status "auto_approved"}}bg-forest-50{{else if eq .Status "approved"}}bg-blue-50{{else if eq .Status "rejected"}}bg-slate-50 opacity-60{{else if eq .Status "created"}}bg-purple-50{{else if ge .Confidence 0.5}}bg-amber-50{{else}}bg-slate-50{{end}}"
+                            x-data="{ editing: false, creating: false }">
                             <td class="px-3 py-3">
                                 <div class="font-medium text-slate-900 text-sm">{{.SourceName}}</div>
                                 {{if .SourceUnit.Valid}}
@@ -93,13 +106,51 @@
                                 {{end}}
                             </td>
                             <td class="px-3 py-3">
-                                {{if .TemplateName.Valid}}
-                                <div class="font-medium text-slate-900 text-sm">{{.TemplateName.String}}</div>
-                                {{if .TemplateUnit.Valid}}
-                                <div class="text-xs text-slate-500">{{.TemplateUnit.String}}</div>
-                                {{end}}
+                                {{if .MatchedTemplateID.Valid}}
+                                    {{if and (eq $.Import.Status "ready") (eq .Status "pending")}}
+                                    <!-- Editable name for pending matched items -->
+                                    <div x-show="!editing">
+                                        <div class="font-medium text-slate-900 text-sm">{{if .NewName.Valid}}{{.NewName.String}}{{else}}{{.TemplateName.String}}{{end}}</div>
+                                        {{if .TemplateUnit.Valid}}
+                                        <div class="text-xs text-slate-500">{{.TemplateUnit.String}}</div>
+                                        {{end}}
+                                        <button @click="editing = true" class="text-xs text-copper-600 hover:text-copper-800 mt-1">Edit name</button>
+                                    </div>
+                                    <div x-show="editing" x-cloak>
+                                        <input type="text" id="new_name_{{.ID}}" value="{{if .NewName.Valid}}{{.NewName.String}}{{else}}{{.TemplateName.String}}{{end}}"
+                                               class="w-full text-sm border border-slate-300 rounded px-2 py-1 focus:ring-copper-500 focus:border-copper-500">
+                                        <button @click="editing = false" class="text-xs text-slate-500 mt-1">Cancel</button>
+                                    </div>
+                                    {{else}}
+                                    <div class="font-medium text-slate-900 text-sm">{{if .NewName.Valid}}{{.NewName.String}}{{else}}{{.TemplateName.String}}{{end}}</div>
+                                    {{if .TemplateUnit.Valid}}
+                                    <div class="text-xs text-slate-500">{{.TemplateUnit.String}}</div>
+                                    {{end}}
+                                    {{end}}
                                 {{else}}
-                                <span class="text-sm text-slate-400 italic">No match found</span>
+                                    {{if and (eq $.Import.Status "ready") (eq .Status "pending")}}
+                                    <!-- Create new template form for unmatched items -->
+                                    <div x-show="!creating">
+                                        <span class="text-sm text-slate-400 italic">No match found</span>
+                                        <button @click="creating = true" class="block text-xs text-copper-600 hover:text-copper-800 mt-1">Create template</button>
+                                    </div>
+                                    <div x-show="creating" x-cloak class="space-y-1">
+                                        <input type="text" id="create_name_{{.ID}}" value="{{.SourceName}}" placeholder="Name"
+                                               class="w-full text-sm border border-slate-300 rounded px-2 py-1">
+                                        <input type="text" id="create_unit_{{.ID}}" value="{{if .SourceUnit.Valid}}{{.SourceUnit.String}}{{end}}" placeholder="Unit"
+                                               class="w-full text-sm border border-slate-300 rounded px-2 py-1">
+                                        <select id="create_type_{{.ID}}" class="w-full text-sm border border-slate-300 rounded px-2 py-1">
+                                            <option value="material">Material</option>
+                                            <option value="labor">Labor</option>
+                                            <option value="equipment">Equipment</option>
+                                        </select>
+                                        <button @click="creating = false" class="text-xs text-slate-500">Cancel</button>
+                                    </div>
+                                    {{else if eq .Status "created"}}
+                                    <span class="text-sm text-purple-600">Created as new template</span>
+                                    {{else}}
+                                    <span class="text-sm text-slate-400 italic">No match</span>
+                                    {{end}}
                                 {{end}}
                             </td>
                             <td class="px-3 py-3 text-right">
@@ -126,33 +177,69 @@
                                     {{if eq .Status "auto_approved"}}bg-forest-100 text-forest-700
                                     {{else if eq .Status "approved"}}bg-blue-100 text-blue-700
                                     {{else if eq .Status "rejected"}}bg-slate-200 text-slate-600
+                                    {{else if eq .Status "created"}}bg-purple-100 text-purple-700
                                     {{else}}bg-amber-100 text-amber-700{{end}}">
                                     {{if eq .Status "auto_approved"}}Auto
                                     {{else if eq .Status "approved"}}Approved
                                     {{else if eq .Status "rejected"}}Rejected
+                                    {{else if eq .Status "created"}}Created
                                     {{else}}Pending{{end}}
                                 </span>
                             </td>
                             <td class="px-3 py-3 text-right">
-                                {{if and (eq $.Import.Status "ready") (eq .Status "pending") .MatchedTemplateID.Valid}}
-                                <div class="flex items-center justify-end gap-1">
-                                    <form hx-put="/price-import/matches/{{.ID}}" hx-target="#match-{{.ID}}" hx-swap="outerHTML">
-                                        <input type="hidden" name="status" value="approved">
-                                        <button type="submit" class="p-1 text-forest-600 hover:text-forest-800" title="Approve">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                        </button>
-                                    </form>
-                                    <form hx-put="/price-import/matches/{{.ID}}" hx-target="#match-{{.ID}}" hx-swap="outerHTML">
-                                        <input type="hidden" name="status" value="rejected">
-                                        <button type="submit" class="p-1 text-red-600 hover:text-red-800" title="Reject">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                        </button>
-                                    </form>
-                                </div>
+                                {{if and (eq $.Import.Status "ready") (eq .Status "pending")}}
+                                    {{if .MatchedTemplateID.Valid}}
+                                    <!-- Actions for matched items -->
+                                    <div class="flex items-center justify-end gap-1">
+                                        <form hx-put="/price-import/matches/{{.ID}}" hx-target="#match-{{.ID}}" hx-swap="outerHTML"
+                                              @submit="if(editing) { $el.querySelector('[name=new_name]').value = document.getElementById('new_name_{{.ID}}').value }">
+                                            <input type="hidden" name="status" value="approved">
+                                            <input type="hidden" name="new_name" value="">
+                                            <button type="submit" class="p-1 text-forest-600 hover:text-forest-800" title="Approve">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                        <form hx-put="/price-import/matches/{{.ID}}" hx-target="#match-{{.ID}}" hx-swap="outerHTML">
+                                            <input type="hidden" name="status" value="rejected">
+                                            <button type="submit" class="p-1 text-red-600 hover:text-red-800" title="Reject">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {{else}}
+                                    <!-- Actions for unmatched items -->
+                                    <div x-show="creating" class="flex items-center justify-end gap-1">
+                                        <form hx-post="/price-import/matches/{{.ID}}/create-template" hx-target="#match-{{.ID}}" hx-swap="outerHTML"
+                                              @submit="$el.querySelector('[name=name]').value = document.getElementById('create_name_{{.ID}}').value;
+                                                       $el.querySelector('[name=unit]').value = document.getElementById('create_unit_{{.ID}}').value;
+                                                       $el.querySelector('[name=type]').value = document.getElementById('create_type_{{.ID}}').value">
+                                            <input type="hidden" name="name" value="">
+                                            <input type="hidden" name="unit" value="">
+                                            <input type="hidden" name="type" value="">
+                                            <input type="hidden" name="price" value="{{.SourcePrice}}">
+                                            <input type="hidden" name="category" value="">
+                                            <button type="submit" class="p-1 text-purple-600 hover:text-purple-800" title="Create Template">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div x-show="!creating" class="flex items-center justify-end gap-1">
+                                        <form hx-put="/price-import/matches/{{.ID}}" hx-target="#match-{{.ID}}" hx-swap="outerHTML">
+                                            <input type="hidden" name="status" value="rejected">
+                                            <button type="submit" class="p-1 text-red-600 hover:text-red-800" title="Skip">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {{end}}
                                 {{end}}
                             </td>
                         </tr>
