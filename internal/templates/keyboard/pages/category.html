@@ -331,7 +331,20 @@
 
             <!-- Category Total -->
             <div class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
-                <div class="flex justify-between items-center">
+                <!-- Subtotals by type -->
+                {{range $group := .ItemsByType}}
+                {{if gt $group.Subtotal 0}}
+                <div class="flex justify-between items-center py-1">
+                    <span class="text-sm text-slate-600 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-{{$group.Color}}-500"></span>
+                        {{$group.Name}}
+                    </span>
+                    <span class="text-sm tabular-nums text-slate-700">{{formatMoney $group.Subtotal}}</span>
+                </div>
+                {{end}}
+                {{end}}
+                <!-- Grand total -->
+                <div class="flex justify-between items-center pt-2 mt-2 border-t border-slate-200">
                     <span class="text-sm font-medium text-slate-700">Category Total</span>
                     <span class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .CategoryTotal.Total}}</span>
                 </div>
