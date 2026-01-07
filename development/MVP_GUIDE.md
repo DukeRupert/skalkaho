@@ -21,11 +21,15 @@ Skalkaho is a construction quoting SaaS application designed to help small-mediu
 ### Included in MVP
 
 - Build quotes with hierarchical categories
-- Add line items (materials, labor, and equipment)
-- Apply surcharges at job, category, and line-item levels
-- Real-time total calculations
+- Add line items (materials, labor, equipment, and custom types)
+- Custom item types per job (e.g., "Subcontractor", "Permits")
+- Apply surcharges at job, type, category, and line-item levels
+- Per-type surcharge rates (e.g., 20% materials, 10% labor)
+- Real-time total calculations with type breakdowns
 - Configurable surcharge modes (stacking vs. override)
 - Order List and Site Materials reports
+- Excel/CSV price import with AI-powered matching
+- Line item tags for visual grouping within categories
 
 ### Excluded from MVP (Future Phases)
 
@@ -50,6 +54,8 @@ Skalkaho is a construction quoting SaaS application designed to help small-mediu
 Settings (singleton)
     │
     └── provides defaults for ──▶ Job ◀── belongs to ── Client
+                                   │
+                                   ├── has many ──▶ JobItemType (custom types)
                                    │
                                    └── has many ──▶ Category
                                                       │
@@ -90,7 +96,10 @@ The top-level container for a quote.
 | `id` | UUID | PK | Unique identifier |
 | `name` | string | required | e.g., "Smith Kitchen Remodel" |
 | `customer_name` | string | nullable | Legacy field, prefer client_id |
-| `surcharge_percent` | decimal | default: 0 | Job-level surcharge (e.g., 15.0 for 15%) |
+| `surcharge_percent` | decimal | default: 0 | Default surcharge for unset types |
+| `material_surcharge_percent` | decimal | nullable | Material-specific surcharge |
+| `labor_surcharge_percent` | decimal | nullable | Labor-specific surcharge |
+| `equipment_surcharge_percent` | decimal | nullable | Equipment-specific surcharge |
 | `surcharge_mode` | enum | "stacking" \| "override" | How surcharges combine |
 | `status` | enum | "draft" \| "sent" \| "accepted" \| "rejected" | Quote lifecycle status |
 | `expires_at` | timestamp | nullable | Quote expiration date |
@@ -101,6 +110,30 @@ The top-level container for a quote.
 - `surcharge_mode` defaults to value from Settings when creating new jobs
 - `client_id` links to client record; `customer_name` kept for backwards compatibility
 - Client can only be changed when status is "draft"
+- Type-specific surcharges (material, labor, equipment) override the default when set
+- Custom item types have their own surcharge in the JobItemType table
+
+---
+
+### JobItemType
+
+Custom line item types defined per job (beyond the standard material/labor/equipment).
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `id` | UUID | PK | Unique identifier |
+| `job_id` | UUID | FK → Job | Parent job |
+| `name` | string | required | Display name (e.g., "Subcontractor") |
+| `slug` | string | required, unique per job | URL-safe identifier (e.g., "subcontractor") |
+| `color` | string | required | Tailwind color prefix for UI (e.g., "amber") |
+| `sort_order` | int | default: 0 | Display order |
+| `surcharge_percent` | decimal | nullable | Type-specific surcharge |
+| `created_at` | timestamp | auto | Creation timestamp |
+
+**Notes:**
+- Custom types appear alongside standard types (material, labor, equipment)
+- If `surcharge_percent` is null, falls back to job's default `surcharge_percent`
+- Slug must be unique within a job, lowercase alphanumeric with hyphens
 
 ---
 
@@ -142,14 +175,28 @@ Individual materials or labor entries within a category.
 |-------|------|-------------|-------------|
 | `id` | UUID | PK | Unique identifier |
 | `category_id` | UUID | FK → Category | Parent category |
-| `type` | enum | "material" \| "labor" \| "equipment" | Critical for material list generation |
+| `type` | string | required | "material", "labor", "equipment", or custom slug |
 | `name` | string | required | e.g., "2x4 Lumber", "Electrician" |
 | `description` | string | nullable | e.g., "8ft pressure treated" |
 | `quantity` | decimal | required | Supports partial units (e.g., 2.5) |
 | `unit` | string | required | Free-form with UI suggestions |
 | `unit_price` | decimal | required | Price per unit |
-| `surcharge_percent` | decimal | nullable | Null = inherit from category |
+| `surcharge_percent` | decimal | nullable | Null = inherit from type/category |
+| `tag` | string | nullable | Visual grouping label within category |
 | `sort_order` | int | default: 0 | Manual ordering within category |
+
+**Standard Types:**
+- `material` - Physical goods
+- `labor` - Work hours/services
+- `equipment` - Tools and machinery
+
+**Custom Types:**
+- Any slug from job's JobItemType records (e.g., "subcontractor", "permits")
+
+**Tags:**
+- Optional label for visual grouping within a category
+- Items with the same tag are displayed together with indentation
+- Scoped within item type (material tags separate from labor tags)
 
 **Common Units (UI suggestions):**
 - Materials: `ea`, `sqft`, `lnft`, `bundle`, `box`, `bag`, `gal`, `sheet`
@@ -176,23 +223,41 @@ Application-wide defaults. Single row table.
 
 ## Surcharge Calculation Logic
 
+### Type-Based Surcharges
+
+Surcharges are now applied per item type, allowing different markup rates for materials, labor, and equipment:
+
+```
+Job
+├── material_surcharge_percent: 20%
+├── labor_surcharge_percent: 10%
+├── equipment_surcharge_percent: 15%
+└── surcharge_percent: 12% (default for unset types and custom types)
+```
+
+**Resolution Order for Type Surcharge:**
+1. Standard types (material/labor/equipment) use their specific job field if set
+2. Custom types use their `surcharge_percent` from JobItemType if set
+3. Falls back to job's default `surcharge_percent`
+
 ### Inheritance Rules
 
 Surcharges cascade down the hierarchy with explicit values overriding inherited ones:
 
 1. **LineItem** uses its own `surcharge_percent` if set
-2. Otherwise, inherits from parent **Category**
-3. Category inherits from its parent Category (if nested)
-4. Top-level Category inherits from **Job**
+2. Otherwise, inherits from parent **Category** chain
+3. Otherwise, uses **Type-specific surcharge** from Job or JobItemType
+4. Falls back to Job's default `surcharge_percent`
 
 ```
-Job (15%)
-└── Category A (null → inherits 15%)
-    ├── LineItem 1 (null → inherits 15%)
-    └── LineItem 2 (5% → uses 5%)
-└── Category B (10% → uses 10%)
-    └── Subcategory B1 (null → inherits 10%)
-        └── LineItem 3 (null → inherits 10%)
+Job (default: 15%, material: 20%, labor: 10%)
+└── Category A (null → inherits type surcharge)
+    ├── Material Item 1 (null → uses 20%)
+    ├── Labor Item 2 (null → uses 10%)
+    └── Material Item 3 (5% → uses 5%)
+└── Category B (8% → overrides type surcharge)
+    └── Subcategory B1 (null → inherits 8%)
+        └── Material Item 4 (null → uses 8% in override mode)
 ```
 
 ### Surcharge Modes
@@ -202,57 +267,93 @@ Job (15%)
 All applicable surcharges add together:
 
 ```
-Effective Surcharge = Job% + Category% + LineItem%
+Effective Surcharge = TypeSurcharge% + Category% + LineItem%
 ```
 
 **Example:**
-- Job surcharge: 15%
-- Category surcharge: 10%
-- LineItem surcharge: 5%
-- **Total: 30%**
+- Material type surcharge: 20%
+- Category surcharge: 5%
+- LineItem surcharge: 3%
+- **Total: 28%**
 
-A $100 item becomes $130.
+A $100 material item becomes $128.
 
 #### Override Mode
 
 Only the most specific (lowest-level) surcharge applies:
 
 ```
-Effective Surcharge = LineItem% ?? Category% ?? Job%
+Effective Surcharge = LineItem% ?? Category% ?? TypeSurcharge%
 ```
 
 **Example:**
-- Job surcharge: 15%
+- Material type surcharge: 20%
 - Category surcharge: 10%
-- LineItem surcharge: 5%
-- **Total: 5%** (LineItem value used)
+- LineItem surcharge: null
+- **Total: 10%** (Category value used)
 
-A $100 item becomes $105.
+A $100 item becomes $110.
 
 ### Calculation Pseudocode
 
 ```go
-func (li *LineItem) EffectiveSurcharge(job *Job, category *Category) decimal {
+// GetTypeSurcharge returns the surcharge for a specific item type
+func GetTypeSurcharge(job *Job, itemType LineItemType, customTypes []*JobItemType) decimal {
+    switch itemType {
+    case "material":
+        if job.MaterialSurchargePercent != nil {
+            return *job.MaterialSurchargePercent
+        }
+    case "labor":
+        if job.LaborSurchargePercent != nil {
+            return *job.LaborSurchargePercent
+        }
+    case "equipment":
+        if job.EquipmentSurchargePercent != nil {
+            return *job.EquipmentSurchargePercent
+        }
+    default:
+        // Custom type - look up in customTypes
+        for _, ct := range customTypes {
+            if ct.Slug == itemType && ct.SurchargePercent != nil {
+                return *ct.SurchargePercent
+            }
+        }
+    }
+    return job.SurchargePercent // Fall back to default
+}
+
+func (li *LineItem) EffectiveSurcharge(job *Job, categoryChain []*Category, customTypes []*JobItemType) decimal {
     if job.SurchargeMode == "override" {
         // Most specific non-null value wins
         if li.SurchargePercent != nil {
             return *li.SurchargePercent
         }
-        return category.ResolveSurcharge(job) // walks up tree
+        // Walk category chain from deepest to shallowest
+        for i := len(categoryChain) - 1; i >= 0; i-- {
+            if categoryChain[i].SurchargePercent != nil {
+                return *categoryChain[i].SurchargePercent
+            }
+        }
+        return GetTypeSurcharge(job, li.Type, customTypes)
     }
-    
+
     // Stacking mode - sum all levels
-    total := job.SurchargePercent
-    total += category.StackedSurcharge() // sums category + ancestors
+    total := GetTypeSurcharge(job, li.Type, customTypes)
+    for _, cat := range categoryChain {
+        if cat.SurchargePercent != nil {
+            total += *cat.SurchargePercent
+        }
+    }
     if li.SurchargePercent != nil {
         total += *li.SurchargePercent
     }
     return total
 }
 
-func (li *LineItem) FinalPrice(job *Job, category *Category) decimal {
+func (li *LineItem) FinalPrice(job *Job, categoryChain []*Category, customTypes []*JobItemType) decimal {
     base := li.Quantity * li.UnitPrice
-    surcharge := li.EffectiveSurcharge(job, category)
+    surcharge := li.EffectiveSurcharge(job, categoryChain, customTypes)
     return base * (1 + surcharge / 100)
 }
 ```
@@ -280,9 +381,13 @@ The UI should display:
 - **Total Surcharges**: JobTotal - Subtotal
 - **Grand Total**: JobTotal
 
-Optionally break down by type:
-- **Materials Subtotal**: Sum of LineItems where type = "material"
-- **Labor Subtotal**: Sum of LineItems where type = "labor"
+**Type Breakdown** (displayed on job and category pages):
+- **Materials Total**: Sum of final prices for type = "material"
+- **Labor Total**: Sum of final prices for type = "labor"
+- **Equipment Total**: Sum of final prices for type = "equipment"
+- **Custom Type Totals**: Sum of final prices for each custom type
+
+Line items are grouped by type in category view, with each type displayed in its own card/section.
 
 ---
 
@@ -468,3 +573,4 @@ type LineItem struct {
 | 2024-12-22 | 0.1 | Initial MVP specification |
 | 2025-12-27 | 0.2 | MVP complete - added equipment type, reports |
 | 2025-12-28 | 0.3 | Added client management, quote status, item templates |
+| 2026-01-07 | 0.4 | Added custom item types, per-type markup, line item tags, Excel import |

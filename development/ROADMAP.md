@@ -12,9 +12,12 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 - [x] Quote management (create, rename, delete)
 - [x] Hierarchical categories (up to 3 levels deep)
 - [x] Line items: materials, labor, equipment
-- [x] Surcharge system with inheritance (job → category → item)
+- [x] Custom item types per job (e.g., "Subcontractor", "Permits")
+- [x] Surcharge system with inheritance (job → type → category → item)
+- [x] Per-type surcharge rates (material: 20%, labor: 10%, etc.)
 - [x] Surcharge modes: stacking and override
-- [x] Real-time total calculations
+- [x] Real-time total calculations with type breakdowns
+- [x] Line item tags for visual grouping within categories
 - [x] Settings page for defaults
 - [x] Quote status tracking (draft, sent, accepted, rejected)
 - [x] Quote pagination with filtering by status
@@ -36,6 +39,11 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 ### Reports
 - [x] Order List - aggregated materials/equipment for entire quote
 - [x] Site Materials - materials/equipment by category
+
+### Data Import
+- [x] Excel/CSV price import with AI-powered matching
+- [x] Claude AI spreadsheet parsing for flexible formats
+- [x] Background processing for bulk imports
 
 ### UI/UX
 - [x] Keyboard-driven interface (vim-style navigation)
@@ -79,7 +87,7 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 |---------|----------|-------|
 | Labor rate presets | High | Common labor types with rates |
 | Category templates | Medium | Reusable category structures |
-| Supplier price imports | Low | CSV/Excel import for pricing |
+| ~~Supplier price imports~~ | ~~Low~~ | ~~CSV/Excel import for pricing~~ Done with AI |
 
 ---
 
@@ -118,3 +126,4 @@ The MVP is functionally complete and deployed. Core quoting functionality is wor
 |------|-------|
 | 2025-12-27 | Initial roadmap - MVP feature complete |
 | 2025-12-28 | Added client management, quote status, item templates, touch UI |
+| 2026-01-07 | Added custom item types, per-type markup, line item tags, AI-powered Excel import |
