@@ -21,8 +21,9 @@
 {{define "tree_node"}}
 {{$isActive := eq .Node.ID .CurrentID}}
 {{$hasChildren := gt (len .Node.Children) 0}}
-<li>
+<li x-data="{ contextMenu: false, menuX: 0, menuY: 0 }" class="relative">
     <a href="/categories/{{.Node.ID}}"
+       @contextmenu.prevent="menuX = $event.clientX; menuY = $event.clientY; contextMenu = true"
        class="flex items-center gap-1.5 px-2 py-1 rounded transition-colors
               {{if $isActive}}bg-slate-900 text-white{{else}}text-slate-700 hover:bg-slate-100{{end}}">
         {{if eq .Depth 0}}
@@ -36,6 +37,35 @@
         {{end}}
         <span class="truncate">{{.Node.Name}}</span>
     </a>
+    <!-- Right-click Context Menu -->
+    <div x-show="contextMenu"
+         x-cloak
+         x-transition:enter="transition ease-out duration-100"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100"
+         x-transition:leave="transition ease-in duration-75"
+         x-transition:leave-start="opacity-100 scale-100"
+         x-transition:leave-end="opacity-0 scale-95"
+         @click.away="contextMenu = false"
+         @keydown.escape.window="contextMenu = false"
+         :style="'position: fixed; left: ' + menuX + 'px; top: ' + menuY + 'px;'"
+         class="bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-[100] min-w-[140px]">
+        <a href="/categories/{{.Node.ID}}"
+           class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+            Enter
+        </a>
+        <button
+            @click="if(confirm('Delete this category and all its contents?')) { htmx.ajax('DELETE', '/categories/{{.Node.ID}}', {target: 'body'}); } contextMenu = false;"
+            class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Delete
+        </button>
+    </div>
     {{if $hasChildren}}
     <ul class="ml-3 mt-1 space-y-1 border-l border-slate-200 pl-2">
         {{$currentID := .CurrentID}}
