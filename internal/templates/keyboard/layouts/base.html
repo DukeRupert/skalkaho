@@ -265,11 +265,16 @@ function toggleHelp() {
 }
 
 function showInlineForm(type) {
-    const container = document.getElementById('inline-form-container');
+    // Try type-specific container first, fall back to generic container
+    let container = document.getElementById('inline-form-container-' + type);
+    if (!container) {
+        container = document.getElementById('inline-form-container');
+    }
     if (!container) return;
 
     const categoryID = container.dataset.categoryId;
-    htmx.ajax('GET', `/categories/${categoryID}/form?type=${type}`, {target: '#inline-form-container', swap: 'innerHTML'}).then(() => {
+    const targetId = container.id;
+    htmx.ajax('GET', `/categories/${categoryID}/form?type=${type}`, {target: '#' + targetId, swap: 'innerHTML'}).then(() => {
         htmx.process(container);
         const input = container.querySelector('input[name="name"]');
         if (input) input.focus();
@@ -278,10 +283,17 @@ function showInlineForm(type) {
 }
 
 function hideInlineForm() {
-    const container = document.getElementById('inline-form-container');
-    if (container) {
-        container.innerHTML = '';
-    }
+    // Clear all type-specific containers and generic container
+    const types = ['material', 'labor', 'equipment'];
+    types.forEach(t => {
+        const container = document.getElementById('inline-form-container-' + t);
+        if (container) container.innerHTML = '';
+    });
+    // Also clear any custom type containers
+    document.querySelectorAll('[id^="inline-form-container-"]').forEach(c => c.innerHTML = '');
+    // And the generic container if it exists
+    const generic = document.getElementById('inline-form-container');
+    if (generic) generic.innerHTML = '';
     formActive = false;
 }
 

@@ -3,6 +3,7 @@ package keyboard
 import (
 	"bytes"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,6 +11,56 @@ import (
 	"github.com/dukerupert/skalkaho/internal/repository"
 	"github.com/google/uuid"
 )
+
+// ItemTypeGroup represents a group of line items of the same type.
+type ItemTypeGroup struct {
+	Slug     string
+	Name     string
+	Color    string
+	Hotkey   string
+	Items    []repository.LineItem
+	Subtotal float64
+}
+
+// groupItemsByType organizes line items into groups by their type.
+// Standard types (material, labor, equipment) are always included.
+// Custom types are included if they exist for the job.
+func groupItemsByType(items []repository.LineItem, customTypes []repository.JobItemType) []ItemTypeGroup {
+	// Initialize standard type groups (always shown)
+	groups := []ItemTypeGroup{
+		{Slug: "material", Name: "Materials", Color: "forest", Hotkey: "m", Items: []repository.LineItem{}, Subtotal: 0},
+		{Slug: "labor", Name: "Labor", Color: "copper", Hotkey: "l", Items: []repository.LineItem{}, Subtotal: 0},
+		{Slug: "equipment", Name: "Equipment", Color: "slate", Hotkey: "e", Items: []repository.LineItem{}, Subtotal: 0},
+	}
+
+	// Add custom type groups
+	for i, ct := range customTypes {
+		groups = append(groups, ItemTypeGroup{
+			Slug:     ct.Slug,
+			Name:     ct.Name,
+			Color:    ct.Color,
+			Hotkey:   fmt.Sprintf("%d", i+1),
+			Items:    []repository.LineItem{},
+			Subtotal: 0,
+		})
+	}
+
+	// Create a map for quick lookup
+	groupIndex := make(map[string]int)
+	for i, g := range groups {
+		groupIndex[g.Slug] = i
+	}
+
+	// Distribute items into groups
+	for _, item := range items {
+		if idx, ok := groupIndex[item.Type]; ok {
+			groups[idx].Items = append(groups[idx].Items, item)
+			groups[idx].Subtotal += item.Quantity * item.UnitPrice
+		}
+	}
+
+	return groups
+}
 
 // GetCategoryMarkupForm returns an inline form for editing category markup.
 func (h *Handler) GetCategoryMarkupForm(w http.ResponseWriter, r *http.Request) {
@@ -362,11 +413,15 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 		customTypes = []repository.JobItemType{} // Continue with empty list
 	}
 
+	// Group items by type for sectioned display
+	itemsByType := groupItemsByType(categoryItems, customTypes)
+
 	data := map[string]interface{}{
 		"Job":               job,
 		"Category":          category,
 		"Subcategories":     subcatsWithTotals,
 		"Items":             categoryItems,
+		"ItemsByType":       itemsByType,
 		"Breadcrumbs":       breadcrumbs,
 		"Depth":             depth,
 		"CanAddSubcategory": canAddSubcategory(depth),

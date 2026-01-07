@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"strings"
 )
 
 //go:embed layouts/*.html pages/*.html partials/*.html
@@ -56,6 +57,7 @@ func templateFuncs() template.FuncMap {
 		"gt":            gt,
 		"typeIndicator": typeIndicator,
 		"dict":          dict,
+		"lower":         strings.ToLower,
 	}
 }
 

@@ -206,70 +206,35 @@
             </div>
             {{end}}
 
-            <!-- Items Section -->
-            <div class="flex items-center justify-between mb-2">
-                <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-700">Items</h2>
-                <div class="flex items-center gap-3">
-                    <span class="hidden sm:inline text-sm text-slate-500">
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd> material
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">l</kbd> labor
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">e</kbd> equipment
-                        {{range $i, $ct := .CustomTypes}}
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">{{add $i 1}}</kbd> {{$ct.Name}}
-                        {{end}}
-                    </span>
-                    <!-- Mobile: Item type buttons -->
-                    <div class="sm:hidden flex gap-1" x-data="{ open: false }">
+            <!-- Item Type Sections -->
+            {{$subcatCount := len .Subcategories}}
+            {{$globalIndex := 0}}
+            {{range $gi, $group := .ItemsByType}}
+            <div class="mb-4">
+                <!-- Section Header -->
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-sm font-semibold tracking-wide uppercase text-slate-700 flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-{{$group.Color}}-500"></span>
+                        {{$group.Name}}
+                    </h2>
+                    <div class="flex items-center gap-3">
+                        <span class="hidden sm:inline text-sm text-slate-500">
+                            <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">{{$group.Hotkey}}</kbd> add
+                        </span>
+                        <!-- Mobile: Add button for this type -->
                         <button
-                            @click="open = !open"
-                            class="touch-action px-3 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors">
+                            onclick="showInlineForm('{{$group.Slug}}')"
+                            class="sm:hidden touch-action px-2 py-1 bg-{{$group.Color}}-600 hover:bg-{{$group.Color}}-700 text-white text-sm font-medium rounded-lg flex items-center gap-1 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
                         </button>
-                        <div
-                            x-show="open"
-                            x-cloak
-                            x-transition
-                            @click.away="open = false"
-                            class="action-menu absolute right-4 mt-12 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
-                            <button
-                                @click="showInlineForm('material'); open = false"
-                                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-forest-700 hover:bg-forest-50">
-                                <span class="w-3 h-3 rounded-full bg-forest-500"></span>
-                                Material
-                            </button>
-                            <button
-                                @click="showInlineForm('labor'); open = false"
-                                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-copper-700 hover:bg-copper-50">
-                                <span class="w-3 h-3 rounded-full bg-copper-500"></span>
-                                Labor
-                            </button>
-                            <button
-                                @click="showInlineForm('equipment'); open = false"
-                                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                                <span class="w-3 h-3 rounded-full bg-slate-500"></span>
-                                Equipment
-                            </button>
-                            {{if .CustomTypes}}
-                            <div class="border-t border-slate-200 my-1"></div>
-                            {{range .CustomTypes}}
-                            <button
-                                @click="showInlineForm('{{.Slug}}'); open = false"
-                                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-{{.Color}}-700 hover:bg-{{.Color}}-50">
-                                <span class="w-3 h-3 rounded-full bg-{{.Color}}-500"></span>
-                                {{.Name}}
-                            </button>
-                            {{end}}
-                            {{end}}
-                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="bg-white rounded-lg border border-slate-200">
-                {{if .Items}}
-                <div id="items-list">
+                <!-- Items Card -->
+                <div class="bg-white rounded-lg border border-slate-200">
+                    {{if $group.Items}}
                     <!-- Header row - hidden on mobile -->
                     <div class="hidden sm:grid px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs font-medium tracking-wider uppercase text-slate-500 grid-cols-12 gap-2">
                         <span class="col-span-5">Name</span>
@@ -278,12 +243,9 @@
                         <span class="col-span-2 text-right">Price</span>
                         <span class="col-span-1 text-right">Total</span>
                     </div>
-                    {{$subcatCount := len .Subcategories}}
-                    {{range $i, $item := .Items}}
-                    {{$bgColor := "bg-slate-100"}}
-                    {{if eq $item.Type "material"}}{{$bgColor = "bg-forest-50"}}{{else if eq $item.Type "labor"}}{{$bgColor = "bg-copper-50"}}{{else if eq $item.Type "equipment"}}{{$bgColor = "bg-slate-100"}}{{else}}{{range $.CustomTypes}}{{if eq .Slug $item.Type}}{{$bgColor = printf "bg-%s-50" .Color}}{{end}}{{end}}{{end}}
-                    <div class="row flex items-center border-b border-slate-100 last:border-b-0 cursor-pointer hover:brightness-95 {{$bgColor}}"
-                         data-index="{{add $subcatCount $i}}"
+                    {{range $i, $item := $group.Items}}
+                    <div class="row flex items-center border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-{{$group.Color}}-100"
+                         data-index="{{add $subcatCount $globalIndex}}"
                          data-item-id="{{$item.ID}}"
                          data-delete-url="/items/{{$item.ID}}"
                          id="item-row-{{$item.ID}}">
@@ -345,24 +307,27 @@
                             </div>
                         </div>
                     </div>
+                    {{$globalIndex = add $globalIndex 1}}
                     {{end}}
-                </div>
-                {{else}}
-                <div class="px-4 py-8 text-center text-slate-500">
-                    <p>No items yet.</p>
-                    <p class="hidden sm:block text-sm mt-2">
-                        Press <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd> for material,
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd> for labor,
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> for equipment{{if .CustomTypes}},{{range $i, $ct := .CustomTypes}}
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">{{add $i 1}}</kbd> for {{$ct.Name}}{{if not (eq (add $i 1) (len $.CustomTypes))}},{{end}}{{end}}{{end}}.
-                    </p>
-                    <p class="sm:hidden text-sm mt-2">Tap + above to add an item.</p>
-                </div>
-                {{end}}
+                    <!-- Subtotal row -->
+                    <div class="px-4 py-2 bg-{{$group.Color}}-50 border-t border-slate-200">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm font-medium text-slate-600">Subtotal</span>
+                            <span class="text-sm font-semibold tabular-nums text-slate-900">{{formatMoney $group.Subtotal}}</span>
+                        </div>
+                    </div>
+                    {{else}}
+                    <div class="px-4 py-4 text-center text-slate-400 text-sm">
+                        <span class="hidden sm:inline">No {{lower $group.Name}} yet. Press <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">{{$group.Hotkey}}</kbd> to add.</span>
+                        <span class="sm:hidden">No {{lower $group.Name}} yet.</span>
+                    </div>
+                    {{end}}
 
-                <!-- Inline Form Container -->
-                <div id="inline-form-container" data-category-id="{{.Category.ID}}"></div>
+                    <!-- Inline Form Container for this type -->
+                    <div id="inline-form-container-{{$group.Slug}}" data-category-id="{{$.Category.ID}}"></div>
+                </div>
             </div>
+            {{end}}
 
             <!-- Category Total -->
             <div class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
