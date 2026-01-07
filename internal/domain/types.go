@@ -81,6 +81,7 @@ type LineItem struct {
 	UnitPrice        float64      `json:"unit_price"`
 	SurchargePercent *float64     `json:"surcharge_percent,omitempty"`
 	SortOrder        int          `json:"sort_order"`
+	Tag              *string      `json:"tag,omitempty"`
 }
 
 // BasePrice calculates quantity * unit_price.

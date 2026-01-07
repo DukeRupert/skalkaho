@@ -1,6 +1,6 @@
 -- name: CreateLineItem :one
-INSERT INTO line_items (id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO line_items (id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetLineItem :one
@@ -27,7 +27,8 @@ UPDATE line_items SET
     unit = ?,
     unit_price = ?,
     surcharge_percent = ?,
-    sort_order = ?
+    sort_order = ?,
+    tag = ?
 WHERE id = ?
 RETURNING *;
 

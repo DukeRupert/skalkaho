@@ -5,7 +5,7 @@
           class="grid grid-cols-12 gap-2 items-center"
           id="edit-item-form">
 
-        <div class="col-span-5">
+        <div class="col-span-3">
             <input type="text"
                    name="name"
                    id="edit-name-input"
@@ -14,6 +14,19 @@
                    autofocus
                    required>
         </div>
+
+        <input type="text"
+               name="tag"
+               id="edit-tag"
+               value="{{if .Item.Tag.Valid}}{{.Item.Tag.String}}{{end}}"
+               list="existing-tags"
+               placeholder="Tag"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+        <datalist id="existing-tags">
+            {{range .ExistingTags}}
+            <option value="{{.}}">
+            {{end}}
+        </datalist>
 
         <input type="number"
                name="quantity"

@@ -6,17 +6,29 @@
           id="inline-item-form">
         <input type="hidden" name="type" value="{{.Type}}">
 
-        <div class="col-span-5 relative">
+        <div class="col-span-3 relative">
             <input type="text"
                    name="name"
                    id="item-name-input"
-                   placeholder="Search or enter name..."
+                   placeholder="Name..."
                    class="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
                    autocomplete="off"
                    autofocus
                    required>
             <div id="autocomplete-container"></div>
         </div>
+
+        <input type="text"
+               name="tag"
+               id="item-tag"
+               list="existing-tags"
+               placeholder="Tag"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+        <datalist id="existing-tags">
+            {{range .ExistingTags}}
+            <option value="{{.}}">
+            {{end}}
+        </datalist>
 
         <input type="number"
                name="quantity"

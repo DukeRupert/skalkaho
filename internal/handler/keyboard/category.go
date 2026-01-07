@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/dukerupert/skalkaho/internal/middleware"
@@ -12,14 +13,22 @@ import (
 	"github.com/google/uuid"
 )
 
-// ItemTypeGroup represents a group of line items of the same type.
-type ItemTypeGroup struct {
-	Slug     string
-	Name     string
-	Color    string
-	Hotkey   string
+// TagGroup represents a group of items with the same tag within a type group.
+type TagGroup struct {
+	Tag      string // Empty string for untagged items
 	Items    []repository.LineItem
 	Subtotal float64
+}
+
+// ItemTypeGroup represents a group of line items of the same type.
+type ItemTypeGroup struct {
+	Slug      string
+	Name      string
+	Color     string
+	Hotkey    string
+	Items     []repository.LineItem
+	TagGroups []TagGroup
+	Subtotal  float64
 }
 
 // groupItemsByType organizes line items into groups by their type.
@@ -28,20 +37,21 @@ type ItemTypeGroup struct {
 func groupItemsByType(items []repository.LineItem, customTypes []repository.JobItemType) []ItemTypeGroup {
 	// Initialize standard type groups (always shown)
 	groups := []ItemTypeGroup{
-		{Slug: "material", Name: "Materials", Color: "forest", Hotkey: "m", Items: []repository.LineItem{}, Subtotal: 0},
-		{Slug: "labor", Name: "Labor", Color: "copper", Hotkey: "l", Items: []repository.LineItem{}, Subtotal: 0},
-		{Slug: "equipment", Name: "Equipment", Color: "slate", Hotkey: "e", Items: []repository.LineItem{}, Subtotal: 0},
+		{Slug: "material", Name: "Materials", Color: "forest", Hotkey: "m", Items: []repository.LineItem{}, TagGroups: []TagGroup{}, Subtotal: 0},
+		{Slug: "labor", Name: "Labor", Color: "copper", Hotkey: "l", Items: []repository.LineItem{}, TagGroups: []TagGroup{}, Subtotal: 0},
+		{Slug: "equipment", Name: "Equipment", Color: "slate", Hotkey: "e", Items: []repository.LineItem{}, TagGroups: []TagGroup{}, Subtotal: 0},
 	}
 
 	// Add custom type groups
 	for i, ct := range customTypes {
 		groups = append(groups, ItemTypeGroup{
-			Slug:     ct.Slug,
-			Name:     ct.Name,
-			Color:    ct.Color,
-			Hotkey:   fmt.Sprintf("%d", i+1),
-			Items:    []repository.LineItem{},
-			Subtotal: 0,
+			Slug:      ct.Slug,
+			Name:      ct.Name,
+			Color:     ct.Color,
+			Hotkey:    fmt.Sprintf("%d", i+1),
+			Items:     []repository.LineItem{},
+			TagGroups: []TagGroup{},
+			Subtotal:  0,
 		})
 	}
 
@@ -59,7 +69,63 @@ func groupItemsByType(items []repository.LineItem, customTypes []repository.JobI
 		}
 	}
 
+	// Organize each group's items into tag subgroups
+	for i := range groups {
+		groups[i].TagGroups = organizeByTag(groups[i].Items)
+	}
+
 	return groups
+}
+
+// organizeByTag groups items by their tag, with untagged items first.
+func organizeByTag(items []repository.LineItem) []TagGroup {
+	if len(items) == 0 {
+		return nil
+	}
+
+	// Map to collect items by tag
+	tagMap := make(map[string][]repository.LineItem)
+	var tags []string
+
+	for _, item := range items {
+		tag := ""
+		if item.Tag.Valid {
+			tag = item.Tag.String
+		}
+
+		if _, exists := tagMap[tag]; !exists {
+			tags = append(tags, tag)
+		}
+		tagMap[tag] = append(tagMap[tag], item)
+	}
+
+	// Sort tags: empty string (untagged) first, then alphabetically
+	sort.Slice(tags, func(i, j int) bool {
+		if tags[i] == "" {
+			return true
+		}
+		if tags[j] == "" {
+			return false
+		}
+		return tags[i] < tags[j]
+	})
+
+	// Build tag groups
+	var tagGroups []TagGroup
+	for _, tag := range tags {
+		tagItems := tagMap[tag]
+		subtotal := 0.0
+		for _, item := range tagItems {
+			subtotal += item.Quantity * item.UnitPrice
+		}
+		tagGroups = append(tagGroups, TagGroup{
+			Tag:      tag,
+			Items:    tagItems,
+			Subtotal: subtotal,
+		})
+	}
+
+	return tagGroups
 }
 
 // GetCategoryMarkupForm returns an inline form for editing category markup.
@@ -219,8 +285,19 @@ func (h *Handler) GetEditForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch existing items to get tags for autocomplete
+	items, err := h.queries.ListLineItemsByCategory(ctx, item.CategoryID)
+	if err != nil {
+		logger.Error("failed to list items for tags", "error", err)
+		items = []repository.LineItem{} // Continue with empty list
+	}
+
+	// Filter tags for this type only
+	existingTags := extractUniqueTagsForType(items, item.Type)
+
 	data := map[string]interface{}{
-		"Item": item,
+		"Item":         item,
+		"ExistingTags": existingTags,
 	}
 
 	var buf bytes.Buffer
@@ -269,6 +346,12 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 		unit = item.Unit
 	}
 
+	tag := r.FormValue("tag")
+	var tagParam sql.NullString
+	if tag != "" {
+		tagParam = sql.NullString{String: tag, Valid: true}
+	}
+
 	_, err = h.queries.UpdateLineItem(ctx, repository.UpdateLineItemParams{
 		ID:               itemID,
 		Type:             item.Type,
@@ -279,6 +362,7 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 		UnitPrice:        unitPrice,
 		SurchargePercent: item.SurchargePercent,
 		SortOrder:        item.SortOrder,
+		Tag:              tagParam,
 	})
 	if err != nil {
 		logger.Error("failed to update line item", "error", err)
@@ -593,6 +677,12 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 		itemType = "material"
 	}
 
+	tag := r.FormValue("tag")
+	var tagParam sql.NullString
+	if tag != "" {
+		tagParam = sql.NullString{String: tag, Valid: true}
+	}
+
 	_, err := h.queries.CreateLineItem(ctx, repository.CreateLineItemParams{
 		ID:               uuid.New().String(),
 		CategoryID:       categoryID,
@@ -604,6 +694,7 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 		UnitPrice:        unitPrice,
 		SurchargePercent: sql.NullFloat64{},
 		SortOrder:        0,
+		Tag:              tagParam,
 	})
 	if err != nil {
 		logger.Error("failed to create line item", "error", err)
@@ -666,10 +757,21 @@ func (h *Handler) GetInlineForm(w http.ResponseWriter, r *http.Request) {
 		defaultUnit = "day"
 	}
 
+	// Fetch existing items to get tags for autocomplete
+	items, err := h.queries.ListLineItemsByCategory(ctx, categoryID)
+	if err != nil {
+		logger.Error("failed to list items for tags", "error", err)
+		items = []repository.LineItem{} // Continue with empty list
+	}
+
+	// Filter tags for this type only (tags are scoped within types)
+	existingTags := extractUniqueTagsForType(items, itemType)
+
 	data := map[string]interface{}{
-		"CategoryID":  categoryID,
-		"Type":        itemType,
-		"DefaultUnit": defaultUnit,
+		"CategoryID":   categoryID,
+		"Type":         itemType,
+		"DefaultUnit":  defaultUnit,
+		"ExistingTags": existingTags,
 	}
 
 	var buf bytes.Buffer
@@ -681,6 +783,23 @@ func (h *Handler) GetInlineForm(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write(buf.Bytes())
+}
+
+// extractUniqueTagsForType returns unique tags for a specific item type.
+func extractUniqueTagsForType(items []repository.LineItem, itemType string) []string {
+	tagSet := make(map[string]bool)
+	for _, item := range items {
+		if item.Type == itemType && item.Tag.Valid && item.Tag.String != "" {
+			tagSet[item.Tag.String] = true
+		}
+	}
+
+	tags := make([]string, 0, len(tagSet))
+	for tag := range tagSet {
+		tags = append(tags, tag)
+	}
+	sort.Strings(tags)
+	return tags
 }
 
 // GetCategoryForm returns an inline form for creating categories.
