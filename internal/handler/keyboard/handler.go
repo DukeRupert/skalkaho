@@ -35,12 +35,26 @@ func NewHandler(queries *repository.Queries, renderer *keyboard.Renderer, logger
 }
 
 // calculateTotals computes job totals from repository types.
-func (h *Handler) calculateTotals(job repository.Job, categories []repository.Category, lineItems []repository.LineItem) domain.JobTotal {
-	// Convert to domain types
+func (h *Handler) calculateTotals(job repository.Job, categories []repository.Category, lineItems []repository.LineItem, customTypes []repository.JobItemType) domain.JobTotal {
+	// Convert job to domain type with type surcharges
+	var materialSurcharge, laborSurcharge, equipmentSurcharge *float64
+	if job.MaterialSurchargePercent.Valid {
+		materialSurcharge = &job.MaterialSurchargePercent.Float64
+	}
+	if job.LaborSurchargePercent.Valid {
+		laborSurcharge = &job.LaborSurchargePercent.Float64
+	}
+	if job.EquipmentSurchargePercent.Valid {
+		equipmentSurcharge = &job.EquipmentSurchargePercent.Float64
+	}
+
 	domainJob := &domain.Job{
-		ID:               job.ID,
-		SurchargePercent: job.SurchargePercent,
-		SurchargeMode:    domain.SurchargeMode(job.SurchargeMode),
+		ID:                        job.ID,
+		SurchargePercent:          job.SurchargePercent,
+		MaterialSurchargePercent:  materialSurcharge,
+		LaborSurchargePercent:     laborSurcharge,
+		EquipmentSurchargePercent: equipmentSurcharge,
+		SurchargeMode:             domain.SurchargeMode(job.SurchargeMode),
 	}
 
 	domainCategories := make([]*domain.Category, len(categories))
@@ -77,15 +91,45 @@ func (h *Handler) calculateTotals(job repository.Job, categories []repository.Ca
 		}
 	}
 
-	return domain.CalculateJobTotal(domainJob, domainCategories, domainLineItems)
+	// Convert custom types to domain types
+	domainCustomTypes := make([]*domain.JobItemType, len(customTypes))
+	for i, ct := range customTypes {
+		var surcharge *float64
+		if ct.SurchargePercent.Valid {
+			surcharge = &ct.SurchargePercent.Float64
+		}
+		domainCustomTypes[i] = &domain.JobItemType{
+			ID:               ct.ID,
+			JobID:            ct.JobID,
+			Slug:             ct.Slug,
+			SurchargePercent: surcharge,
+		}
+	}
+
+	return domain.CalculateJobTotal(domainJob, domainCategories, domainLineItems, domainCustomTypes)
 }
 
 // calculateCategoryTotal computes totals for a single category.
-func (h *Handler) calculateCategoryTotal(categoryID string, job repository.Job, categories []repository.Category, lineItems []repository.LineItem) domain.CategoryTotal {
+func (h *Handler) calculateCategoryTotal(categoryID string, job repository.Job, categories []repository.Category, lineItems []repository.LineItem, customTypes []repository.JobItemType) domain.CategoryTotal {
+	// Convert job to domain type with type surcharges
+	var materialSurcharge, laborSurcharge, equipmentSurcharge *float64
+	if job.MaterialSurchargePercent.Valid {
+		materialSurcharge = &job.MaterialSurchargePercent.Float64
+	}
+	if job.LaborSurchargePercent.Valid {
+		laborSurcharge = &job.LaborSurchargePercent.Float64
+	}
+	if job.EquipmentSurchargePercent.Valid {
+		equipmentSurcharge = &job.EquipmentSurchargePercent.Float64
+	}
+
 	domainJob := &domain.Job{
-		ID:               job.ID,
-		SurchargePercent: job.SurchargePercent,
-		SurchargeMode:    domain.SurchargeMode(job.SurchargeMode),
+		ID:                        job.ID,
+		SurchargePercent:          job.SurchargePercent,
+		MaterialSurchargePercent:  materialSurcharge,
+		LaborSurchargePercent:     laborSurcharge,
+		EquipmentSurchargePercent: equipmentSurcharge,
+		SurchargeMode:             domain.SurchargeMode(job.SurchargeMode),
 	}
 
 	domainCategories := make([]*domain.Category, len(categories))
@@ -122,7 +166,22 @@ func (h *Handler) calculateCategoryTotal(categoryID string, job repository.Job, 
 		}
 	}
 
-	return domain.CalculateCategoryTotal(categoryID, domainJob, domainCategories, domainLineItems)
+	// Convert custom types to domain types
+	domainCustomTypes := make([]*domain.JobItemType, len(customTypes))
+	for i, ct := range customTypes {
+		var surcharge *float64
+		if ct.SurchargePercent.Valid {
+			surcharge = &ct.SurchargePercent.Float64
+		}
+		domainCustomTypes[i] = &domain.JobItemType{
+			ID:               ct.ID,
+			JobID:            ct.JobID,
+			Slug:             ct.Slug,
+			SurchargePercent: surcharge,
+		}
+	}
+
+	return domain.CalculateCategoryTotal(categoryID, domainJob, domainCategories, domainLineItems, domainCustomTypes)
 }
 
 // getCategoryDepth returns the depth of a category (1 = top level).

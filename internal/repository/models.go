@@ -42,25 +42,29 @@ type ItemTemplate struct {
 }
 
 type Job struct {
-	ID               string         `json:"id"`
-	Name             string         `json:"name"`
-	CustomerName     sql.NullString `json:"customer_name"`
-	SurchargePercent float64        `json:"surcharge_percent"`
-	SurchargeMode    string         `json:"surcharge_mode"`
-	CreatedAt        string         `json:"created_at"`
-	Status           string         `json:"status"`
-	ExpiresAt        sql.NullString `json:"expires_at"`
-	ClientID         sql.NullString `json:"client_id"`
+	ID                        string          `json:"id"`
+	Name                      string          `json:"name"`
+	CustomerName              sql.NullString  `json:"customer_name"`
+	SurchargePercent          float64         `json:"surcharge_percent"`
+	SurchargeMode             string          `json:"surcharge_mode"`
+	CreatedAt                 string          `json:"created_at"`
+	Status                    string          `json:"status"`
+	ExpiresAt                 sql.NullString  `json:"expires_at"`
+	ClientID                  sql.NullString  `json:"client_id"`
+	MaterialSurchargePercent  sql.NullFloat64 `json:"material_surcharge_percent"`
+	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
+	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
 }
 
 type JobItemType struct {
-	ID        string `json:"id"`
-	JobID     string `json:"job_id"`
-	Name      string `json:"name"`
-	Slug      string `json:"slug"`
-	Color     string `json:"color"`
-	SortOrder int64  `json:"sort_order"`
-	CreatedAt string `json:"created_at"`
+	ID               string          `json:"id"`
+	JobID            string          `json:"job_id"`
+	Name             string          `json:"name"`
+	Slug             string          `json:"slug"`
+	Color            string          `json:"color"`
+	SortOrder        int64           `json:"sort_order"`
+	CreatedAt        string          `json:"created_at"`
+	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
 }
 
 type LineItem struct {

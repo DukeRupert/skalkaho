@@ -106,7 +106,8 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	for i, job := range jobs {
 		categories, _ := h.queries.ListCategoriesByJob(ctx, job.ID)
 		lineItems, _ := h.queries.ListLineItemsByJob(ctx, job.ID)
-		totals := h.calculateTotals(job, categories, lineItems)
+		customTypes, _ := h.queries.ListJobItemTypes(ctx, job.ID)
+		totals := h.calculateTotals(job, categories, lineItems, customTypes)
 
 		var clientName string
 		if job.ClientID.Valid {
@@ -176,6 +177,13 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get custom item types for this job (needed for surcharge calculations)
+	customTypes, err := h.queries.ListJobItemTypes(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to list job item types", "error", err)
+		customTypes = []repository.JobItemType{} // Continue with empty list
+	}
+
 	// Get only top-level categories
 	topLevelCategories := make([]repository.Category, 0)
 	for _, cat := range categories {
@@ -192,14 +200,14 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	categoriesWithTotals := make([]CategoryWithTotal, len(topLevelCategories))
 	for i, cat := range topLevelCategories {
-		catTotal := h.calculateCategoryTotal(cat.ID, job, categories, lineItems)
+		catTotal := h.calculateCategoryTotal(cat.ID, job, categories, lineItems, customTypes)
 		categoriesWithTotals[i] = CategoryWithTotal{
 			Category: cat,
 			Total:    catTotal.Total,
 		}
 	}
 
-	totals := h.calculateTotals(job, categories, lineItems)
+	totals := h.calculateTotals(job, categories, lineItems, customTypes)
 
 	// Build category tree for sidebar navigation
 	categoryTree := buildCategoryTree(categories)
@@ -404,8 +412,16 @@ func (h *Handler) GetMarkupForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get custom item types for this job
+	customTypes, err := h.queries.ListJobItemTypes(ctx, jobID)
+	if err != nil {
+		logger.Error("failed to list job item types", "error", err)
+		customTypes = []repository.JobItemType{}
+	}
+
 	data := map[string]interface{}{
-		"Job": job,
+		"Job":         job,
+		"CustomTypes": customTypes,
 	}
 
 	var buf bytes.Buffer
@@ -494,7 +510,7 @@ func (h *Handler) UpdateJobName(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/jobs/"+jobID, http.StatusSeeOther)
 }
 
-// UpdateMarkup updates a job's markup percentage.
+// UpdateMarkup updates a job's markup percentages (per-type and default).
 func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
@@ -514,15 +530,36 @@ func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 
 	surchargePercent, _ := strconv.ParseFloat(r.FormValue("surcharge_percent"), 64)
 
+	// Parse per-type surcharges
+	var materialSurcharge, laborSurcharge, equipmentSurcharge sql.NullFloat64
+	if v := r.FormValue("material_surcharge_percent"); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			materialSurcharge = sql.NullFloat64{Float64: f, Valid: true}
+		}
+	}
+	if v := r.FormValue("labor_surcharge_percent"); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			laborSurcharge = sql.NullFloat64{Float64: f, Valid: true}
+		}
+	}
+	if v := r.FormValue("equipment_surcharge_percent"); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			equipmentSurcharge = sql.NullFloat64{Float64: f, Valid: true}
+		}
+	}
+
 	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
-		ID:               jobID,
-		Name:             job.Name,
-		CustomerName:     job.CustomerName,
-		SurchargePercent: surchargePercent,
-		SurchargeMode:    job.SurchargeMode,
-		Status:           job.Status,
-		ExpiresAt:        job.ExpiresAt,
-		ClientID:         job.ClientID,
+		ID:                        jobID,
+		Name:                      job.Name,
+		CustomerName:              job.CustomerName,
+		SurchargePercent:          surchargePercent,
+		MaterialSurchargePercent:  materialSurcharge,
+		LaborSurchargePercent:     laborSurcharge,
+		EquipmentSurchargePercent: equipmentSurcharge,
+		SurchargeMode:             job.SurchargeMode,
+		Status:                    job.Status,
+		ExpiresAt:                 job.ExpiresAt,
+		ClientID:                  job.ClientID,
 	})
 	if err != nil {
 		logger.Error("failed to update job markup", "error", err)

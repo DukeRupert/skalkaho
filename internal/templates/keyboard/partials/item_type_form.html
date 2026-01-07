@@ -3,7 +3,7 @@
     <form hx-post="/jobs/{{.Job.ID}}/item-types"
           hx-target="body"
           class="space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Name</label>
                 <input type="text"
@@ -23,6 +23,20 @@
                        pattern="[a-z0-9-]+"
                        title="Lowercase letters, numbers, and hyphens only">
                 <p class="text-xs text-slate-500 mt-1">Used internally to identify this type</p>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Markup %</label>
+                <div class="flex items-center gap-1">
+                    <input type="number"
+                           name="surcharge_percent"
+                           placeholder="—"
+                           step="0.1"
+                           min="0"
+                           max="100"
+                           class="w-24 rounded-lg border border-slate-300 px-3 py-2 text-sm text-right focus:ring-2 focus:ring-copper-500 focus:border-copper-500">
+                    <span class="text-slate-400">%</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">Empty uses job default</p>
             </div>
         </div>
 

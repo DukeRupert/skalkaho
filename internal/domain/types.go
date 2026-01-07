@@ -33,13 +33,14 @@ func IsStandardType(t LineItemType) bool {
 
 // JobItemType represents a custom line item type for a specific job.
 type JobItemType struct {
-	ID        string    `json:"id"`
-	JobID     string    `json:"job_id"`
-	Name      string    `json:"name"`
-	Slug      string    `json:"slug"`
-	Color     string    `json:"color"`
-	SortOrder int       `json:"sort_order"`
-	CreatedAt time.Time `json:"created_at"`
+	ID               string    `json:"id"`
+	JobID            string    `json:"job_id"`
+	Name             string    `json:"name"`
+	Slug             string    `json:"slug"`
+	Color            string    `json:"color"`
+	SortOrder        int       `json:"sort_order"`
+	SurchargePercent *float64  `json:"surcharge_percent,omitempty"`
+	CreatedAt        time.Time `json:"created_at"`
 }
 
 // Settings holds application-wide defaults.
@@ -51,12 +52,15 @@ type Settings struct {
 
 // Job is the top-level container for a quote.
 type Job struct {
-	ID               string        `json:"id"`
-	Name             string        `json:"name"`
-	CustomerName     *string       `json:"customer_name,omitempty"`
-	SurchargePercent float64       `json:"surcharge_percent"`
-	SurchargeMode    SurchargeMode `json:"surcharge_mode"`
-	CreatedAt        time.Time     `json:"created_at"`
+	ID                        string        `json:"id"`
+	Name                      string        `json:"name"`
+	CustomerName              *string       `json:"customer_name,omitempty"`
+	SurchargePercent          float64       `json:"surcharge_percent"`
+	MaterialSurchargePercent  *float64      `json:"material_surcharge_percent,omitempty"`
+	LaborSurchargePercent     *float64      `json:"labor_surcharge_percent,omitempty"`
+	EquipmentSurchargePercent *float64      `json:"equipment_surcharge_percent,omitempty"`
+	SurchargeMode             SurchargeMode `json:"surcharge_mode"`
+	CreatedAt                 time.Time     `json:"created_at"`
 }
 
 // Category represents an organizational grouping within a job.

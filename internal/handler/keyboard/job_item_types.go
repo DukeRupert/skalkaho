@@ -2,6 +2,7 @@ package keyboard
 
 import (
 	"bytes"
+	"database/sql"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -107,13 +108,24 @@ func (h *Handler) CreateJobItemType(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Parse surcharge percent
+	var surchargePercent *float64
+	var surchargeSql sql.NullFloat64
+	if v := r.FormValue("surcharge_percent"); v != "" {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			surchargePercent = &f
+			surchargeSql = sql.NullFloat64{Float64: f, Valid: true}
+		}
+	}
+
 	// Validate input
 	input := domain.JobItemTypeInput{
-		JobID:     jobID,
-		Name:      name,
-		Slug:      slug,
-		Color:     color,
-		SortOrder: sortOrder,
+		JobID:            jobID,
+		Name:             name,
+		Slug:             slug,
+		Color:            color,
+		SortOrder:        sortOrder,
+		SurchargePercent: surchargePercent,
 	}
 
 	if errors := input.Validate(); len(errors) > 0 {
@@ -132,12 +144,13 @@ func (h *Handler) CreateJobItemType(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = h.queries.CreateJobItemType(ctx, repository.CreateJobItemTypeParams{
-		ID:        uuid.New().String(),
-		JobID:     jobID,
-		Name:      name,
-		Slug:      slug,
-		Color:     color,
-		SortOrder: int64(sortOrder),
+		ID:               uuid.New().String(),
+		JobID:            jobID,
+		Name:             name,
+		Slug:             slug,
+		Color:            color,
+		SortOrder:        int64(sortOrder),
+		SurchargePercent: surchargeSql,
 	})
 	if err != nil {
 		logger.Error("failed to create job item type", "error", err)
@@ -195,13 +208,25 @@ func (h *Handler) UpdateJobItemType(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Parse surcharge percent
+	var surchargePercent *float64
+	var surchargeSql sql.NullFloat64
+	surchargeStr := r.FormValue("surcharge_percent")
+	if surchargeStr != "" {
+		if f, err := strconv.ParseFloat(surchargeStr, 64); err == nil {
+			surchargePercent = &f
+			surchargeSql = sql.NullFloat64{Float64: f, Valid: true}
+		}
+	}
+
 	// Validate input
 	input := domain.JobItemTypeInput{
-		JobID:     itemType.JobID,
-		Name:      name,
-		Slug:      slug,
-		Color:     color,
-		SortOrder: sortOrder,
+		JobID:            itemType.JobID,
+		Name:             name,
+		Slug:             slug,
+		Color:            color,
+		SortOrder:        sortOrder,
+		SurchargePercent: surchargePercent,
 	}
 
 	if errors := input.Validate(); len(errors) > 0 {
@@ -222,11 +247,12 @@ func (h *Handler) UpdateJobItemType(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = h.queries.UpdateJobItemType(ctx, repository.UpdateJobItemTypeParams{
-		ID:        typeID,
-		Name:      name,
-		Slug:      slug,
-		Color:     color,
-		SortOrder: int64(sortOrder),
+		ID:               typeID,
+		Name:             name,
+		Slug:             slug,
+		Color:            color,
+		SortOrder:        int64(sortOrder),
+		SurchargePercent: surchargeSql,
 	})
 	if err != nil {
 		logger.Error("failed to update job item type", "error", err)

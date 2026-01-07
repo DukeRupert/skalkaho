@@ -366,6 +366,13 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get custom item types for this job (needed for surcharge calculations)
+	customTypes, err := h.queries.ListJobItemTypes(ctx, job.ID)
+	if err != nil {
+		logger.Error("failed to list job item types", "error", err)
+		customTypes = []repository.JobItemType{} // Continue with empty list
+	}
+
 	// Get direct children (subcategories)
 	subcategories := make([]repository.Category, 0)
 	for _, cat := range categories {
@@ -387,7 +394,7 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	breadcrumbs := h.getBreadcrumbs(categories, categoryID, job)
 
 	// Calculate category total
-	catTotal := h.calculateCategoryTotal(categoryID, job, categories, lineItems)
+	catTotal := h.calculateCategoryTotal(categoryID, job, categories, lineItems, customTypes)
 
 	// Calculate totals for subcategories
 	type SubcategoryWithTotal struct {
@@ -396,7 +403,7 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	}
 	subcatsWithTotals := make([]SubcategoryWithTotal, len(subcategories))
 	for i, sub := range subcategories {
-		subTotal := h.calculateCategoryTotal(sub.ID, job, categories, lineItems)
+		subTotal := h.calculateCategoryTotal(sub.ID, job, categories, lineItems, customTypes)
 		subcatsWithTotals[i] = SubcategoryWithTotal{
 			Category: sub,
 			Total:    subTotal.Total,
@@ -405,13 +412,6 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 
 	// Build category tree for sidebar navigation
 	categoryTree := buildCategoryTree(categories)
-
-	// Get custom item types for this job
-	customTypes, err := h.queries.ListJobItemTypes(ctx, job.ID)
-	if err != nil {
-		logger.Error("failed to list job item types", "error", err)
-		customTypes = []repository.JobItemType{} // Continue with empty list
-	}
 
 	// Group items by type for sectioned display
 	itemsByType := groupItemsByType(categoryItems, customTypes)

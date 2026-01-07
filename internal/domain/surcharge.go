@@ -1,17 +1,46 @@
 package domain
 
-// EffectiveSurcharge calculates the applicable surcharge for a line item
-// based on the job's surcharge mode and the category hierarchy.
-func EffectiveSurcharge(li *LineItem, job *Job, categoryChain []*Category) float64 {
-	if job.SurchargeMode == SurchargeModeOverride {
-		return effectiveSurchargeOverride(li, job, categoryChain)
+// GetTypeSurcharge returns the surcharge for a specific item type.
+// For standard types, uses job's type-specific fields.
+// For custom types, uses the custom type's surcharge or job default.
+func GetTypeSurcharge(job *Job, itemType LineItemType, customTypes []*JobItemType) float64 {
+	switch itemType {
+	case LineItemTypeMaterial:
+		if job.MaterialSurchargePercent != nil {
+			return *job.MaterialSurchargePercent
+		}
+	case LineItemTypeLabor:
+		if job.LaborSurchargePercent != nil {
+			return *job.LaborSurchargePercent
+		}
+	case LineItemTypeEquipment:
+		if job.EquipmentSurchargePercent != nil {
+			return *job.EquipmentSurchargePercent
+		}
+	default:
+		// Custom type - look up in customTypes
+		for _, ct := range customTypes {
+			if ct.Slug == string(itemType) && ct.SurchargePercent != nil {
+				return *ct.SurchargePercent
+			}
+		}
 	}
-	return effectiveSurchargeStacking(li, job, categoryChain)
+	// Fall back to job default
+	return job.SurchargePercent
+}
+
+// EffectiveSurcharge calculates the applicable surcharge for a line item
+// based on the job's surcharge mode, item type, and the category hierarchy.
+func EffectiveSurcharge(li *LineItem, job *Job, categoryChain []*Category, customTypes []*JobItemType) float64 {
+	if job.SurchargeMode == SurchargeModeOverride {
+		return effectiveSurchargeOverride(li, job, categoryChain, customTypes)
+	}
+	return effectiveSurchargeStacking(li, job, categoryChain, customTypes)
 }
 
 // effectiveSurchargeOverride returns the most specific (lowest-level) surcharge.
-// Priority: LineItem > deepest Category > ... > shallowest Category > Job
-func effectiveSurchargeOverride(li *LineItem, job *Job, categoryChain []*Category) float64 {
+// Priority: LineItem > deepest Category > Type surcharge
+func effectiveSurchargeOverride(li *LineItem, job *Job, categoryChain []*Category, customTypes []*JobItemType) float64 {
 	// Check line item first
 	if li.SurchargePercent != nil {
 		return *li.SurchargePercent
@@ -24,14 +53,15 @@ func effectiveSurchargeOverride(li *LineItem, job *Job, categoryChain []*Categor
 		}
 	}
 
-	// Fall back to job surcharge
-	return job.SurchargePercent
+	// Fall back to type-specific surcharge
+	return GetTypeSurcharge(job, li.Type, customTypes)
 }
 
 // effectiveSurchargeStacking sums all surcharges in the hierarchy.
-// Total = Job% + Category%s + LineItem%
-func effectiveSurchargeStacking(li *LineItem, job *Job, categoryChain []*Category) float64 {
-	total := job.SurchargePercent
+// Total = Type% + Category%s + LineItem%
+func effectiveSurchargeStacking(li *LineItem, job *Job, categoryChain []*Category, customTypes []*JobItemType) float64 {
+	// Start with type-specific surcharge instead of job.SurchargePercent
+	total := GetTypeSurcharge(job, li.Type, customTypes)
 
 	// Add all category surcharges
 	for _, cat := range categoryChain {
@@ -86,7 +116,7 @@ func (jt JobTotal) EquipmentSubtotal() float64 {
 }
 
 // CalculateJobTotal computes all totals for a job.
-func CalculateJobTotal(job *Job, categories []*Category, lineItems []*LineItem) JobTotal {
+func CalculateJobTotal(job *Job, categories []*Category, lineItems []*LineItem, customTypes []*JobItemType) JobTotal {
 	var result JobTotal
 	result.TypeSubtotals = make(map[string]float64)
 
@@ -109,7 +139,7 @@ func CalculateJobTotal(job *Job, categories []*Category, lineItems []*LineItem) 
 
 		// Calculate effective surcharge and prices
 		basePrice := li.BasePrice()
-		effSurcharge := EffectiveSurcharge(li, job, chain)
+		effSurcharge := EffectiveSurcharge(li, job, chain, customTypes)
 		finalPrice := FinalPrice(li, effSurcharge)
 
 		result.Subtotal += basePrice
@@ -142,7 +172,7 @@ func buildCategoryChain(categoryID string, categoryByID map[string]*Category) []
 }
 
 // CalculateCategoryTotal computes totals for a category including all nested subcategories.
-func CalculateCategoryTotal(categoryID string, job *Job, categories []*Category, lineItems []*LineItem) CategoryTotal {
+func CalculateCategoryTotal(categoryID string, job *Job, categories []*Category, lineItems []*LineItem, customTypes []*JobItemType) CategoryTotal {
 	var result CategoryTotal
 	result.CategoryID = categoryID
 
@@ -174,7 +204,7 @@ func CalculateCategoryTotal(categoryID string, job *Job, categories []*Category,
 
 		// Calculate prices
 		basePrice := li.BasePrice()
-		effSurcharge := EffectiveSurcharge(li, job, chain)
+		effSurcharge := EffectiveSurcharge(li, job, chain, customTypes)
 		finalPrice := FinalPrice(li, effSurcharge)
 
 		result.Subtotal += basePrice

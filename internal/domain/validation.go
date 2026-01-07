@@ -177,11 +177,12 @@ func (i *SettingsInput) Validate() []ValidationError {
 
 // JobItemTypeInput represents input for creating or updating a custom item type.
 type JobItemTypeInput struct {
-	JobID     string `json:"job_id"`
-	Name      string `json:"name"`
-	Slug      string `json:"slug"`
-	Color     string `json:"color"`
-	SortOrder int    `json:"sort_order"`
+	JobID            string   `json:"job_id"`
+	Name             string   `json:"name"`
+	Slug             string   `json:"slug"`
+	Color            string   `json:"color"`
+	SortOrder        int      `json:"sort_order"`
+	SurchargePercent *float64 `json:"surcharge_percent,omitempty"`
 }
 
 // ValidColors are the allowed Tailwind color prefixes for custom types.

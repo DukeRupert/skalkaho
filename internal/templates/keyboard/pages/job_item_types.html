@@ -73,6 +73,12 @@
                             <span class="text-xs text-slate-500 ml-2">({{$type.Slug}})</span>
                         </div>
                     </div>
+                    <div class="flex items-center gap-4">
+                        {{if $type.SurchargePercent.Valid}}
+                        <span class="text-sm text-slate-600">{{printf "%.1f" $type.SurchargePercent.Float64}}%</span>
+                        {{else}}
+                        <span class="text-sm text-slate-400">—</span>
+                        {{end}}
                     <!-- Action Menu -->
                     <div class="relative" x-data="{ open: false }">
                         <button
@@ -103,6 +109,7 @@
                                 Delete
                             </button>
                         </div>
+                    </div>
                     </div>
                 </div>
                 {{end}}

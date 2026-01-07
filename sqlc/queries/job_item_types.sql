@@ -1,6 +1,6 @@
 -- name: CreateJobItemType :one
-INSERT INTO job_item_types (id, job_id, name, slug, color, sort_order)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO job_item_types (id, job_id, name, slug, color, sort_order, surcharge_percent)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetJobItemType :one
@@ -20,7 +20,8 @@ UPDATE job_item_types SET
     name = ?,
     slug = ?,
     color = ?,
-    sort_order = ?
+    sort_order = ?,
+    surcharge_percent = ?
 WHERE id = ?
 RETURNING *;
 

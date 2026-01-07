@@ -80,7 +80,7 @@ func TestEffectiveSurcharge_StackingMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := domain.EffectiveSurcharge(tt.lineItem, tt.job, tt.categoryChain)
+			got := domain.EffectiveSurcharge(tt.lineItem, tt.job, tt.categoryChain, nil)
 			if got != tt.want {
 				t.Errorf("EffectiveSurcharge() = %v, want %v", got, tt.want)
 			}
@@ -159,7 +159,7 @@ func TestEffectiveSurcharge_OverrideMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := domain.EffectiveSurcharge(tt.lineItem, tt.job, tt.categoryChain)
+			got := domain.EffectiveSurcharge(tt.lineItem, tt.job, tt.categoryChain, nil)
 			if got != tt.want {
 				t.Errorf("EffectiveSurcharge() = %v, want %v", got, tt.want)
 			}
@@ -253,7 +253,7 @@ func TestCalculateJobTotal(t *testing.T) {
 		},
 	}
 
-	result := domain.CalculateJobTotal(job, categories, lineItems)
+	result := domain.CalculateJobTotal(job, categories, lineItems, nil)
 
 	expectedSubtotal := 1250.0   // 1000 + 250
 	expectedGrandTotal := 1437.5 // 1150 + 287.5
@@ -334,7 +334,7 @@ func TestCalculateJobTotal_ThreeLevelNestedCategories(t *testing.T) {
 		makeLineItem("item-l3", "cat-l3", domain.LineItemTypeMaterial, 3, 100),
 	}
 
-	result := domain.CalculateJobTotal(job, categories, lineItems)
+	result := domain.CalculateJobTotal(job, categories, lineItems, nil)
 
 	// Subtotal: 100 + 200 + 300 = 600
 	if !floatEquals(result.Subtotal, 600) {
@@ -381,7 +381,7 @@ func TestCalculateJobTotal_ThreeLevelNestedCategories_OverrideMode(t *testing.T)
 		makeLineItem("item-l3", "cat-l3", domain.LineItemTypeMaterial, 3, 100),
 	}
 
-	result := domain.CalculateJobTotal(job, categories, lineItems)
+	result := domain.CalculateJobTotal(job, categories, lineItems, nil)
 
 	// GrandTotal: 105 + 206 + 306 = 617
 	if !floatEquals(result.GrandTotal, 617) {
@@ -409,7 +409,7 @@ func TestCalculateJobTotal_MultipleCategories(t *testing.T) {
 		makeLineItem("item-c1", "cat-c", domain.LineItemTypeLabor, 4, 25), // Base 100, Final 110
 	}
 
-	result := domain.CalculateJobTotal(job, categories, lineItems)
+	result := domain.CalculateJobTotal(job, categories, lineItems, nil)
 
 	// Subtotal: 100 + 100 + 100 + 100 = 400
 	if !floatEquals(result.Subtotal, 400) {
@@ -496,7 +496,7 @@ func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := domain.CalculateJobTotal(job, categories, tt.lineItems)
+			result := domain.CalculateJobTotal(job, categories, tt.lineItems, nil)
 
 			if !floatEquals(result.MaterialSubtotal(), tt.wantMaterial) {
 				t.Errorf("MaterialSubtotal = %v, want %v", result.MaterialSubtotal(), tt.wantMaterial)
@@ -531,7 +531,7 @@ func TestCalculateJobTotal_CategoryRemoval(t *testing.T) {
 	}
 
 	// Calculate with all items
-	fullResult := domain.CalculateJobTotal(job, categories, allItems)
+	fullResult := domain.CalculateJobTotal(job, categories, allItems, nil)
 
 	// Remove cat-b items (simulate category deletion)
 	catAItemsOnly := []*domain.LineItem{
@@ -539,7 +539,7 @@ func TestCalculateJobTotal_CategoryRemoval(t *testing.T) {
 		makeLineItem("item-a2", "cat-a", domain.LineItemTypeLabor, 5, 20),
 	}
 
-	reducedResult := domain.CalculateJobTotal(job, categories, catAItemsOnly)
+	reducedResult := domain.CalculateJobTotal(job, categories, catAItemsOnly, nil)
 
 	// Full: 4 items * 115 = 460
 	if !floatEquals(fullResult.GrandTotal, 460) {
@@ -577,7 +577,7 @@ func TestCalculateCategoryTotal(t *testing.T) {
 	}
 
 	t.Run("root category includes all descendants", func(t *testing.T) {
-		result := domain.CalculateCategoryTotal("cat-root", job, categories, lineItems)
+		result := domain.CalculateCategoryTotal("cat-root", job, categories, lineItems, nil)
 
 		// Root total should include all items: 115 + 236 + 360 = 711
 		if !floatEquals(result.Total, 711) {
@@ -595,7 +595,7 @@ func TestCalculateCategoryTotal(t *testing.T) {
 	})
 
 	t.Run("L2 category includes L3 items", func(t *testing.T) {
-		result := domain.CalculateCategoryTotal("cat-l2", job, categories, lineItems)
+		result := domain.CalculateCategoryTotal("cat-l2", job, categories, lineItems, nil)
 
 		// L2 total: 236 (L2 item) + 360 (L3 item) = 596
 		if !floatEquals(result.Total, 596) {
@@ -604,7 +604,7 @@ func TestCalculateCategoryTotal(t *testing.T) {
 	})
 
 	t.Run("L3 category only includes its own items", func(t *testing.T) {
-		result := domain.CalculateCategoryTotal("cat-l3", job, categories, lineItems)
+		result := domain.CalculateCategoryTotal("cat-l3", job, categories, lineItems, nil)
 
 		// L3 total: 360 (only L3 item)
 		if !floatEquals(result.Total, 360) {
@@ -616,7 +616,7 @@ func TestCalculateCategoryTotal(t *testing.T) {
 		emptyCats := []*domain.Category{
 			makeCategory("empty-cat", "job-1", nil, floatPtr(5)),
 		}
-		result := domain.CalculateCategoryTotal("empty-cat", job, emptyCats, []*domain.LineItem{})
+		result := domain.CalculateCategoryTotal("empty-cat", job, emptyCats, []*domain.LineItem{}, nil)
 
 		if result.Total != 0 {
 			t.Errorf("Empty category Total = %v, want 0", result.Total)
@@ -636,7 +636,7 @@ func TestCalculateCategoryTotal(t *testing.T) {
 			makeLineItem("child-item", "child", domain.LineItemTypeMaterial, 10, 10), // Base 100, 18%, Final 118
 		}
 
-		result := domain.CalculateCategoryTotal("parent", job, parentChild, childItems)
+		result := domain.CalculateCategoryTotal("parent", job, parentChild, childItems, nil)
 
 		// Parent total should include child item: 118
 		if !floatEquals(result.Total, 118) {
@@ -652,7 +652,7 @@ func TestCalculateJobTotal_EdgeCases(t *testing.T) {
 	}
 
 	t.Run("empty job no items", func(t *testing.T) {
-		result := domain.CalculateJobTotal(job, categories, []*domain.LineItem{})
+		result := domain.CalculateJobTotal(job, categories, []*domain.LineItem{}, nil)
 
 		if result.Subtotal != 0 {
 			t.Errorf("Subtotal = %v, want 0", result.Subtotal)
@@ -672,7 +672,7 @@ func TestCalculateJobTotal_EdgeCases(t *testing.T) {
 		items := []*domain.LineItem{
 			makeLineItem("zero-qty", "cat-1", domain.LineItemTypeMaterial, 0, 100),
 		}
-		result := domain.CalculateJobTotal(job, categories, items)
+		result := domain.CalculateJobTotal(job, categories, items, nil)
 
 		if result.GrandTotal != 0 {
 			t.Errorf("GrandTotal = %v, want 0", result.GrandTotal)
@@ -683,7 +683,7 @@ func TestCalculateJobTotal_EdgeCases(t *testing.T) {
 		items := []*domain.LineItem{
 			makeLineItem("zero-price", "cat-1", domain.LineItemTypeMaterial, 10, 0),
 		}
-		result := domain.CalculateJobTotal(job, categories, items)
+		result := domain.CalculateJobTotal(job, categories, items, nil)
 
 		if result.GrandTotal != 0 {
 			t.Errorf("GrandTotal = %v, want 0", result.GrandTotal)
@@ -694,7 +694,7 @@ func TestCalculateJobTotal_EdgeCases(t *testing.T) {
 		items := []*domain.LineItem{
 			makeLineItem("large", "cat-1", domain.LineItemTypeMaterial, 1000000, 999.99),
 		}
-		result := domain.CalculateJobTotal(job, categories, items)
+		result := domain.CalculateJobTotal(job, categories, items, nil)
 
 		// Base: 1,000,000 * 999.99 = 999,990,000
 		// With 15% surcharge: 1,149,988,500
@@ -708,7 +708,7 @@ func TestCalculateJobTotal_EdgeCases(t *testing.T) {
 		items := []*domain.LineItem{
 			makeLineItem("fractional", "cat-1", domain.LineItemTypeMaterial, 2.5, 33.33),
 		}
-		result := domain.CalculateJobTotal(job, categories, items)
+		result := domain.CalculateJobTotal(job, categories, items, nil)
 
 		// Base: 2.5 * 33.33 = 83.325
 		// With 15% surcharge: 95.82375
@@ -727,7 +727,7 @@ func TestCalculateJobTotal_EdgeCases(t *testing.T) {
 			makeLineItem("item", "cat-zero", domain.LineItemTypeMaterial, 10, 10),
 		}
 
-		result := domain.CalculateJobTotal(zeroJob, zeroCats, items)
+		result := domain.CalculateJobTotal(zeroJob, zeroCats, items, nil)
 
 		// No surcharge: base = final = 100
 		if !floatEquals(result.GrandTotal, 100) {
@@ -737,4 +737,211 @@ func TestCalculateJobTotal_EdgeCases(t *testing.T) {
 			t.Errorf("SurchargeTotal = %v, want 0", result.SurchargeTotal)
 		}
 	})
+}
+
+func TestGetTypeSurcharge(t *testing.T) {
+	tests := []struct {
+		name        string
+		job         *domain.Job
+		itemType    domain.LineItemType
+		customTypes []*domain.JobItemType
+		want        float64
+	}{
+		{
+			name: "material type with specific surcharge",
+			job: &domain.Job{
+				SurchargePercent:         10,
+				MaterialSurchargePercent: floatPtr(20),
+			},
+			itemType:    domain.LineItemTypeMaterial,
+			customTypes: nil,
+			want:        20,
+		},
+		{
+			name: "labor type with specific surcharge",
+			job: &domain.Job{
+				SurchargePercent:      10,
+				LaborSurchargePercent: floatPtr(15),
+			},
+			itemType:    domain.LineItemTypeLabor,
+			customTypes: nil,
+			want:        15,
+		},
+		{
+			name: "equipment type with specific surcharge",
+			job: &domain.Job{
+				SurchargePercent:          10,
+				EquipmentSurchargePercent: floatPtr(8),
+			},
+			itemType:    domain.LineItemTypeEquipment,
+			customTypes: nil,
+			want:        8,
+		},
+		{
+			name: "material type falls back to job default",
+			job: &domain.Job{
+				SurchargePercent: 10,
+				// MaterialSurchargePercent is nil
+			},
+			itemType:    domain.LineItemTypeMaterial,
+			customTypes: nil,
+			want:        10,
+		},
+		{
+			name: "custom type with specific surcharge",
+			job: &domain.Job{
+				SurchargePercent: 10,
+			},
+			itemType: domain.LineItemType("subcontractor"),
+			customTypes: []*domain.JobItemType{
+				{Slug: "subcontractor", SurchargePercent: floatPtr(5)},
+			},
+			want: 5,
+		},
+		{
+			name: "custom type falls back to job default",
+			job: &domain.Job{
+				SurchargePercent: 10,
+			},
+			itemType: domain.LineItemType("subcontractor"),
+			customTypes: []*domain.JobItemType{
+				{Slug: "subcontractor", SurchargePercent: nil},
+			},
+			want: 10,
+		},
+		{
+			name: "unknown custom type falls back to job default",
+			job: &domain.Job{
+				SurchargePercent: 10,
+			},
+			itemType:    domain.LineItemType("unknown"),
+			customTypes: nil,
+			want:        10,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := domain.GetTypeSurcharge(tt.job, tt.itemType, tt.customTypes)
+			if got != tt.want {
+				t.Errorf("GetTypeSurcharge() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCalculateJobTotal_TypeSpecificSurcharges(t *testing.T) {
+	// Job with different surcharges per type
+	job := &domain.Job{
+		ID:                        "job-1",
+		SurchargePercent:          10, // Default
+		MaterialSurchargePercent:  floatPtr(20),
+		LaborSurchargePercent:     floatPtr(15),
+		EquipmentSurchargePercent: floatPtr(8),
+		SurchargeMode:             domain.SurchargeModeStacking,
+	}
+
+	categories := []*domain.Category{
+		makeCategory("cat-1", "job-1", nil, nil), // No category surcharge
+	}
+
+	lineItems := []*domain.LineItem{
+		// Material: Base 100, 20% surcharge, Final 120
+		makeLineItem("mat-1", "cat-1", domain.LineItemTypeMaterial, 10, 10),
+		// Labor: Base 100, 15% surcharge, Final 115
+		makeLineItem("lab-1", "cat-1", domain.LineItemTypeLabor, 10, 10),
+		// Equipment: Base 100, 8% surcharge, Final 108
+		makeLineItem("eqp-1", "cat-1", domain.LineItemTypeEquipment, 10, 10),
+	}
+
+	result := domain.CalculateJobTotal(job, categories, lineItems, nil)
+
+	// MaterialSubtotal: 120
+	if !floatEquals(result.MaterialSubtotal(), 120) {
+		t.Errorf("MaterialSubtotal = %v, want 120", result.MaterialSubtotal())
+	}
+
+	// LaborSubtotal: 115
+	if !floatEquals(result.LaborSubtotal(), 115) {
+		t.Errorf("LaborSubtotal = %v, want 115", result.LaborSubtotal())
+	}
+
+	// EquipmentSubtotal: 108
+	if !floatEquals(result.EquipmentSubtotal(), 108) {
+		t.Errorf("EquipmentSubtotal = %v, want 108", result.EquipmentSubtotal())
+	}
+
+	// GrandTotal: 120 + 115 + 108 = 343
+	if !floatEquals(result.GrandTotal, 343) {
+		t.Errorf("GrandTotal = %v, want 343", result.GrandTotal)
+	}
+}
+
+func TestCalculateJobTotal_CustomTypeWithSurcharge(t *testing.T) {
+	job := &domain.Job{
+		ID:               "job-1",
+		SurchargePercent: 10,
+		SurchargeMode:    domain.SurchargeModeStacking,
+	}
+
+	categories := []*domain.Category{
+		makeCategory("cat-1", "job-1", nil, nil),
+	}
+
+	customTypes := []*domain.JobItemType{
+		{
+			ID:               "ct-1",
+			JobID:            "job-1",
+			Slug:             "subcontractor",
+			SurchargePercent: floatPtr(5),
+		},
+	}
+
+	lineItems := []*domain.LineItem{
+		// Custom type: Base 100, 5% surcharge, Final 105
+		{
+			ID:         "sub-1",
+			CategoryID: "cat-1",
+			Type:       domain.LineItemType("subcontractor"),
+			Quantity:   10,
+			UnitPrice:  10,
+		},
+	}
+
+	result := domain.CalculateJobTotal(job, categories, lineItems, customTypes)
+
+	// Custom type subtotal should be 105
+	if !floatEquals(result.TypeSubtotals["subcontractor"], 105) {
+		t.Errorf("TypeSubtotals[subcontractor] = %v, want 105", result.TypeSubtotals["subcontractor"])
+	}
+
+	// GrandTotal should be 105
+	if !floatEquals(result.GrandTotal, 105) {
+		t.Errorf("GrandTotal = %v, want 105", result.GrandTotal)
+	}
+}
+
+func TestEffectiveSurcharge_TypeSpecificOverrideMode(t *testing.T) {
+	// Test that override mode falls back to type-specific surcharge when no category/line item surcharge
+	job := &domain.Job{
+		ID:                       "job-1",
+		SurchargePercent:         10,
+		MaterialSurchargePercent: floatPtr(20),
+		SurchargeMode:            domain.SurchargeModeOverride,
+	}
+
+	categoryChain := []*domain.Category{
+		{SurchargePercent: nil}, // No category surcharge
+	}
+
+	lineItem := &domain.LineItem{
+		Type:             domain.LineItemTypeMaterial,
+		SurchargePercent: nil, // No line item surcharge
+	}
+
+	// Should fall back to material type surcharge (20), not job default (10)
+	got := domain.EffectiveSurcharge(lineItem, job, categoryChain, nil)
+	if got != 20 {
+		t.Errorf("EffectiveSurcharge() = %v, want 20", got)
+	}
 }
