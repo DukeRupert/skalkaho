@@ -214,6 +214,9 @@
                         <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd> material
                         <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">l</kbd> labor
                         <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">e</kbd> equipment
+                        {{range $i, $ct := .CustomTypes}}
+                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">{{add $i 1}}</kbd> {{$ct.Name}}
+                        {{end}}
                     </span>
                     <!-- Mobile: Item type buttons -->
                     <div class="sm:hidden flex gap-1" x-data="{ open: false }">
@@ -277,7 +280,9 @@
                     </div>
                     {{$subcatCount := len .Subcategories}}
                     {{range $i, $item := .Items}}
-                    <div class="row flex items-center border-b border-slate-100 last:border-b-0 cursor-pointer hover:brightness-95 {{if eq $item.Type "material"}}bg-forest-50{{else if eq $item.Type "labor"}}bg-copper-50{{else}}bg-slate-100{{end}}"
+                    {{$bgColor := "bg-slate-100"}}
+                    {{if eq $item.Type "material"}}{{$bgColor = "bg-forest-50"}}{{else if eq $item.Type "labor"}}{{$bgColor = "bg-copper-50"}}{{else if eq $item.Type "equipment"}}{{$bgColor = "bg-slate-100"}}{{else}}{{range $.CustomTypes}}{{if eq .Slug $item.Type}}{{$bgColor = printf "bg-%s-50" .Color}}{{end}}{{end}}{{end}}
+                    <div class="row flex items-center border-b border-slate-100 last:border-b-0 cursor-pointer hover:brightness-95 {{$bgColor}}"
                          data-index="{{add $subcatCount $i}}"
                          data-item-id="{{$item.ID}}"
                          data-delete-url="/items/{{$item.ID}}"
@@ -347,8 +352,9 @@
                     <p>No items yet.</p>
                     <p class="hidden sm:block text-sm mt-2">
                         Press <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd> for material,
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd> for labor, or
-                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> for equipment.
+                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd> for labor,
+                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> for equipment{{if .CustomTypes}},{{range $i, $ct := .CustomTypes}}
+                        <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">{{add $i 1}}</kbd> for {{$ct.Name}}{{if not (eq (add $i 1) (len $.CustomTypes))}},{{end}}{{end}}{{end}}.
                     </p>
                     <p class="sm:hidden text-sm mt-2">Tap + above to add an item.</p>
                 </div>
@@ -371,6 +377,16 @@
     {{template "footer" .}}
     {{template "help_overlay" .}}
     {{template "scripts" .}}
+
+    {{if .CustomTypes}}
+    <script>
+    window.customItemTypes = [
+        {{range $i, $ct := .CustomTypes}}
+        { slug: '{{$ct.Slug}}', name: '{{$ct.Name}}', color: '{{$ct.Color}}' }{{if not (eq (add $i 1) (len $.CustomTypes))}},{{end}}
+        {{end}}
+    ];
+    </script>
+    {{end}}
 </body>
 </html>
 {{end}}
@@ -381,6 +397,9 @@
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd> material</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd> labor</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> equipment</span>
+{{range $i, $ct := .CustomTypes}}
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">{{add $i 1}}</kbd> {{$ct.Name}}</span>
+{{end}}
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd> rename</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
 {{end}}

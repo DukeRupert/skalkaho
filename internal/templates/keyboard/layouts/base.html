@@ -585,6 +585,16 @@ document.addEventListener('keydown', function(e) {
             e.preventDefault();
             showInlineForm('equipment');
             break;
+        case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+            // Custom item types - only on category page with custom types defined
+            if (window.customItemTypes && window.customItemTypes.length > 0) {
+                const index = parseInt(e.key) - 1;
+                if (index < window.customItemTypes.length) {
+                    e.preventDefault();
+                    showInlineForm(window.customItemTypes[index].slug);
+                }
+            }
+            break;
         case 'd':
             e.preventDefault();
             deleteCurrent();
