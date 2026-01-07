@@ -268,12 +268,12 @@ func TestCalculateJobTotal(t *testing.T) {
 		t.Errorf("GrandTotal = %v, want %v", result.GrandTotal, expectedGrandTotal)
 	}
 
-	if result.MaterialSubtotal != expectedMaterial {
-		t.Errorf("MaterialSubtotal = %v, want %v", result.MaterialSubtotal, expectedMaterial)
+	if result.MaterialSubtotal() != expectedMaterial {
+		t.Errorf("MaterialSubtotal = %v, want %v", result.MaterialSubtotal(), expectedMaterial)
 	}
 
-	if result.LaborSubtotal != expectedLabor {
-		t.Errorf("LaborSubtotal = %v, want %v", result.LaborSubtotal, expectedLabor)
+	if result.LaborSubtotal() != expectedLabor {
+		t.Errorf("LaborSubtotal = %v, want %v", result.LaborSubtotal(), expectedLabor)
 	}
 
 	expectedSurchargeTotal := expectedGrandTotal - expectedSubtotal
@@ -347,13 +347,13 @@ func TestCalculateJobTotal_ThreeLevelNestedCategories(t *testing.T) {
 	}
 
 	// MaterialSubtotal: 115 + 360 = 475
-	if !floatEquals(result.MaterialSubtotal, 475) {
-		t.Errorf("MaterialSubtotal = %v, want 475", result.MaterialSubtotal)
+	if !floatEquals(result.MaterialSubtotal(), 475) {
+		t.Errorf("MaterialSubtotal = %v, want 475", result.MaterialSubtotal())
 	}
 
 	// LaborSubtotal: 236
-	if !floatEquals(result.LaborSubtotal, 236) {
-		t.Errorf("LaborSubtotal = %v, want 236", result.LaborSubtotal)
+	if !floatEquals(result.LaborSubtotal(), 236) {
+		t.Errorf("LaborSubtotal = %v, want 236", result.LaborSubtotal())
 	}
 
 	// SurchargeTotal: 711 - 600 = 111
@@ -422,13 +422,13 @@ func TestCalculateJobTotal_MultipleCategories(t *testing.T) {
 	}
 
 	// MaterialSubtotal: 115 + 118 = 233
-	if !floatEquals(result.MaterialSubtotal, 233) {
-		t.Errorf("MaterialSubtotal = %v, want 233", result.MaterialSubtotal)
+	if !floatEquals(result.MaterialSubtotal(), 233) {
+		t.Errorf("MaterialSubtotal = %v, want 233", result.MaterialSubtotal())
 	}
 
 	// LaborSubtotal: 115 + 110 = 225
-	if !floatEquals(result.LaborSubtotal, 225) {
-		t.Errorf("LaborSubtotal = %v, want 225", result.LaborSubtotal)
+	if !floatEquals(result.LaborSubtotal(), 225) {
+		t.Errorf("LaborSubtotal = %v, want 225", result.LaborSubtotal())
 	}
 }
 
@@ -498,14 +498,14 @@ func TestCalculateJobTotal_TypeBreakdown(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := domain.CalculateJobTotal(job, categories, tt.lineItems)
 
-			if !floatEquals(result.MaterialSubtotal, tt.wantMaterial) {
-				t.Errorf("MaterialSubtotal = %v, want %v", result.MaterialSubtotal, tt.wantMaterial)
+			if !floatEquals(result.MaterialSubtotal(), tt.wantMaterial) {
+				t.Errorf("MaterialSubtotal = %v, want %v", result.MaterialSubtotal(), tt.wantMaterial)
 			}
-			if !floatEquals(result.LaborSubtotal, tt.wantLabor) {
-				t.Errorf("LaborSubtotal = %v, want %v", result.LaborSubtotal, tt.wantLabor)
+			if !floatEquals(result.LaborSubtotal(), tt.wantLabor) {
+				t.Errorf("LaborSubtotal = %v, want %v", result.LaborSubtotal(), tt.wantLabor)
 			}
-			if !floatEquals(result.EquipmentSubtotal, tt.wantEquipment) {
-				t.Errorf("EquipmentSubtotal = %v, want %v", result.EquipmentSubtotal, tt.wantEquipment)
+			if !floatEquals(result.EquipmentSubtotal(), tt.wantEquipment) {
+				t.Errorf("EquipmentSubtotal = %v, want %v", result.EquipmentSubtotal(), tt.wantEquipment)
 			}
 			if !floatEquals(result.GrandTotal, tt.wantGrandTotal) {
 				t.Errorf("GrandTotal = %v, want %v", result.GrandTotal, tt.wantGrandTotal)
@@ -660,11 +660,11 @@ func TestCalculateJobTotal_EdgeCases(t *testing.T) {
 		if result.GrandTotal != 0 {
 			t.Errorf("GrandTotal = %v, want 0", result.GrandTotal)
 		}
-		if result.MaterialSubtotal != 0 {
-			t.Errorf("MaterialSubtotal = %v, want 0", result.MaterialSubtotal)
+		if result.MaterialSubtotal() != 0 {
+			t.Errorf("MaterialSubtotal = %v, want 0", result.MaterialSubtotal())
 		}
-		if result.LaborSubtotal != 0 {
-			t.Errorf("LaborSubtotal = %v, want 0", result.LaborSubtotal)
+		if result.LaborSubtotal() != 0 {
+			t.Errorf("LaborSubtotal = %v, want 0", result.LaborSubtotal())
 		}
 	})
 

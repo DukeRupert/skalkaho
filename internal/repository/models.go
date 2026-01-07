@@ -53,6 +53,16 @@ type Job struct {
 	ClientID         sql.NullString `json:"client_id"`
 }
 
+type JobItemType struct {
+	ID        string `json:"id"`
+	JobID     string `json:"job_id"`
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+	Color     string `json:"color"`
+	SortOrder int64  `json:"sort_order"`
+	CreatedAt string `json:"created_at"`
+}
+
 type LineItem struct {
 	ID               string          `json:"id"`
 	CategoryID       string          `json:"category_id"`

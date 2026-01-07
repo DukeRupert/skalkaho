@@ -248,6 +248,17 @@
                                 <span class="w-3 h-3 rounded-full bg-slate-500"></span>
                                 Equipment
                             </button>
+                            {{if .CustomTypes}}
+                            <div class="border-t border-slate-200 my-1"></div>
+                            {{range .CustomTypes}}
+                            <button
+                                @click="showInlineForm('{{.Slug}}'); open = false"
+                                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-{{.Color}}-700 hover:bg-{{.Color}}-50">
+                                <span class="w-3 h-3 rounded-full bg-{{.Color}}-500"></span>
+                                {{.Name}}
+                            </button>
+                            {{end}}
+                            {{end}}
                         </div>
                     </div>
                 </div>

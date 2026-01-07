@@ -44,6 +44,13 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("GET /categories/{id}/rename", h.GetCategoryRenameForm)
 	mux.HandleFunc("PUT /categories/{id}/name", h.UpdateCategoryName)
 
+	// Job Item Types (Custom Item Types)
+	mux.HandleFunc("GET /jobs/{jobID}/item-types", h.ListJobItemTypes)
+	mux.HandleFunc("POST /jobs/{jobID}/item-types", h.CreateJobItemType)
+	mux.HandleFunc("GET /jobs/{jobID}/item-types/new", h.GetJobItemTypeForm)
+	mux.HandleFunc("PUT /item-types/{id}", h.UpdateJobItemType)
+	mux.HandleFunc("DELETE /item-types/{id}", h.DeleteJobItemType)
+
 	// Line Items
 	mux.HandleFunc("POST /categories/{categoryID}/items", h.CreateLineItem)
 	mux.HandleFunc("GET /categories/{categoryID}/form", h.GetInlineForm)

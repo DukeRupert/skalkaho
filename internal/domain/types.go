@@ -19,6 +19,29 @@ const (
 	LineItemTypeEquipment LineItemType = "equipment"
 )
 
+// StandardTypes returns the list of built-in line item types.
+var StandardTypes = []LineItemType{
+	LineItemTypeMaterial,
+	LineItemTypeLabor,
+	LineItemTypeEquipment,
+}
+
+// IsStandardType returns true if the type is one of the built-in types.
+func IsStandardType(t LineItemType) bool {
+	return t == LineItemTypeMaterial || t == LineItemTypeLabor || t == LineItemTypeEquipment
+}
+
+// JobItemType represents a custom line item type for a specific job.
+type JobItemType struct {
+	ID        string    `json:"id"`
+	JobID     string    `json:"job_id"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	Color     string    `json:"color"`
+	SortOrder int       `json:"sort_order"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 // Settings holds application-wide defaults.
 type Settings struct {
 	ID                      string        `json:"id"`

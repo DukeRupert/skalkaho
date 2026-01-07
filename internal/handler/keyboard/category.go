@@ -355,6 +355,13 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	// Build category tree for sidebar navigation
 	categoryTree := buildCategoryTree(categories)
 
+	// Get custom item types for this job
+	customTypes, err := h.queries.ListJobItemTypes(ctx, job.ID)
+	if err != nil {
+		logger.Error("failed to list job item types", "error", err)
+		customTypes = []repository.JobItemType{} // Continue with empty list
+	}
+
 	data := map[string]interface{}{
 		"Job":               job,
 		"Category":          category,
@@ -367,6 +374,7 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 		"SelectedIndex":     0,
 		"CategoryTree":      categoryTree,
 		"CurrentCategoryID": categoryID,
+		"CustomTypes":       customTypes,
 	}
 
 	if err := h.renderer.Render(w, "category", data); err != nil {

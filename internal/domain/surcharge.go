@@ -64,17 +64,31 @@ type CategoryTotal struct {
 
 // JobTotal calculates the complete job totals.
 type JobTotal struct {
-	Subtotal          float64 `json:"subtotal"`           // Sum of all base prices
-	SurchargeTotal    float64 `json:"surcharge_total"`    // Total surcharges applied
-	GrandTotal        float64 `json:"grand_total"`        // Final total
-	MaterialSubtotal  float64 `json:"material_subtotal"`  // Materials only
-	LaborSubtotal     float64 `json:"labor_subtotal"`     // Labor only
-	EquipmentSubtotal float64 `json:"equipment_subtotal"` // Equipment only
+	Subtotal       float64            `json:"subtotal"`        // Sum of all base prices
+	SurchargeTotal float64            `json:"surcharge_total"` // Total surcharges applied
+	GrandTotal     float64            `json:"grand_total"`     // Final total
+	TypeSubtotals  map[string]float64 `json:"type_subtotals"`  // Subtotals keyed by type slug
+}
+
+// MaterialSubtotal returns the subtotal for material items (backward compatibility).
+func (jt JobTotal) MaterialSubtotal() float64 {
+	return jt.TypeSubtotals["material"]
+}
+
+// LaborSubtotal returns the subtotal for labor items (backward compatibility).
+func (jt JobTotal) LaborSubtotal() float64 {
+	return jt.TypeSubtotals["labor"]
+}
+
+// EquipmentSubtotal returns the subtotal for equipment items (backward compatibility).
+func (jt JobTotal) EquipmentSubtotal() float64 {
+	return jt.TypeSubtotals["equipment"]
 }
 
 // CalculateJobTotal computes all totals for a job.
 func CalculateJobTotal(job *Job, categories []*Category, lineItems []*LineItem) JobTotal {
 	var result JobTotal
+	result.TypeSubtotals = make(map[string]float64)
 
 	// Build category lookup for chain resolution
 	categoryByID := make(map[string]*Category)
@@ -101,15 +115,9 @@ func CalculateJobTotal(job *Job, categories []*Category, lineItems []*LineItem) 
 		result.Subtotal += basePrice
 		result.GrandTotal += finalPrice
 
-		// Track by type
-		switch li.Type {
-		case LineItemTypeMaterial:
-			result.MaterialSubtotal += finalPrice
-		case LineItemTypeLabor:
-			result.LaborSubtotal += finalPrice
-		case LineItemTypeEquipment:
-			result.EquipmentSubtotal += finalPrice
-		}
+		// Track by type using dynamic map
+		typeKey := string(li.Type)
+		result.TypeSubtotals[typeKey] += finalPrice
 	}
 
 	result.SurchargeTotal = result.GrandTotal - result.Subtotal

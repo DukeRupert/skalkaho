@@ -95,6 +95,7 @@ type LineItemInput struct {
 	UnitPrice        float64      `json:"unit_price"`
 	SurchargePercent *float64     `json:"surcharge_percent"`
 	SortOrder        int          `json:"sort_order"`
+	ValidCustomTypes []string     `json:"-"` // Set by handler before validation
 }
 
 // Validate checks the line item input for errors.
@@ -113,10 +114,20 @@ func (i *LineItemInput) Validate() []ValidationError {
 		})
 	}
 
-	if i.Type != LineItemTypeMaterial && i.Type != LineItemTypeLabor {
+	// Type validation - accept standard types OR valid custom types
+	isStandard := IsStandardType(i.Type)
+	isCustomValid := false
+	for _, ct := range i.ValidCustomTypes {
+		if string(i.Type) == ct {
+			isCustomValid = true
+			break
+		}
+	}
+
+	if !isStandard && !isCustomValid {
 		errors = append(errors, ValidationError{
 			Field:   "type",
-			Message: "Type must be 'material' or 'labor'",
+			Message: "Type must be a valid standard or custom type",
 		})
 	}
 
@@ -162,4 +173,89 @@ func (i *SettingsInput) Validate() []ValidationError {
 	}
 
 	return errors
+}
+
+// JobItemTypeInput represents input for creating or updating a custom item type.
+type JobItemTypeInput struct {
+	JobID     string `json:"job_id"`
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+	Color     string `json:"color"`
+	SortOrder int    `json:"sort_order"`
+}
+
+// ValidColors are the allowed Tailwind color prefixes for custom types.
+var ValidColors = []string{"forest", "copper", "slate", "amber", "rose", "violet", "cyan", "lime"}
+
+// Validate checks the job item type input for errors.
+func (i *JobItemTypeInput) Validate() []ValidationError {
+	var errors []ValidationError
+
+	if strings.TrimSpace(i.Name) == "" {
+		errors = append(errors, ValidationError{
+			Field:   "name",
+			Message: "Name is required",
+		})
+	} else if len(i.Name) > 100 {
+		errors = append(errors, ValidationError{
+			Field:   "name",
+			Message: "Name must be less than 100 characters",
+		})
+	}
+
+	if strings.TrimSpace(i.Slug) == "" {
+		errors = append(errors, ValidationError{
+			Field:   "slug",
+			Message: "Slug is required",
+		})
+	} else if !isValidSlug(i.Slug) {
+		errors = append(errors, ValidationError{
+			Field:   "slug",
+			Message: "Slug must be lowercase alphanumeric with hyphens only",
+		})
+	}
+
+	// Prevent using reserved standard type slugs
+	reserved := []string{"material", "labor", "equipment"}
+	for _, r := range reserved {
+		if i.Slug == r {
+			errors = append(errors, ValidationError{
+				Field:   "slug",
+				Message: "Cannot use reserved type name",
+			})
+			break
+		}
+	}
+
+	// Color is optional - if provided, validate it
+	if i.Color != "" {
+		colorValid := false
+		for _, c := range ValidColors {
+			if i.Color == c {
+				colorValid = true
+				break
+			}
+		}
+		if !colorValid {
+			errors = append(errors, ValidationError{
+				Field:   "color",
+				Message: "Invalid color",
+			})
+		}
+	}
+
+	return errors
+}
+
+// isValidSlug checks if a string is a valid slug (lowercase alphanumeric with hyphens).
+func isValidSlug(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, c := range s {
+		if !((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-') {
+			return false
+		}
+	}
+	return true
 }
