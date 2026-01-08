@@ -18,8 +18,11 @@ const pageSize = 20
 // JobWithTotal wraps a Job with its calculated grand total and client info.
 type JobWithTotal struct {
 	repository.Job
-	GrandTotal float64
-	ClientName string
+	GrandTotal            float64
+	ClientName            string
+	EstimateCount         int64
+	LatestEstimateStatus  string
+	LatestSignatureStatus string
 }
 
 // PaginationData holds pagination state for templates.
@@ -101,7 +104,7 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate totals for each job and get client names
+	// Calculate totals for each job and get client names + estimate status
 	jobsWithTotals := make([]JobWithTotal, len(jobs))
 	for i, job := range jobs {
 		categories, _ := h.queries.ListCategoriesByJob(ctx, job.ID)
@@ -118,10 +121,28 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 			clientName = job.CustomerName.String
 		}
 
+		// Get estimate and signature status
+		var estimateCount int64
+		var latestEstimateStatus, latestSignatureStatus string
+
+		estimates, _ := h.queries.ListEstimatesByJob(ctx, job.ID)
+		estimateCount = int64(len(estimates))
+		if len(estimates) > 0 {
+			latestEstimateStatus = estimates[0].Status // First is latest (ordered by version DESC)
+
+			// Get signature status for latest estimate
+			if sigReq, err := h.queries.GetSignatureRequestByEstimate(ctx, estimates[0].ID); err == nil {
+				latestSignatureStatus = sigReq.Status
+			}
+		}
+
 		jobsWithTotals[i] = JobWithTotal{
-			Job:        job,
-			GrandTotal: totals.GrandTotal,
-			ClientName: clientName,
+			Job:                   job,
+			GrandTotal:            totals.GrandTotal,
+			ClientName:            clientName,
+			EstimateCount:         estimateCount,
+			LatestEstimateStatus:  latestEstimateStatus,
+			LatestSignatureStatus: latestSignatureStatus,
 		}
 	}
 
