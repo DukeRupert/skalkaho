@@ -4,10 +4,14 @@
 <head>
     {{template "head" .}}
 </head>
-<body class="bg-slate-50 pb-12" data-context="estimate">
+<body class="bg-slate-50 pb-12" data-context="estimate" x-data="{ sidebarOpen: false }">
     {{template "header" .}}
 
-    <main class="max-w-4xl mx-auto p-4">
+    <div class="flex min-h-[calc(100vh-3rem)]">
+        {{template "nav_sidebar" .}}
+
+        <main class="flex-1 p-4 overflow-x-hidden">
+            <div class="max-w-4xl mx-auto">
         <!-- Breadcrumb -->
         <nav class="flex items-center gap-2 text-sm text-slate-500 mb-4">
             <a href="/" class="text-copper-700 hover:text-copper-500">Quotes</a>
@@ -199,7 +203,9 @@
                 </div>
             </div>
         </div>
-    </main>
+            </div>
+        </main>
+    </div>
 
     {{template "footer" .}}
     {{template "help_overlay" .}}

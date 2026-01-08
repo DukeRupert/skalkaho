@@ -4,10 +4,14 @@
 <head>
     {{template "head" .}}
 </head>
-<body class="bg-slate-50 pb-12">
+<body class="bg-slate-50 pb-12" x-data="{ sidebarOpen: false }">
     {{template "header" .}}
 
-    <main class="max-w-4xl mx-auto p-4">
+    <div class="flex min-h-[calc(100vh-3rem)]">
+        {{template "nav_sidebar" .}}
+
+        <main class="flex-1 p-4 overflow-x-hidden">
+            <div class="max-w-4xl mx-auto">
         <!-- Back link -->
         <a data-back-url="/" class="hidden"></a>
 
@@ -60,7 +64,9 @@
                 </div>
             </form>
         </div>
-    </main>
+            </div>
+        </main>
+    </div>
 
     {{template "footer" .}}
 </body>

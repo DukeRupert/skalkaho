@@ -4,10 +4,14 @@
 <head>
     {{template "head" .}}
 </head>
-<body class="bg-slate-50 pb-12" data-context="clients">
+<body class="bg-slate-50 pb-12" data-context="clients" x-data="{ sidebarOpen: false }">
     {{template "header" .}}
 
-    <main class="max-w-4xl mx-auto p-4">
+    <div class="flex min-h-[calc(100vh-3rem)]">
+        {{template "nav_sidebar" .}}
+
+        <main class="flex-1 p-4 overflow-x-hidden">
+            <div class="max-w-4xl mx-auto">
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-2xl font-bold tracking-tight text-slate-900">Clients</h1>
             <div class="flex items-center gap-3">
@@ -170,7 +174,9 @@
             </div>
             {{end}}
         </div>
-    </main>
+            </div>
+        </main>
+    </div>
 
     {{template "footer" .}}
     {{template "help_overlay" .}}

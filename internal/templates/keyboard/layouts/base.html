@@ -90,23 +90,61 @@ tailwind.config = {
             font-size: 16px; /* Prevents iOS zoom on focus */
         }
     }
+    /* Sidebar navigation styles */
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+        transition: all 0.15s ease;
+    }
+    .nav-link:hover {
+        background-color: #f1f5f9;
+        color: #1e293b;
+    }
+    .nav-link.active {
+        background-color: #1e293b;
+        color: #ffffff;
+    }
+    .nav-link.active:hover {
+        background-color: #334155;
+    }
+    /* Footer adjustment for sidebar on desktop */
+    @media (min-width: 1024px) {
+        #shortcuts-bar.has-sidebar {
+            left: 14rem; /* w-56 = 224px = 14rem */
+        }
+    }
 </style>
 {{end}}
 
 {{define "header"}}
 <header class="border-b border-slate-200 px-4 py-2 flex items-center justify-between bg-slate-900 text-white">
-    <a href="/" class="flex items-center gap-2">
-        <svg width="28" height="22" viewBox="0 0 56 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 0 44 Q 9 38, 18 4 Q 27 38, 36 44 Z" fill="#ffffff" opacity="0.35"/>
-            <path d="M 20 44 Q 29 38, 38 4 Q 47 38, 56 44 Z" fill="#ffffff"/>
-        </svg>
-        <span class="font-bold tracking-wider">SKALKAHO</span>
-    </a>
+    <div class="flex items-center gap-3">
+        <!-- Hamburger menu button (mobile only) -->
+        <button @click="sidebarOpen = !sidebarOpen"
+                class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-800 transition-colors"
+                aria-label="Toggle navigation">
+            <svg x-show="!sidebarOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+            <svg x-show="sidebarOpen" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        <a href="/" class="flex items-center gap-2">
+            <svg width="28" height="22" viewBox="0 0 56 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 0 44 Q 9 38, 18 4 Q 27 38, 36 44 Z" fill="#ffffff" opacity="0.35"/>
+                <path d="M 20 44 Q 29 38, 38 4 Q 47 38, 56 44 Z" fill="#ffffff"/>
+            </svg>
+            <span class="font-bold tracking-wider">SKALKAHO</span>
+        </a>
+    </div>
     <div class="flex items-center gap-4 text-sm">
-        <a href="/clients" class="text-slate-400 hover:text-white transition-colors">Clients</a>
-        <a href="/items" class="text-slate-400 hover:text-white transition-colors">Items</a>
-        <a href="/price-import" class="text-slate-400 hover:text-white transition-colors">Import</a>
-        <a href="/settings" class="text-slate-400 hover:text-white transition-colors">Settings</a>
         <button onclick="toggleHelp()" class="px-2 py-1 bg-slate-700 rounded text-xs hover:bg-slate-600">
             ? Help
         </button>

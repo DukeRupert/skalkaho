@@ -4,10 +4,14 @@
 <head>
     {{template "head" .}}
 </head>
-<body class="bg-slate-50 pb-12" data-context="client">
+<body class="bg-slate-50 pb-12" data-context="client" x-data="{ sidebarOpen: false }">
     {{template "header" .}}
 
-    <main class="max-w-4xl mx-auto p-4">
+    <div class="flex min-h-[calc(100vh-3rem)]">
+        {{template "nav_sidebar" .}}
+
+        <main class="flex-1 p-4 overflow-x-hidden">
+            <div class="max-w-4xl mx-auto">
         <!-- Back link for keyboard navigation -->
         <a data-back-url="/clients" class="hidden"></a>
 
@@ -192,7 +196,9 @@
             </div>
         </div>
         {{end}}
-    </main>
+            </div>
+        </main>
+    </div>
 
     {{template "footer" .}}
     {{template "help_overlay" .}}
