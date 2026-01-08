@@ -595,7 +595,12 @@ document.addEventListener('keydown', function(e) {
             break;
         case 'e':
             e.preventDefault();
-            showInlineForm('equipment');
+            // On job page, go to estimates; on category page, add equipment
+            if (document.body.dataset.jobId && !document.body.dataset.categoryId) {
+                window.location.href = '/jobs/' + document.body.dataset.jobId + '/estimates';
+            } else {
+                showInlineForm('equipment');
+            }
             break;
         case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
             // Custom item types - only on category page with custom types defined

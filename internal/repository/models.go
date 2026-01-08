@@ -32,6 +32,30 @@ type Client struct {
 	CreatedAt string         `json:"created_at"`
 }
 
+type Estimate struct {
+	ID          string         `json:"id"`
+	JobID       string         `json:"job_id"`
+	Version     int64          `json:"version"`
+	Status      string         `json:"status"`
+	GrandTotal  float64        `json:"grand_total"`
+	Notes       sql.NullString `json:"notes"`
+	SentAt      sql.NullString `json:"sent_at"`
+	RespondedAt sql.NullString `json:"responded_at"`
+	CreatedAt   string         `json:"created_at"`
+}
+
+type EstimateCategory struct {
+	ID               string         `json:"id"`
+	EstimateID       string         `json:"estimate_id"`
+	CategoryID       string         `json:"category_id"`
+	ParentCategoryID sql.NullString `json:"parent_category_id"`
+	Tier             int64          `json:"tier"`
+	Name             string         `json:"name"`
+	Description      sql.NullString `json:"description"`
+	Total            float64        `json:"total"`
+	SortOrder        int64          `json:"sort_order"`
+}
+
 type ItemTemplate struct {
 	ID           int64   `json:"id"`
 	Type         string  `json:"type"`

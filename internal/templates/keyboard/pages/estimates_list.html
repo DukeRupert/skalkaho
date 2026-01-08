@@ -1,0 +1,149 @@
+{{define "estimates_list"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head" .}}
+</head>
+<body class="bg-slate-50 pb-12" data-context="estimates">
+    {{template "header" .}}
+
+    <main class="max-w-4xl mx-auto p-4">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-4">
+            <a href="/" class="text-copper-700 hover:text-copper-500">Quotes</a>
+            <span>/</span>
+            <a href="/jobs/{{.Job.ID}}" class="text-copper-700 hover:text-copper-500">{{.Job.Name}}</a>
+            <span>/</span>
+            <span class="text-slate-900 font-medium">Estimates</span>
+        </nav>
+
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Estimates</h1>
+            {{if .Client}}
+            <!-- Job has client, POST directly to create -->
+            <form action="/jobs/{{.Job.ID}}/estimates" method="POST">
+                <button type="submit"
+                        class="px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Create Estimate
+                </button>
+            </form>
+            {{else}}
+            <!-- No client, show form to select one -->
+            <button onclick="showEstimateForm()"
+                    hx-get="/jobs/{{.Job.ID}}/estimates/new"
+                    hx-target="#estimate-form-container"
+                    hx-swap="innerHTML"
+                    class="px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Create Estimate
+            </button>
+            {{end}}
+        </div>
+
+        <!-- Client Info -->
+        {{if .Client}}
+        <div class="bg-white rounded-lg border border-slate-200 p-4 mb-4">
+            <div class="text-sm text-slate-500 mb-1">Client</div>
+            <div class="font-medium text-slate-900">{{.Client.Name}}</div>
+            {{if .Client.Email.Valid}}
+            <div class="text-sm text-slate-600">{{.Client.Email.String}}</div>
+            {{end}}
+        </div>
+        {{else}}
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div>
+                    <p class="text-sm font-medium text-amber-800">No client assigned</p>
+                    <p class="text-sm text-amber-700 mt-1">You'll need to select a client when creating an estimate.</p>
+                </div>
+            </div>
+        </div>
+        {{end}}
+
+        <!-- Form Container -->
+        <div id="estimate-form-container"></div>
+
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            {{if .Estimates}}
+            <div id="estimates-list">
+                {{range $i, $est := .Estimates}}
+                <div class="row flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-slate-50"
+                     data-index="{{$i}}"
+                     data-delete-url="/estimates/{{$est.ID}}">
+                    <a href="/estimates/{{$est.ID}}" class="flex-1 min-w-0 flex items-center gap-3">
+                        <!-- Version -->
+                        <span class="font-medium text-slate-900">v{{$est.Version}}</span>
+
+                        <!-- Status Badge -->
+                        {{if eq $est.Status "draft"}}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-600">Draft</span>
+                        {{else if eq $est.Status "sent"}}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700">Sent</span>
+                        {{else if eq $est.Status "accepted"}}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-forest-100 text-forest-700">Accepted</span>
+                        {{else if eq $est.Status "rejected"}}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700">Rejected</span>
+                        {{end}}
+                    </a>
+
+                    <span class="text-sm tabular-nums font-semibold text-slate-900">{{formatMoney $est.GrandTotal}}</span>
+
+                    <!-- Action Menu -->
+                    <div class="relative ml-3" x-data="{ open: false }">
+                        <button
+                            @click.stop.prevent="open = !open"
+                            class="touch-action p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+                            aria-label="Actions">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                            </svg>
+                        </button>
+                        <div
+                            x-show="open"
+                            x-cloak
+                            x-transition
+                            @click.away="open = false"
+                            class="action-menu absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                            <a href="/estimates/{{$est.ID}}"
+                               class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                Open
+                            </a>
+                            {{if eq $est.Status "draft"}}
+                            <a href="/estimates/{{$est.ID}}/preview"
+                               class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                                Preview
+                            </a>
+                            {{end}}
+                            <button
+                                @click.stop="if(confirm('Delete this estimate?')) { htmx.ajax('DELETE', '/estimates/{{$est.ID}}', {target: 'body'}); open = false; }"
+                                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{else}}
+            <div class="px-4 py-8 text-center text-slate-500">
+                <p>No estimates yet.</p>
+                <p class="text-sm mt-2">Create an estimate to send a simplified quote to your client.</p>
+            </div>
+            {{end}}
+        </div>
+    </main>
+
+    {{template "footer" .}}
+    {{template "help_overlay" .}}
+    {{template "scripts" .}}
+</body>
+</html>
+{{end}}

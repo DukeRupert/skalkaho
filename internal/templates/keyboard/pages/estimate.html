@@ -1,0 +1,209 @@
+{{define "estimate"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {{template "head" .}}
+</head>
+<body class="bg-slate-50 pb-12" data-context="estimate">
+    {{template "header" .}}
+
+    <main class="max-w-4xl mx-auto p-4">
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-slate-500 mb-4">
+            <a href="/" class="text-copper-700 hover:text-copper-500">Quotes</a>
+            <span>/</span>
+            <a href="/jobs/{{.Job.ID}}" class="text-copper-700 hover:text-copper-500">{{.Job.Name}}</a>
+            <span>/</span>
+            <a href="/jobs/{{.Job.ID}}/estimates" class="text-copper-700 hover:text-copper-500">Estimates</a>
+            <span>/</span>
+            <span class="text-slate-900 font-medium">v{{.Estimate.Version}}</span>
+        </nav>
+
+        <!-- Header Card -->
+        <div class="bg-white rounded-lg border border-slate-200 p-4 mb-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Estimate v{{.Estimate.Version}}</h1>
+                    <p class="text-sm text-slate-500 mt-1">{{.Job.Name}}</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Status Badge -->
+                    {{if eq .Estimate.Status "draft"}}
+                    <span class="px-3 py-1 text-sm font-medium rounded-full bg-slate-100 text-slate-600">Draft</span>
+                    {{else if eq .Estimate.Status "sent"}}
+                    <span class="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-700">Sent</span>
+                    {{else if eq .Estimate.Status "accepted"}}
+                    <span class="px-3 py-1 text-sm font-medium rounded-full bg-forest-100 text-forest-700">Accepted</span>
+                    {{else if eq .Estimate.Status "rejected"}}
+                    <span class="px-3 py-1 text-sm font-medium rounded-full bg-red-100 text-red-700">Rejected</span>
+                    {{end}}
+
+                    <span class="text-xl font-bold tabular-nums text-slate-900">{{formatMoney .Estimate.GrandTotal}}</span>
+                </div>
+            </div>
+
+            <!-- Client Info -->
+            {{if .Client}}
+            <div class="mt-4 pt-4 border-t border-slate-100">
+                <div class="text-sm text-slate-500">Client</div>
+                <div class="font-medium text-slate-900">{{.Client.Name}}</div>
+                {{if .Client.Email.Valid}}
+                <div class="text-sm text-slate-600">{{.Client.Email.String}}</div>
+                {{end}}
+            </div>
+            {{end}}
+
+            <!-- Actions -->
+            <div class="flex flex-wrap gap-3 mt-4 pt-4 border-t border-slate-100">
+                {{if eq .Estimate.Status "draft"}}
+                <a href="/estimates/{{.Estimate.ID}}/preview"
+                   class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm font-medium">
+                    Preview
+                </a>
+                <form action="/estimates/{{.Estimate.ID}}/send" method="POST" class="inline">
+                    <button type="submit"
+                            onclick="return confirm('Send this estimate to {{if .Client}}{{.Client.Name}}{{else}}the client{{end}}?')"
+                            class="px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white rounded-lg text-sm font-medium">
+                        Send to Client
+                    </button>
+                </form>
+                {{else if eq .Estimate.Status "sent"}}
+                <form action="/estimates/{{.Estimate.ID}}/status" method="POST" class="inline">
+                    <input type="hidden" name="status" value="accepted">
+                    <button type="submit"
+                            class="px-4 py-2 bg-forest-600 hover:bg-forest-700 text-white rounded-lg text-sm font-medium">
+                        Mark Accepted
+                    </button>
+                </form>
+                <form action="/estimates/{{.Estimate.ID}}/status" method="POST" class="inline">
+                    <input type="hidden" name="status" value="rejected">
+                    <button type="submit"
+                            class="px-4 py-2 border border-red-300 text-red-700 rounded-lg hover:bg-red-50 text-sm font-medium">
+                        Mark Rejected
+                    </button>
+                </form>
+                {{end}}
+            </div>
+        </div>
+
+        <!-- Categories -->
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            <div class="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                <h2 class="font-semibold text-slate-900">Categories</h2>
+                <p class="text-sm text-slate-500 mt-0.5">Add descriptions to explain each category to your client</p>
+            </div>
+
+            {{if .Categories}}
+            {{range .Categories}}
+            <!-- Tier 1 Category -->
+            <div class="border-b border-slate-100 last:border-b-0">
+                <div class="px-4 py-4 bg-slate-50/50">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-semibold text-slate-900">{{.Name}}</h3>
+                        <span class="font-semibold tabular-nums text-slate-900">{{formatMoney .Total}}</span>
+                    </div>
+
+                    <!-- Description (editable) -->
+                    <div class="mt-3" x-data="{ editing: false }">
+                        <div x-show="!editing">
+                            {{if .Description.Valid}}
+                            <p class="text-sm text-slate-600">{{.Description.String}}</p>
+                            <button @click="editing = true" class="text-xs text-copper-600 hover:text-copper-700 mt-1">
+                                Edit description
+                            </button>
+                            {{else}}
+                            <button @click="editing = true" class="text-sm text-copper-600 hover:text-copper-700">
+                                + Add description
+                            </button>
+                            {{end}}
+                        </div>
+                        <form x-show="editing"
+                              x-cloak
+                              hx-put="/estimate-categories/{{.ID}}/description"
+                              hx-target="body"
+                              class="mt-2"
+                              @submit="editing = false">
+                            <textarea name="description"
+                                      rows="4"
+                                      class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-copper-500 focus:border-copper-500 resize-y"
+                                      placeholder="Description for client...">{{if .Description.Valid}}{{.Description.String}}{{end}}</textarea>
+                            <div class="flex gap-2 mt-2">
+                                <button type="submit" class="px-3 py-1.5 bg-copper-600 text-white text-sm rounded-lg hover:bg-copper-700">
+                                    Save
+                                </button>
+                                <button type="button" @click="editing = false" class="px-3 py-1.5 text-slate-600 text-sm">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tier 2 Children -->
+                {{range .Children}}
+                <div class="px-4 py-3 pl-8 border-t border-slate-100">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-700">{{.Name}}</span>
+                        <span class="tabular-nums text-slate-600">{{formatMoney .Total}}</span>
+                    </div>
+
+                    <!-- Description (editable) -->
+                    <div class="mt-2" x-data="{ editing: false }">
+                        <div x-show="!editing">
+                            {{if .Description.Valid}}
+                            <p class="text-sm text-slate-500">{{.Description.String}}</p>
+                            <button @click="editing = true" class="text-xs text-copper-600 hover:text-copper-700 mt-1">
+                                Edit
+                            </button>
+                            {{else}}
+                            <button @click="editing = true" class="text-xs text-copper-600 hover:text-copper-700">
+                                + Add description
+                            </button>
+                            {{end}}
+                        </div>
+                        <form x-show="editing"
+                              x-cloak
+                              hx-put="/estimate-categories/{{.ID}}/description"
+                              hx-target="body"
+                              class="mt-2"
+                              @submit="editing = false">
+                            <textarea name="description"
+                                      rows="3"
+                                      class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-copper-500 focus:border-copper-500 resize-y"
+                                      placeholder="Description...">{{if .Description.Valid}}{{.Description.String}}{{end}}</textarea>
+                            <div class="flex gap-2 mt-2">
+                                <button type="submit" class="px-3 py-1.5 bg-copper-600 text-white text-sm rounded-lg hover:bg-copper-700">
+                                    Save
+                                </button>
+                                <button type="button" @click="editing = false" class="px-3 py-1.5 text-slate-600 text-sm">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{end}}
+            {{else}}
+            <div class="px-4 py-8 text-center text-slate-500">
+                <p>No categories in this estimate.</p>
+            </div>
+            {{end}}
+
+            <!-- Total -->
+            <div class="px-4 py-4 bg-slate-100 border-t border-slate-200">
+                <div class="flex items-center justify-between">
+                    <span class="text-lg font-bold text-slate-900">Total</span>
+                    <span class="text-lg font-bold tabular-nums text-slate-900">{{formatMoney .Estimate.GrandTotal}}</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {{template "footer" .}}
+    {{template "help_overlay" .}}
+    {{template "scripts" .}}
+</body>
+</html>
+{{end}}

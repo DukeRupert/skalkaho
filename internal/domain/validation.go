@@ -261,3 +261,31 @@ func isValidSlug(s string) bool {
 	}
 	return true
 }
+
+// EstimateCategoryInput represents input for updating an estimate category description.
+type EstimateCategoryInput struct {
+	Description *string `json:"description"`
+}
+
+// Validate checks the estimate category input for errors.
+func (i *EstimateCategoryInput) Validate() []ValidationError {
+	var errors []ValidationError
+
+	if i.Description != nil && len(*i.Description) > 1000 {
+		errors = append(errors, ValidationError{
+			Field:   "description",
+			Message: "Description must be less than 1000 characters",
+		})
+	}
+
+	return errors
+}
+
+// ValidEstimateStatus checks if a status string is valid.
+func ValidEstimateStatus(s string) bool {
+	switch EstimateStatus(s) {
+	case EstimateStatusDraft, EstimateStatusSent, EstimateStatusAccepted, EstimateStatusRejected:
+		return true
+	}
+	return false
+}

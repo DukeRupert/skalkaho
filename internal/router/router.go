@@ -33,6 +33,17 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("GET /jobs/{id}/client", h.GetJobClientForm)
 	mux.HandleFunc("PUT /jobs/{id}/client", h.UpdateJobClient)
 
+	// Estimates
+	mux.HandleFunc("GET /jobs/{jobID}/estimates", h.ListEstimates)
+	mux.HandleFunc("GET /jobs/{jobID}/estimates/new", h.GetNewEstimateForm)
+	mux.HandleFunc("POST /jobs/{jobID}/estimates", h.CreateEstimate)
+	mux.HandleFunc("GET /estimates/{id}", h.GetEstimate)
+	mux.HandleFunc("DELETE /estimates/{id}", h.DeleteEstimate)
+	mux.HandleFunc("GET /estimates/{id}/preview", h.GetEstimatePreview)
+	mux.HandleFunc("POST /estimates/{id}/send", h.SendEstimate)
+	mux.HandleFunc("POST /estimates/{id}/status", h.UpdateEstimateStatus)
+	mux.HandleFunc("PUT /estimate-categories/{id}/description", h.UpdateEstimateCategoryDescription)
+
 	// Categories
 	mux.HandleFunc("GET /categories/{id}", h.GetCategory)
 	mux.HandleFunc("POST /jobs/{jobID}/categories", h.CreateCategory)

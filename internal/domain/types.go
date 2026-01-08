@@ -101,3 +101,39 @@ var CommonUnits = struct {
 	Material: []string{"ea", "sqft", "lnft", "bundle", "box", "bag", "gal", "sheet"},
 	Labor:    []string{"hr", "day", "job", "sqft"},
 }
+
+// EstimateStatus defines the lifecycle states for an estimate.
+type EstimateStatus string
+
+const (
+	EstimateStatusDraft    EstimateStatus = "draft"
+	EstimateStatusSent     EstimateStatus = "sent"
+	EstimateStatusAccepted EstimateStatus = "accepted"
+	EstimateStatusRejected EstimateStatus = "rejected"
+)
+
+// Estimate represents a client-facing snapshot of a quote.
+type Estimate struct {
+	ID          string         `json:"id"`
+	JobID       string         `json:"job_id"`
+	Version     int            `json:"version"`
+	Status      EstimateStatus `json:"status"`
+	GrandTotal  float64        `json:"grand_total"`
+	Notes       *string        `json:"notes,omitempty"`
+	SentAt      *time.Time     `json:"sent_at,omitempty"`
+	RespondedAt *time.Time     `json:"responded_at,omitempty"`
+	CreatedAt   time.Time      `json:"created_at"`
+}
+
+// EstimateCategory represents a category snapshot in an estimate.
+type EstimateCategory struct {
+	ID               string  `json:"id"`
+	EstimateID       string  `json:"estimate_id"`
+	CategoryID       string  `json:"category_id"`
+	ParentCategoryID *string `json:"parent_category_id,omitempty"`
+	Tier             int     `json:"tier"`
+	Name             string  `json:"name"`
+	Description      *string `json:"description,omitempty"`
+	Total            float64 `json:"total"`
+	SortOrder        int     `json:"sort_order"`
+}
