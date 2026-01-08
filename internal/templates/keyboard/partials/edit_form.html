@@ -16,12 +16,19 @@
         </div>
 
         <input type="text"
+               name="description"
+               id="edit-description"
+               value="{{if .Item.Description.Valid}}{{.Item.Description.String}}{{end}}"
+               placeholder="Description"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+        <input type="text"
                name="tag"
                id="edit-tag"
                value="{{if .Item.Tag.Valid}}{{.Item.Tag.String}}{{end}}"
                list="existing-tags"
                placeholder="Tag"
-               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+               class="col-span-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
         <datalist id="existing-tags">
             {{range .ExistingTags}}
             <option value="{{.}}">
@@ -40,7 +47,7 @@
                name="unit"
                id="edit-unit"
                value="{{.Item.Unit}}"
-               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+               class="col-span-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
 
         <div class="col-span-2 flex items-center border border-slate-300 rounded focus-within:ring-2 focus-within:ring-slate-400 overflow-hidden bg-white">
             <span class="pl-2 text-slate-500 text-sm shrink-0">$</span>

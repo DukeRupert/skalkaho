@@ -19,11 +19,17 @@
         </div>
 
         <input type="text"
+               name="description"
+               id="item-description"
+               placeholder="Description"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+        <input type="text"
                name="tag"
                id="item-tag"
                list="existing-tags"
                placeholder="Tag"
-               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+               class="col-span-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
         <datalist id="existing-tags">
             {{range .ExistingTags}}
             <option value="{{.}}">
@@ -43,7 +49,7 @@
                id="item-unit"
                value="{{.DefaultUnit}}"
                placeholder="unit"
-               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
+               class="col-span-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400">
 
         <div class="col-span-2 flex items-center border border-slate-300 rounded focus-within:ring-2 focus-within:ring-slate-400 overflow-hidden">
             <span class="pl-2 text-slate-500 text-sm shrink-0">$</span>

@@ -352,11 +352,17 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 		tagParam = sql.NullString{String: tag, Valid: true}
 	}
 
+	description := r.FormValue("description")
+	var descParam sql.NullString
+	if description != "" {
+		descParam = sql.NullString{String: description, Valid: true}
+	}
+
 	_, err = h.queries.UpdateLineItem(ctx, repository.UpdateLineItemParams{
 		ID:               itemID,
 		Type:             item.Type,
 		Name:             name,
-		Description:      item.Description,
+		Description:      descParam,
 		Quantity:         quantity,
 		Unit:             unit,
 		UnitPrice:        unitPrice,
@@ -683,12 +689,18 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 		tagParam = sql.NullString{String: tag, Valid: true}
 	}
 
+	description := r.FormValue("description")
+	var descParam sql.NullString
+	if description != "" {
+		descParam = sql.NullString{String: description, Valid: true}
+	}
+
 	_, err := h.queries.CreateLineItem(ctx, repository.CreateLineItemParams{
 		ID:               uuid.New().String(),
 		CategoryID:       categoryID,
 		Type:             itemType,
 		Name:             name,
-		Description:      sql.NullString{},
+		Description:      descParam,
 		Quantity:         quantity,
 		Unit:             unit,
 		UnitPrice:        unitPrice,

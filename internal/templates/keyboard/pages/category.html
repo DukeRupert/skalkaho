@@ -272,13 +272,21 @@
                                 <span class="text-sm font-medium text-slate-900">{{$item.Name}}</span>
                                 <span class="text-sm tabular-nums font-medium text-slate-900">{{formatMoney (mul $item.Quantity $item.UnitPrice)}}</span>
                             </div>
+                            {{if $item.Description.Valid}}
+                            <div class="text-xs text-slate-600 mt-0.5">{{$item.Description.String}}</div>
+                            {{end}}
                             <div class="text-xs text-slate-500 mt-1">
                                 {{printf "%.2f" $item.Quantity}} {{$item.Unit}} @ {{formatMoney $item.UnitPrice}}
                             </div>
                         </div>
                         <!-- Desktop layout -->
                         <div class="hidden sm:grid flex-1 px-4 py-3 grid-cols-12 gap-2 items-center">
-                            <span class="col-span-5 text-sm font-medium text-slate-900 truncate">{{$item.Name}}</span>
+                            <div class="col-span-5">
+                                <span class="text-sm font-medium text-slate-900 truncate block">{{$item.Name}}</span>
+                                {{if $item.Description.Valid}}
+                                <span class="text-xs text-slate-500 truncate block">{{$item.Description.String}}</span>
+                                {{end}}
+                            </div>
                             <span class="col-span-2 text-sm text-right tabular-nums text-slate-700">{{printf "%.2f" $item.Quantity}}</span>
                             <span class="col-span-2 text-sm text-slate-500">{{$item.Unit}}</span>
                             <span class="col-span-2 text-sm text-right tabular-nums text-slate-700">{{formatMoney $item.UnitPrice}}</span>
