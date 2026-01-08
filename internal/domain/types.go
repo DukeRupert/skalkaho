@@ -140,17 +140,17 @@ type EstimateCategory struct {
 
 // CompanyProfile holds contractor/business information.
 type CompanyProfile struct {
-	ID        string     `json:"id"`
-	Name      string     `json:"name"`
-	Email     *string    `json:"email,omitempty"`
-	Phone     *string    `json:"phone,omitempty"`
-	Address   *string    `json:"address,omitempty"`
-	City      *string    `json:"city,omitempty"`
-	State     *string    `json:"state,omitempty"`
-	Zip       *string    `json:"zip,omitempty"`
-	LogoPath  *string    `json:"logo_path,omitempty"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Email     *string   `json:"email,omitempty"`
+	Phone     *string   `json:"phone,omitempty"`
+	Address   *string   `json:"address,omitempty"`
+	City      *string   `json:"city,omitempty"`
+	State     *string   `json:"state,omitempty"`
+	Zip       *string   `json:"zip,omitempty"`
+	LogoPath  *string   `json:"logo_path,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // SignatureRequestStatus defines lifecycle states for signature requests.
@@ -197,22 +197,22 @@ type Signature struct {
 
 // QuoteSnapshot captures the quote state at send time for immutable reference.
 type QuoteSnapshot struct {
-	JobName      string             `json:"job_name"`
-	ClientName   string             `json:"client_name"`
-	ClientEmail  string             `json:"client_email"`
-	Categories   []CategorySnapshot `json:"categories"`
-	GrandTotal   float64            `json:"grand_total"`
-	Notes        *string            `json:"notes,omitempty"`
-	GeneratedAt  time.Time          `json:"generated_at"`
-	EstimateID   string             `json:"estimate_id"`
-	Version      int                `json:"version"`
+	JobName     string             `json:"job_name"`
+	ClientName  string             `json:"client_name"`
+	ClientEmail string             `json:"client_email"`
+	Categories  []CategorySnapshot `json:"categories"`
+	GrandTotal  float64            `json:"grand_total"`
+	Notes       *string            `json:"notes,omitempty"`
+	GeneratedAt time.Time          `json:"generated_at"`
+	EstimateID  string             `json:"estimate_id"`
+	Version     int                `json:"version"`
 }
 
 // CategorySnapshot captures category state for the quote snapshot.
 type CategorySnapshot struct {
-	Name        string   `json:"name"`
-	Description *string  `json:"description,omitempty"`
-	Total       float64  `json:"total"`
-	Tier        int      `json:"tier"`
-	SortOrder   int      `json:"sort_order"`
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+	Total       float64 `json:"total"`
+	Tier        int     `json:"tier"`
+	SortOrder   int     `json:"sort_order"`
 }
