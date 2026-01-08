@@ -164,7 +164,7 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "No file uploaded", http.StatusBadRequest)
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Validate file extension
 	ext := strings.ToLower(filepath.Ext(header.Filename))

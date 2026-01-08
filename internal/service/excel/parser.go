@@ -43,7 +43,7 @@ func (p *Parser) ParseToText(r io.Reader, filename string) (*RawSpreadsheet, err
 	if err != nil {
 		return nil, fmt.Errorf("opening excel file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Get the first sheet
 	sheets := f.GetSheetList()
@@ -83,7 +83,7 @@ func (p *Parser) Parse(r io.Reader, filename string) (*ParseResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening excel file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Get the first sheet
 	sheets := f.GetSheetList()
