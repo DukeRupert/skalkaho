@@ -137,3 +137,82 @@ type EstimateCategory struct {
 	Total            float64 `json:"total"`
 	SortOrder        int     `json:"sort_order"`
 }
+
+// CompanyProfile holds contractor/business information.
+type CompanyProfile struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Email     *string    `json:"email,omitempty"`
+	Phone     *string    `json:"phone,omitempty"`
+	Address   *string    `json:"address,omitempty"`
+	City      *string    `json:"city,omitempty"`
+	State     *string    `json:"state,omitempty"`
+	Zip       *string    `json:"zip,omitempty"`
+	LogoPath  *string    `json:"logo_path,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+}
+
+// SignatureRequestStatus defines lifecycle states for signature requests.
+type SignatureRequestStatus string
+
+const (
+	SignatureRequestStatusPending   SignatureRequestStatus = "pending"
+	SignatureRequestStatusSigned    SignatureRequestStatus = "signed"
+	SignatureRequestStatusExpired   SignatureRequestStatus = "expired"
+	SignatureRequestStatusCancelled SignatureRequestStatus = "cancelled"
+)
+
+// SignatureRequest tracks outbound signature requests.
+type SignatureRequest struct {
+	ID              string                 `json:"id"`
+	EstimateID      string                 `json:"estimate_id"`
+	RecipientEmail  string                 `json:"recipient_email"`
+	RecipientName   string                 `json:"recipient_name"`
+	Token           string                 `json:"-"` // Never expose token in JSON
+	DocumentHash    string                 `json:"document_hash"`
+	QuoteSnapshot   string                 `json:"-"` // Large JSON, exclude from default serialization
+	Message         *string                `json:"message,omitempty"`
+	Status          SignatureRequestStatus `json:"status"`
+	ExpiresAt       time.Time              `json:"expires_at"`
+	SenderIP        *string                `json:"sender_ip,omitempty"`
+	SenderUserAgent *string                `json:"sender_user_agent,omitempty"`
+	CreatedAt       time.Time              `json:"created_at"`
+}
+
+// Signature captures the actual signing event (immutable after creation).
+type Signature struct {
+	ID                 string    `json:"id"`
+	RequestID          string    `json:"request_id"`
+	LegalName          string    `json:"legal_name"`
+	ConsentText        string    `json:"consent_text"`
+	DocumentHash       string    `json:"document_hash"`
+	SignedAt           time.Time `json:"signed_at"`
+	SignerIP           string    `json:"signer_ip"`
+	SignerUserAgent    string    `json:"signer_user_agent"`
+	SignerEmail        string    `json:"signer_email"`
+	CertificatePDFPath *string   `json:"certificate_pdf_path,omitempty"`
+	CreatedAt          time.Time `json:"created_at"`
+}
+
+// QuoteSnapshot captures the quote state at send time for immutable reference.
+type QuoteSnapshot struct {
+	JobName      string             `json:"job_name"`
+	ClientName   string             `json:"client_name"`
+	ClientEmail  string             `json:"client_email"`
+	Categories   []CategorySnapshot `json:"categories"`
+	GrandTotal   float64            `json:"grand_total"`
+	Notes        *string            `json:"notes,omitempty"`
+	GeneratedAt  time.Time          `json:"generated_at"`
+	EstimateID   string             `json:"estimate_id"`
+	Version      int                `json:"version"`
+}
+
+// CategorySnapshot captures category state for the quote snapshot.
+type CategorySnapshot struct {
+	Name        string   `json:"name"`
+	Description *string  `json:"description,omitempty"`
+	Total       float64  `json:"total"`
+	Tier        int      `json:"tier"`
+	SortOrder   int      `json:"sort_order"`
+}

@@ -44,6 +44,16 @@ func Register(mux *http.ServeMux, h *keyboard.Handler) {
 	mux.HandleFunc("POST /estimates/{id}/status", h.UpdateEstimateStatus)
 	mux.HandleFunc("PUT /estimate-categories/{id}/description", h.UpdateEstimateCategoryDescription)
 
+	// E-Signatures
+	mux.HandleFunc("GET /estimates/{id}/send-for-signature", h.GetSendSignatureForm)
+	mux.HandleFunc("POST /estimates/{id}/send-for-signature", h.SendForSignature)
+	mux.HandleFunc("POST /estimates/{id}/cancel-signature", h.CancelSignatureRequest)
+
+	// Public Signature Pages (no auth)
+	mux.HandleFunc("GET /sign/{token}", h.GetSignaturePage)
+	mux.HandleFunc("POST /sign/{token}", h.SubmitSignature)
+	mux.HandleFunc("GET /sign/{token}/complete", h.GetSignatureComplete)
+
 	// Categories
 	mux.HandleFunc("GET /categories/{id}", h.GetCategory)
 	mux.HandleFunc("POST /jobs/{jobID}/categories", h.CreateCategory)

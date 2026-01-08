@@ -310,11 +310,19 @@ func (h *Handler) GetEstimate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := map[string]interface{}{
-		"Estimate":   estimate,
-		"Job":        job,
-		"Categories": categoryTree,
-		"Client":     client,
+	// Get latest signature request if any
+	var signatureRequest *repository.SignatureRequest
+	req, err := h.queries.GetSignatureRequestByEstimate(ctx, estimateID)
+	if err == nil {
+		signatureRequest = &req
+	}
+
+	data := map[string]any{
+		"Estimate":         estimate,
+		"Job":              job,
+		"Categories":       categoryTree,
+		"Client":           client,
+		"SignatureRequest": signatureRequest,
 	}
 
 	if err := h.renderer.Render(w, "estimate", data); err != nil {

@@ -32,6 +32,20 @@ type Client struct {
 	CreatedAt string         `json:"created_at"`
 }
 
+type CompanyProfile struct {
+	ID        string         `json:"id"`
+	Name      string         `json:"name"`
+	Email     sql.NullString `json:"email"`
+	Phone     sql.NullString `json:"phone"`
+	Address   sql.NullString `json:"address"`
+	City      sql.NullString `json:"city"`
+	State     sql.NullString `json:"state"`
+	Zip       sql.NullString `json:"zip"`
+	LogoPath  sql.NullString `json:"logo_path"`
+	CreatedAt string         `json:"created_at"`
+	UpdatedAt string         `json:"updated_at"`
+}
+
 type Estimate struct {
 	ID          string         `json:"id"`
 	JobID       string         `json:"job_id"`
@@ -135,4 +149,34 @@ type Setting struct {
 	ID                      string  `json:"id"`
 	DefaultSurchargeMode    string  `json:"default_surcharge_mode"`
 	DefaultSurchargePercent float64 `json:"default_surcharge_percent"`
+}
+
+type Signature struct {
+	ID                 string         `json:"id"`
+	RequestID          string         `json:"request_id"`
+	LegalName          string         `json:"legal_name"`
+	ConsentText        string         `json:"consent_text"`
+	DocumentHash       string         `json:"document_hash"`
+	SignedAt           string         `json:"signed_at"`
+	SignerIp           string         `json:"signer_ip"`
+	SignerUserAgent    string         `json:"signer_user_agent"`
+	SignerEmail        string         `json:"signer_email"`
+	CertificatePdfPath sql.NullString `json:"certificate_pdf_path"`
+	CreatedAt          string         `json:"created_at"`
+}
+
+type SignatureRequest struct {
+	ID              string         `json:"id"`
+	EstimateID      string         `json:"estimate_id"`
+	RecipientEmail  string         `json:"recipient_email"`
+	RecipientName   string         `json:"recipient_name"`
+	Token           string         `json:"token"`
+	DocumentHash    string         `json:"document_hash"`
+	QuoteSnapshot   string         `json:"quote_snapshot"`
+	Message         sql.NullString `json:"message"`
+	Status          string         `json:"status"`
+	ExpiresAt       string         `json:"expires_at"`
+	SenderIp        sql.NullString `json:"sender_ip"`
+	SenderUserAgent sql.NullString `json:"sender_user_agent"`
+	CreatedAt       string         `json:"created_at"`
 }

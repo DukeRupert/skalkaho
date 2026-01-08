@@ -64,14 +64,53 @@
                    class="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-sm font-medium">
                     Preview
                 </a>
-                <form action="/estimates/{{.Estimate.ID}}/send" method="POST" class="inline">
-                    <button type="submit"
-                            onclick="return confirm('Send this estimate to {{if .Client}}{{.Client.Name}}{{else}}the client{{end}}?')"
-                            class="px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white rounded-lg text-sm font-medium">
-                        Send to Client
-                    </button>
-                </form>
+                {{if .SignatureRequest}}
+                    {{if eq .SignatureRequest.Status "pending"}}
+                    <!-- Pending signature request -->
+                    <span class="px-3 py-2 text-sm font-medium rounded-lg bg-amber-100 text-amber-700">
+                        Awaiting Signature from {{.SignatureRequest.RecipientName}}
+                    </span>
+                    <form action="/estimates/{{.Estimate.ID}}/cancel-signature" method="POST" class="inline"
+                          hx-post="/estimates/{{.Estimate.ID}}/cancel-signature"
+                          hx-confirm="Cancel this signature request?">
+                        <button type="submit"
+                                class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium">
+                            Cancel Request
+                        </button>
+                    </form>
+                    {{else if eq .SignatureRequest.Status "signed"}}
+                    <!-- Signed -->
+                    <span class="px-3 py-2 text-sm font-medium rounded-lg bg-forest-100 text-forest-700">
+                        Signed by {{.SignatureRequest.RecipientName}}
+                    </span>
+                    {{end}}
+                {{else}}
+                <!-- No signature request yet -->
+                <a href="/estimates/{{.Estimate.ID}}/send-for-signature"
+                   class="px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white rounded-lg text-sm font-medium">
+                    Send for Signature
+                </a>
+                {{end}}
                 {{else if eq .Estimate.Status "sent"}}
+                {{if .SignatureRequest}}
+                    {{if eq .SignatureRequest.Status "pending"}}
+                    <span class="px-3 py-2 text-sm font-medium rounded-lg bg-amber-100 text-amber-700">
+                        Awaiting Signature
+                    </span>
+                    <form action="/estimates/{{.Estimate.ID}}/cancel-signature" method="POST" class="inline"
+                          hx-post="/estimates/{{.Estimate.ID}}/cancel-signature"
+                          hx-confirm="Cancel this signature request?">
+                        <button type="submit"
+                                class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 text-sm font-medium">
+                            Cancel
+                        </button>
+                    </form>
+                    {{else if eq .SignatureRequest.Status "signed"}}
+                    <span class="px-3 py-2 text-sm font-medium rounded-lg bg-forest-100 text-forest-700">
+                        Signed
+                    </span>
+                    {{end}}
+                {{else}}
                 <form action="/estimates/{{.Estimate.ID}}/status" method="POST" class="inline">
                     <input type="hidden" name="status" value="accepted">
                     <button type="submit"
@@ -86,6 +125,13 @@
                         Mark Rejected
                     </button>
                 </form>
+                {{end}}
+                {{else if eq .Estimate.Status "accepted"}}
+                {{if .SignatureRequest}}{{if eq .SignatureRequest.Status "signed"}}
+                <span class="px-3 py-2 text-sm font-medium rounded-lg bg-forest-100 text-forest-700">
+                    Signed by {{.SignatureRequest.RecipientName}}
+                </span>
+                {{end}}{{end}}
                 {{end}}
             </div>
         </div>
