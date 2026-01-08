@@ -207,6 +207,13 @@ func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Update estimate status to 'sent'
+	_, err = h.queries.MarkEstimateSent(ctx, estimateID)
+	if err != nil {
+		logger.Error("failed to update estimate status", "error", err)
+		// Non-fatal: signature request was created, just log the error
+	}
+
 	// Build signing URL
 	scheme := "http"
 	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
@@ -368,6 +375,13 @@ func (h *Handler) SubmitSignature(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		logger.Error("failed to update signature request status", "error", err)
+	}
+
+	// Update estimate status to 'accepted'
+	_, err = h.queries.MarkEstimateAccepted(ctx, request.EstimateID)
+	if err != nil {
+		logger.Error("failed to update estimate status to accepted", "error", err)
+		// Non-fatal: signature was captured, just log the error
 	}
 
 	// Log email notifications (stub)

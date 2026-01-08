@@ -23,30 +23,39 @@
 
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-2xl font-bold tracking-tight text-slate-900">Estimates</h1>
-            {{if .Client}}
-            <!-- Job has client, POST directly to create -->
-            <form action="/jobs/{{.Job.ID}}/estimates" method="POST">
-                <button type="submit"
+            <div class="flex items-center gap-3">
+                <!-- Keyboard hint (hidden on small screens) -->
+                <span class="hidden sm:inline text-sm text-slate-500">
+                    <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">n</kbd> new estimate
+                </span>
+                {{if .Client}}
+                <!-- Job has client, POST directly to create -->
+                <form id="new-estimate-form" action="/jobs/{{.Job.ID}}/estimates" method="POST">
+                    <button type="submit"
+                            class="px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <span class="sm:hidden">New</span>
+                        <span class="hidden sm:inline">Create Estimate</span>
+                    </button>
+                </form>
+                {{else}}
+                <!-- No client, show form to select one -->
+                <button id="new-estimate-btn"
+                        onclick="showEstimateForm()"
+                        hx-get="/jobs/{{.Job.ID}}/estimates/new"
+                        hx-target="#estimate-form-container"
+                        hx-swap="innerHTML"
                         class="px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                     </svg>
-                    Create Estimate
+                    <span class="sm:hidden">New</span>
+                    <span class="hidden sm:inline">Create Estimate</span>
                 </button>
-            </form>
-            {{else}}
-            <!-- No client, show form to select one -->
-            <button onclick="showEstimateForm()"
-                    hx-get="/jobs/{{.Job.ID}}/estimates/new"
-                    hx-target="#estimate-form-container"
-                    hx-swap="innerHTML"
-                    class="px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Create Estimate
-            </button>
-            {{end}}
+                {{end}}
+            </div>
         </div>
 
         <!-- Client Info -->
@@ -75,7 +84,7 @@
         <!-- Form Container -->
         <div id="estimate-form-container"></div>
 
-        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-lg border border-slate-200">
             {{if .Estimates}}
             <div id="estimates-list">
                 {{range $i, $est := .Estimates}}
@@ -150,6 +159,37 @@
     {{template "footer" .}}
     {{template "help_overlay" .}}
     {{template "scripts" .}}
+
+    <script>
+    // Handle 'n' key to create new estimate
+    document.addEventListener('keydown', function(e) {
+        // Skip if typing in an input or textarea
+        if (e.target.matches('input, textarea, select')) return;
+        // Skip if modifier keys are pressed
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        if (e.key === 'n') {
+            e.preventDefault();
+            {{if .Client}}
+            // Submit the form directly
+            const form = document.getElementById('new-estimate-form');
+            if (form) form.submit();
+            {{else}}
+            // Trigger the button to show client selection form
+            const btn = document.getElementById('new-estimate-btn');
+            if (btn) btn.click();
+            {{end}}
+        }
+    });
+    </script>
 </body>
 </html>
+{{end}}
+
+{{define "shortcuts"}}
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">↑↓</kbd> navigate</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">⏎</kbd> open</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">n</kbd> new</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">?</kbd> help</span>
 {{end}}

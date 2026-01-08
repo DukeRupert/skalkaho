@@ -354,6 +354,52 @@ func (q *Queries) ListEstimatesByJob(ctx context.Context, jobID string) ([]Estim
 	return items, nil
 }
 
+const markEstimateAccepted = `-- name: MarkEstimateAccepted :one
+UPDATE estimates SET status = 'accepted', responded_at = datetime('now')
+WHERE id = ?
+RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
+`
+
+func (q *Queries) MarkEstimateAccepted(ctx context.Context, id string) (Estimate, error) {
+	row := q.db.QueryRowContext(ctx, markEstimateAccepted, id)
+	var i Estimate
+	err := row.Scan(
+		&i.ID,
+		&i.JobID,
+		&i.Version,
+		&i.Status,
+		&i.GrandTotal,
+		&i.Notes,
+		&i.SentAt,
+		&i.RespondedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const markEstimateSent = `-- name: MarkEstimateSent :one
+UPDATE estimates SET status = 'sent', sent_at = datetime('now')
+WHERE id = ?
+RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
+`
+
+func (q *Queries) MarkEstimateSent(ctx context.Context, id string) (Estimate, error) {
+	row := q.db.QueryRowContext(ctx, markEstimateSent, id)
+	var i Estimate
+	err := row.Scan(
+		&i.ID,
+		&i.JobID,
+		&i.Version,
+		&i.Status,
+		&i.GrandTotal,
+		&i.Notes,
+		&i.SentAt,
+		&i.RespondedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const updateEstimate = `-- name: UpdateEstimate :one
 UPDATE estimates SET
     status = ?,
@@ -419,6 +465,34 @@ func (q *Queries) UpdateEstimateCategoryDescription(ctx context.Context, arg Upd
 		&i.Description,
 		&i.Total,
 		&i.SortOrder,
+	)
+	return i, err
+}
+
+const updateEstimateStatus = `-- name: UpdateEstimateStatus :one
+UPDATE estimates SET status = ?
+WHERE id = ?
+RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
+`
+
+type UpdateEstimateStatusParams struct {
+	Status string `json:"status"`
+	ID     string `json:"id"`
+}
+
+func (q *Queries) UpdateEstimateStatus(ctx context.Context, arg UpdateEstimateStatusParams) (Estimate, error) {
+	row := q.db.QueryRowContext(ctx, updateEstimateStatus, arg.Status, arg.ID)
+	var i Estimate
+	err := row.Scan(
+		&i.ID,
+		&i.JobID,
+		&i.Version,
+		&i.Status,
+		&i.GrandTotal,
+		&i.Notes,
+		&i.SentAt,
+		&i.RespondedAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }

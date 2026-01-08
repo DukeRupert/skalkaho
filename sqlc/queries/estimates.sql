@@ -28,6 +28,21 @@ UPDATE estimates SET
 WHERE id = ?
 RETURNING *;
 
+-- name: UpdateEstimateStatus :one
+UPDATE estimates SET status = ?
+WHERE id = ?
+RETURNING *;
+
+-- name: MarkEstimateSent :one
+UPDATE estimates SET status = 'sent', sent_at = datetime('now')
+WHERE id = ?
+RETURNING *;
+
+-- name: MarkEstimateAccepted :one
+UPDATE estimates SET status = 'accepted', responded_at = datetime('now')
+WHERE id = ?
+RETURNING *;
+
 -- name: DeleteEstimate :exec
 DELETE FROM estimates WHERE id = ?;
 

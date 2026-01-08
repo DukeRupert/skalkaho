@@ -93,18 +93,10 @@ func (h *Handler) GetClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get jobs associated with this client
-	jobs, err := h.queries.ListJobs(ctx)
+	// Get jobs associated with this client (with estimate/signature status)
+	clientJobs, err := h.queries.ListJobsByClientWithEstimateStatus(ctx, sql.NullString{String: id, Valid: true})
 	if err != nil {
-		logger.Error("failed to list jobs", "error", err)
-	}
-
-	// Filter jobs for this client
-	var clientJobs []repository.Job
-	for _, job := range jobs {
-		if job.ClientID.Valid && job.ClientID.String == id {
-			clientJobs = append(clientJobs, job)
-		}
+		logger.Error("failed to list client jobs", "error", err)
 	}
 
 	// Check if client can be deleted

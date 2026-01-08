@@ -150,6 +150,77 @@ func (q *Queries) ListJobs(ctx context.Context) ([]Job, error) {
 	return items, nil
 }
 
+const listJobsByClientWithEstimateStatus = `-- name: ListJobsByClientWithEstimateStatus :many
+SELECT
+    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent,
+    (SELECT COUNT(*) FROM estimates WHERE job_id = j.id) as estimate_count,
+    (SELECT status FROM estimates WHERE job_id = j.id ORDER BY version DESC LIMIT 1) as latest_estimate_status,
+    (SELECT sr.status FROM signature_requests sr
+     INNER JOIN estimates e ON sr.estimate_id = e.id
+     WHERE e.job_id = j.id
+     ORDER BY sr.created_at DESC LIMIT 1) as latest_signature_status
+FROM jobs j
+WHERE j.client_id = ?
+ORDER BY j.created_at DESC
+`
+
+type ListJobsByClientWithEstimateStatusRow struct {
+	ID                        string          `json:"id"`
+	Name                      string          `json:"name"`
+	CustomerName              sql.NullString  `json:"customer_name"`
+	SurchargePercent          float64         `json:"surcharge_percent"`
+	SurchargeMode             string          `json:"surcharge_mode"`
+	CreatedAt                 string          `json:"created_at"`
+	Status                    string          `json:"status"`
+	ExpiresAt                 sql.NullString  `json:"expires_at"`
+	ClientID                  sql.NullString  `json:"client_id"`
+	MaterialSurchargePercent  sql.NullFloat64 `json:"material_surcharge_percent"`
+	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
+	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
+	EstimateCount             int64           `json:"estimate_count"`
+	LatestEstimateStatus      string          `json:"latest_estimate_status"`
+	LatestSignatureStatus     string          `json:"latest_signature_status"`
+}
+
+func (q *Queries) ListJobsByClientWithEstimateStatus(ctx context.Context, clientID sql.NullString) ([]ListJobsByClientWithEstimateStatusRow, error) {
+	rows, err := q.db.QueryContext(ctx, listJobsByClientWithEstimateStatus, clientID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListJobsByClientWithEstimateStatusRow{}
+	for rows.Next() {
+		var i ListJobsByClientWithEstimateStatusRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CustomerName,
+			&i.SurchargePercent,
+			&i.SurchargeMode,
+			&i.CreatedAt,
+			&i.Status,
+			&i.ExpiresAt,
+			&i.ClientID,
+			&i.MaterialSurchargePercent,
+			&i.LaborSurchargePercent,
+			&i.EquipmentSurchargePercent,
+			&i.EstimateCount,
+			&i.LatestEstimateStatus,
+			&i.LatestSignatureStatus,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listJobsPaginated = `-- name: ListJobsPaginated :many
 SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent FROM jobs
 WHERE (?1 = '' OR status = ?1)

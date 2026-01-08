@@ -34,6 +34,12 @@ type PaginationData struct {
 	HasNext     bool
 }
 
+// EstimateWithStatus wraps an Estimate with its signature status.
+type EstimateWithStatus struct {
+	repository.Estimate
+	SignatureStatus string // "", "pending", "signed", "expired", "cancelled"
+}
+
 // ListJobs shows the keyboard-centric jobs list with pagination and filtering.
 func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -242,6 +248,20 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Get estimates with signature status
+	estimates, _ := h.queries.ListEstimatesByJob(ctx, jobID)
+	estimatesWithStatus := make([]EstimateWithStatus, len(estimates))
+	for i, est := range estimates {
+		var sigStatus string
+		if sigReq, err := h.queries.GetSignatureRequestByEstimate(ctx, est.ID); err == nil {
+			sigStatus = sigReq.Status
+		}
+		estimatesWithStatus[i] = EstimateWithStatus{
+			Estimate:        est,
+			SignatureStatus: sigStatus,
+		}
+	}
+
 	data := map[string]interface{}{
 		"Job":               job,
 		"Categories":        categoriesWithTotals,
@@ -250,6 +270,7 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 		"CategoryTree":      categoryTree,
 		"CurrentCategoryID": "",
 		"Client":            client,
+		"Estimates":         estimatesWithStatus,
 	}
 
 	if err := h.renderer.Render(w, "job", data); err != nil {
