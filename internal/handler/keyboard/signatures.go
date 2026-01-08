@@ -233,7 +233,7 @@ func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 	// For development: show the signing URL in response
 	if h.config.Environment == "development" {
 		w.Header().Set("Content-Type", "text/html")
-		fmt.Fprintf(w, `<div class="p-4 bg-green-50 border border-green-200 rounded-lg">
+		_, _ = fmt.Fprintf(w, `<div class="p-4 bg-green-50 border border-green-200 rounded-lg">
 			<p class="font-medium text-green-800">Signing link generated!</p>
 			<p class="text-sm text-green-700 mt-2">In production, this would be emailed to %s</p>
 			<p class="text-sm text-green-700 mt-1">Development signing URL:</p>
