@@ -332,7 +332,7 @@ func (p *Parser) looksLikeProduct(name string) bool {
 
 	// Common patterns that indicate a product, not a category
 	productPatterns := []string{
-		"x", // dimensions like 2x4, 4x8
+		"x",  // dimensions like 2x4, 4x8
 		"/",  // fractions like 1/2, 3/4
 		"\"", // inches
 		"'",  // feet
@@ -342,7 +342,7 @@ func (p *Parser) looksLikeProduct(name string) bool {
 		"lb",
 		"oz",
 		"gal",
-		"#",  // size numbers like #8
+		"#", // size numbers like #8
 	}
 
 	for _, pattern := range productPatterns {
