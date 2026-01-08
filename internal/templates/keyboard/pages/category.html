@@ -234,7 +234,7 @@
 
                 <!-- Items Card -->
                 <div class="bg-white rounded-lg border border-slate-200">
-                    {{if $group.Items}}
+                    {{if $group.TagGroups}}
                     <!-- Header row - hidden on mobile -->
                     <div class="hidden sm:grid px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs font-medium tracking-wider uppercase text-slate-500 grid-cols-12 gap-2">
                         <span class="col-span-5">Name</span>
@@ -243,8 +243,25 @@
                         <span class="col-span-2 text-right">Price</span>
                         <span class="col-span-1 text-right">Total</span>
                     </div>
-                    {{range $i, $item := $group.Items}}
-                    <div class="row flex items-center border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-{{$group.Color}}-100"
+
+                    {{range $ti, $tagGroup := $group.TagGroups}}
+                    <!-- Tag Group Header (only if tagged) -->
+                    {{if $tagGroup.Tag}}
+                    <div class="px-4 py-2 bg-{{$group.Color}}-50 border-b border-slate-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-{{$group.Color}}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                </svg>
+                                <span class="text-sm font-medium text-{{$group.Color}}-700">{{$tagGroup.Tag}}</span>
+                            </div>
+                            <span class="text-xs tabular-nums text-slate-500">{{formatMoney $tagGroup.Subtotal}}</span>
+                        </div>
+                    </div>
+                    {{end}}
+
+                    {{range $i, $item := $tagGroup.Items}}
+                    <div class="row flex items-center border-b border-slate-100 last:border-b-0 cursor-pointer hover:bg-{{$group.Color}}-100 {{if $tagGroup.Tag}}pl-4{{end}}"
                          data-index="{{add $subcatCount $globalIndex}}"
                          data-item-id="{{$item.ID}}"
                          data-delete-url="/items/{{$item.ID}}"
@@ -309,6 +326,8 @@
                     </div>
                     {{$globalIndex = add $globalIndex 1}}
                     {{end}}
+                    {{end}}
+
                     <!-- Subtotal row -->
                     <div class="px-4 py-2 bg-{{$group.Color}}-50 border-t border-slate-200">
                         <div class="flex justify-between items-center">

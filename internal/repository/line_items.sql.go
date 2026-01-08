@@ -11,9 +11,9 @@ import (
 )
 
 const createLineItem = `-- name: CreateLineItem :one
-INSERT INTO line_items (id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order
+INSERT INTO line_items (id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag
 `
 
 type CreateLineItemParams struct {
@@ -27,6 +27,7 @@ type CreateLineItemParams struct {
 	UnitPrice        float64         `json:"unit_price"`
 	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
 	SortOrder        int64           `json:"sort_order"`
+	Tag              sql.NullString  `json:"tag"`
 }
 
 func (q *Queries) CreateLineItem(ctx context.Context, arg CreateLineItemParams) (LineItem, error) {
@@ -41,6 +42,7 @@ func (q *Queries) CreateLineItem(ctx context.Context, arg CreateLineItemParams) 
 		arg.UnitPrice,
 		arg.SurchargePercent,
 		arg.SortOrder,
+		arg.Tag,
 	)
 	var i LineItem
 	err := row.Scan(
@@ -54,6 +56,7 @@ func (q *Queries) CreateLineItem(ctx context.Context, arg CreateLineItemParams) 
 		&i.UnitPrice,
 		&i.SurchargePercent,
 		&i.SortOrder,
+		&i.Tag,
 	)
 	return i, err
 }
@@ -69,7 +72,7 @@ func (q *Queries) DeleteLineItem(ctx context.Context, id string) error {
 }
 
 const getLineItem = `-- name: GetLineItem :one
-SELECT id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order FROM line_items
+SELECT id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag FROM line_items
 WHERE id = ?
 `
 
@@ -87,12 +90,13 @@ func (q *Queries) GetLineItem(ctx context.Context, id string) (LineItem, error) 
 		&i.UnitPrice,
 		&i.SurchargePercent,
 		&i.SortOrder,
+		&i.Tag,
 	)
 	return i, err
 }
 
 const listLineItemsByCategory = `-- name: ListLineItemsByCategory :many
-SELECT id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order FROM line_items
+SELECT id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag FROM line_items
 WHERE category_id = ?
 ORDER BY sort_order ASC
 `
@@ -117,6 +121,7 @@ func (q *Queries) ListLineItemsByCategory(ctx context.Context, categoryID string
 			&i.UnitPrice,
 			&i.SurchargePercent,
 			&i.SortOrder,
+			&i.Tag,
 		); err != nil {
 			return nil, err
 		}
@@ -132,7 +137,7 @@ func (q *Queries) ListLineItemsByCategory(ctx context.Context, categoryID string
 }
 
 const listLineItemsByJob = `-- name: ListLineItemsByJob :many
-SELECT li.id, li.category_id, li.type, li.name, li.description, li.quantity, li.unit, li.unit_price, li.surcharge_percent, li.sort_order FROM line_items li
+SELECT li.id, li.category_id, li.type, li.name, li.description, li.quantity, li.unit, li.unit_price, li.surcharge_percent, li.sort_order, li.tag FROM line_items li
 JOIN categories c ON li.category_id = c.id
 WHERE c.job_id = ?
 ORDER BY li.sort_order ASC
@@ -158,6 +163,7 @@ func (q *Queries) ListLineItemsByJob(ctx context.Context, jobID string) ([]LineI
 			&i.UnitPrice,
 			&i.SurchargePercent,
 			&i.SortOrder,
+			&i.Tag,
 		); err != nil {
 			return nil, err
 		}
@@ -181,9 +187,10 @@ UPDATE line_items SET
     unit = ?,
     unit_price = ?,
     surcharge_percent = ?,
-    sort_order = ?
+    sort_order = ?,
+    tag = ?
 WHERE id = ?
-RETURNING id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order
+RETURNING id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag
 `
 
 type UpdateLineItemParams struct {
@@ -195,6 +202,7 @@ type UpdateLineItemParams struct {
 	UnitPrice        float64         `json:"unit_price"`
 	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
 	SortOrder        int64           `json:"sort_order"`
+	Tag              sql.NullString  `json:"tag"`
 	ID               string          `json:"id"`
 }
 
@@ -208,6 +216,7 @@ func (q *Queries) UpdateLineItem(ctx context.Context, arg UpdateLineItemParams) 
 		arg.UnitPrice,
 		arg.SurchargePercent,
 		arg.SortOrder,
+		arg.Tag,
 		arg.ID,
 	)
 	var i LineItem
@@ -222,6 +231,7 @@ func (q *Queries) UpdateLineItem(ctx context.Context, arg UpdateLineItemParams) 
 		&i.UnitPrice,
 		&i.SurchargePercent,
 		&i.SortOrder,
+		&i.Tag,
 	)
 	return i, err
 }

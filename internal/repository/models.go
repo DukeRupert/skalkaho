@@ -78,6 +78,7 @@ type LineItem struct {
 	UnitPrice        float64         `json:"unit_price"`
 	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
 	SortOrder        int64           `json:"sort_order"`
+	Tag              sql.NullString  `json:"tag"`
 }
 
 type PriceImport struct {
