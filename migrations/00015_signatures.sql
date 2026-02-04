@@ -11,8 +11,8 @@ CREATE TABLE company_profile (
     state TEXT,
     zip TEXT,
     logo_path TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (NOW()),
+    updated_at TEXT NOT NULL DEFAULT (NOW())
 );
 
 -- Insert default row
@@ -45,7 +45,7 @@ CREATE TABLE signature_requests (
     sender_ip TEXT,
     sender_user_agent TEXT,
 
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (NOW())
 );
 
 CREATE INDEX idx_signature_requests_token ON signature_requests(token);
@@ -63,7 +63,7 @@ CREATE TABLE signatures (
     document_hash TEXT NOT NULL,
 
     -- Audit trail
-    signed_at TEXT NOT NULL DEFAULT (datetime('now')),
+    signed_at TEXT NOT NULL DEFAULT (NOW()),
     signer_ip TEXT NOT NULL,
     signer_user_agent TEXT NOT NULL,
     signer_email TEXT NOT NULL,
@@ -71,7 +71,7 @@ CREATE TABLE signatures (
     -- Generated artifacts
     certificate_pdf_path TEXT,
 
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (NOW())
 );
 
 CREATE INDEX idx_signatures_request ON signatures(request_id);

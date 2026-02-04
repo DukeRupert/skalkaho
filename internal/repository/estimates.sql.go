@@ -12,7 +12,7 @@ import (
 
 const createEstimate = `-- name: CreateEstimate :one
 INSERT INTO estimates (id, job_id, version, status, grand_total, notes)
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
 `
 
@@ -51,7 +51,7 @@ func (q *Queries) CreateEstimate(ctx context.Context, arg CreateEstimateParams) 
 
 const createEstimateCategory = `-- name: CreateEstimateCategory :one
 INSERT INTO estimate_categories (id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order
 `
 
@@ -95,7 +95,7 @@ func (q *Queries) CreateEstimateCategory(ctx context.Context, arg CreateEstimate
 }
 
 const deleteEstimate = `-- name: DeleteEstimate :exec
-DELETE FROM estimates WHERE id = ?
+DELETE FROM estimates WHERE id = $1
 `
 
 func (q *Queries) DeleteEstimate(ctx context.Context, id string) error {
@@ -104,7 +104,7 @@ func (q *Queries) DeleteEstimate(ctx context.Context, id string) error {
 }
 
 const deleteEstimateCategoriesByEstimate = `-- name: DeleteEstimateCategoriesByEstimate :exec
-DELETE FROM estimate_categories WHERE estimate_id = ?
+DELETE FROM estimate_categories WHERE estimate_id = $1
 `
 
 func (q *Queries) DeleteEstimateCategoriesByEstimate(ctx context.Context, estimateID string) error {
@@ -113,7 +113,7 @@ func (q *Queries) DeleteEstimateCategoriesByEstimate(ctx context.Context, estima
 }
 
 const getEstimate = `-- name: GetEstimate :one
-SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at FROM estimates WHERE id = ?
+SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at FROM estimates WHERE id = $1
 `
 
 func (q *Queries) GetEstimate(ctx context.Context, id string) (Estimate, error) {
@@ -134,7 +134,7 @@ func (q *Queries) GetEstimate(ctx context.Context, id string) (Estimate, error) 
 }
 
 const getEstimateByJobAndVersion = `-- name: GetEstimateByJobAndVersion :one
-SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at FROM estimates WHERE job_id = ? AND version = ?
+SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at FROM estimates WHERE job_id = $1 AND version = $2
 `
 
 type GetEstimateByJobAndVersionParams struct {
@@ -160,7 +160,7 @@ func (q *Queries) GetEstimateByJobAndVersion(ctx context.Context, arg GetEstimat
 }
 
 const getEstimateCategory = `-- name: GetEstimateCategory :one
-SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories WHERE id = ?
+SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories WHERE id = $1
 `
 
 func (q *Queries) GetEstimateCategory(ctx context.Context, id string) (EstimateCategory, error) {
@@ -183,7 +183,7 @@ func (q *Queries) GetEstimateCategory(ctx context.Context, id string) (EstimateC
 const getLatestEstimateVersion = `-- name: GetLatestEstimateVersion :one
 SELECT CAST(COALESCE(MAX(version), 0) AS INTEGER) as max_version
 FROM estimates
-WHERE job_id = ?
+WHERE job_id = $1
 `
 
 func (q *Queries) GetLatestEstimateVersion(ctx context.Context, jobID string) (int64, error) {
@@ -195,7 +195,7 @@ func (q *Queries) GetLatestEstimateVersion(ctx context.Context, jobID string) (i
 
 const listEstimateCategoriesByEstimate = `-- name: ListEstimateCategoriesByEstimate :many
 SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories
-WHERE estimate_id = ?
+WHERE estimate_id = $1
 ORDER BY tier ASC, sort_order ASC
 `
 
@@ -234,7 +234,7 @@ func (q *Queries) ListEstimateCategoriesByEstimate(ctx context.Context, estimate
 
 const listEstimateCategoriesByParent = `-- name: ListEstimateCategoriesByParent :many
 SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories
-WHERE estimate_id = ? AND parent_category_id = ?
+WHERE estimate_id = $1 AND parent_category_id = $2
 ORDER BY sort_order ASC
 `
 
@@ -278,7 +278,7 @@ func (q *Queries) ListEstimateCategoriesByParent(ctx context.Context, arg ListEs
 
 const listEstimateCategoriesTier1 = `-- name: ListEstimateCategoriesTier1 :many
 SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories
-WHERE estimate_id = ? AND tier = 1
+WHERE estimate_id = $1 AND tier = 1
 ORDER BY sort_order ASC
 `
 
@@ -317,7 +317,7 @@ func (q *Queries) ListEstimateCategoriesTier1(ctx context.Context, estimateID st
 
 const listEstimatesByJob = `-- name: ListEstimatesByJob :many
 SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at FROM estimates
-WHERE job_id = ?
+WHERE job_id = $1
 ORDER BY version DESC
 `
 
@@ -356,7 +356,7 @@ func (q *Queries) ListEstimatesByJob(ctx context.Context, jobID string) ([]Estim
 
 const markEstimateAccepted = `-- name: MarkEstimateAccepted :one
 UPDATE estimates SET status = 'accepted', responded_at = datetime('now')
-WHERE id = ?
+WHERE id = $1
 RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
 `
 
@@ -379,7 +379,7 @@ func (q *Queries) MarkEstimateAccepted(ctx context.Context, id string) (Estimate
 
 const markEstimateSent = `-- name: MarkEstimateSent :one
 UPDATE estimates SET status = 'sent', sent_at = datetime('now')
-WHERE id = ?
+WHERE id = $1
 RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
 `
 
@@ -402,11 +402,11 @@ func (q *Queries) MarkEstimateSent(ctx context.Context, id string) (Estimate, er
 
 const updateEstimate = `-- name: UpdateEstimate :one
 UPDATE estimates SET
-    status = ?,
-    notes = ?,
-    sent_at = ?,
-    responded_at = ?
-WHERE id = ?
+    status = $1,
+    notes = $2,
+    sent_at = $3,
+    responded_at = $4
+WHERE id = $5
 RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
 `
 
@@ -442,8 +442,8 @@ func (q *Queries) UpdateEstimate(ctx context.Context, arg UpdateEstimateParams) 
 }
 
 const updateEstimateCategoryDescription = `-- name: UpdateEstimateCategoryDescription :one
-UPDATE estimate_categories SET description = ?
-WHERE id = ?
+UPDATE estimate_categories SET description = $1
+WHERE id = $2
 RETURNING id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order
 `
 
@@ -470,8 +470,8 @@ func (q *Queries) UpdateEstimateCategoryDescription(ctx context.Context, arg Upd
 }
 
 const updateEstimateStatus = `-- name: UpdateEstimateStatus :one
-UPDATE estimates SET status = ?
-WHERE id = ?
+UPDATE estimates SET status = $1
+WHERE id = $2
 RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
 `
 

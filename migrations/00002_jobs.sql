@@ -6,7 +6,7 @@ CREATE TABLE jobs (
     surcharge_percent REAL NOT NULL DEFAULT 0,
     surcharge_mode TEXT NOT NULL DEFAULT 'stacking'
         CHECK (surcharge_mode IN ('stacking', 'override')),
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (NOW())
 );
 
 -- +goose Down

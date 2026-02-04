@@ -1,11 +1,11 @@
 -- name: CreateJob :one
 INSERT INTO jobs (id, name, customer_name, surcharge_percent, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, surcharge_mode, status, expires_at, client_id)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING *;
 
 -- name: GetJob :one
 SELECT * FROM jobs
-WHERE id = ?;
+WHERE id = $1;
 
 -- name: ListJobs :many
 SELECT * FROM jobs
@@ -13,53 +13,53 @@ ORDER BY created_at DESC;
 
 -- name: ListJobsPaginated :many
 SELECT * FROM jobs
-WHERE (@status = '' OR status = @status)
+WHERE (sqlc.arg('status') = '' OR status = sqlc.arg('status'))
 ORDER BY created_at DESC
-LIMIT @limit OFFSET @offset;
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: ListJobsPaginatedByName :many
 SELECT * FROM jobs
-WHERE (@status = '' OR status = @status)
+WHERE (sqlc.arg('status') = '' OR status = sqlc.arg('status'))
 ORDER BY name ASC
-LIMIT @limit OFFSET @offset;
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: ListJobsPaginatedByNameDesc :many
 SELECT * FROM jobs
-WHERE (@status = '' OR status = @status)
+WHERE (sqlc.arg('status') = '' OR status = sqlc.arg('status'))
 ORDER BY name DESC
-LIMIT @limit OFFSET @offset;
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: ListJobsPaginatedOldest :many
 SELECT * FROM jobs
-WHERE (@status = '' OR status = @status)
+WHERE (sqlc.arg('status') = '' OR status = sqlc.arg('status'))
 ORDER BY created_at ASC
-LIMIT @limit OFFSET @offset;
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: CountJobs :one
 SELECT COUNT(*) FROM jobs
-WHERE (@status = '' OR status = @status);
+WHERE (sqlc.arg('status') = '' OR status = sqlc.arg('status'));
 
 -- name: UpdateJobStatus :one
-UPDATE jobs SET status = ? WHERE id = ? RETURNING *;
+UPDATE jobs SET status = $1 WHERE id = $2 RETURNING *;
 
 -- name: UpdateJob :one
 UPDATE jobs SET
-    name = ?,
-    customer_name = ?,
-    surcharge_percent = ?,
-    material_surcharge_percent = ?,
-    labor_surcharge_percent = ?,
-    equipment_surcharge_percent = ?,
-    surcharge_mode = ?,
-    status = ?,
-    expires_at = ?,
-    client_id = ?
-WHERE id = ?
+    name = $1,
+    customer_name = $2,
+    surcharge_percent = $3,
+    material_surcharge_percent = $4,
+    labor_surcharge_percent = $5,
+    equipment_surcharge_percent = $6,
+    surcharge_mode = $7,
+    status = $8,
+    expires_at = $9,
+    client_id = $10
+WHERE id = $11
 RETURNING *;
 
 -- name: DeleteJob :exec
 DELETE FROM jobs
-WHERE id = ?;
+WHERE id = $1;
 
 -- name: ListJobsWithEstimateStatus :many
 SELECT
@@ -71,9 +71,9 @@ SELECT
      WHERE e.job_id = j.id
      ORDER BY sr.created_at DESC LIMIT 1) as latest_signature_status
 FROM jobs j
-WHERE (@status = '' OR j.status = @status)
+WHERE (sqlc.arg('status') = '' OR j.status = sqlc.arg('status'))
 ORDER BY j.created_at DESC
-LIMIT @limit OFFSET @offset;
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: ListJobsByClientWithEstimateStatus :many
 SELECT
@@ -85,5 +85,5 @@ SELECT
      WHERE e.job_id = j.id
      ORDER BY sr.created_at DESC LIMIT 1) as latest_signature_status
 FROM jobs j
-WHERE j.client_id = ?
+WHERE j.client_id = $1
 ORDER BY j.created_at DESC;

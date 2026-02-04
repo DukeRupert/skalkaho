@@ -9,7 +9,7 @@ CREATE TABLE estimates (
     notes TEXT,
     sent_at TEXT,
     responded_at TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (NOW())
 );
 
 -- Estimate categories: tier 1 and tier 2 snapshots with descriptions

@@ -14,7 +14,7 @@ const countCategoryAncestors = `-- name: CountCategoryAncestors :one
 WITH RECURSIVE ancestors AS (
     SELECT categories.id, categories.parent_id, 0 as depth
     FROM categories
-    WHERE categories.id = ?
+    WHERE categories.id = $1
     UNION ALL
     SELECT c.id, c.parent_id, a.depth + 1
     FROM categories c
@@ -32,7 +32,7 @@ func (q *Queries) CountCategoryAncestors(ctx context.Context, id string) (interf
 
 const createCategory = `-- name: CreateCategory :one
 INSERT INTO categories (id, job_id, parent_id, name, surcharge_percent, sort_order)
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order
 `
 
@@ -68,7 +68,7 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 
 const deleteCategory = `-- name: DeleteCategory :exec
 DELETE FROM categories
-WHERE id = ?
+WHERE id = $1
 `
 
 func (q *Queries) DeleteCategory(ctx context.Context, id string) error {
@@ -78,7 +78,7 @@ func (q *Queries) DeleteCategory(ctx context.Context, id string) error {
 
 const getCategory = `-- name: GetCategory :one
 SELECT id, job_id, parent_id, name, surcharge_percent, sort_order FROM categories
-WHERE id = ?
+WHERE id = $1
 `
 
 func (q *Queries) GetCategory(ctx context.Context, id string) (Category, error) {
@@ -97,7 +97,7 @@ func (q *Queries) GetCategory(ctx context.Context, id string) (Category, error) 
 
 const listCategoriesByJob = `-- name: ListCategoriesByJob :many
 SELECT id, job_id, parent_id, name, surcharge_percent, sort_order FROM categories
-WHERE job_id = ?
+WHERE job_id = $1
 ORDER BY sort_order ASC
 `
 
@@ -133,7 +133,7 @@ func (q *Queries) ListCategoriesByJob(ctx context.Context, jobID string) ([]Cate
 
 const listChildCategories = `-- name: ListChildCategories :many
 SELECT id, job_id, parent_id, name, surcharge_percent, sort_order FROM categories
-WHERE parent_id = ?
+WHERE parent_id = $1
 ORDER BY sort_order ASC
 `
 
@@ -169,7 +169,7 @@ func (q *Queries) ListChildCategories(ctx context.Context, parentID sql.NullStri
 
 const listTopLevelCategories = `-- name: ListTopLevelCategories :many
 SELECT id, job_id, parent_id, name, surcharge_percent, sort_order FROM categories
-WHERE job_id = ? AND parent_id IS NULL
+WHERE job_id = $1 AND parent_id IS NULL
 ORDER BY sort_order ASC
 `
 
@@ -205,10 +205,10 @@ func (q *Queries) ListTopLevelCategories(ctx context.Context, jobID string) ([]C
 
 const updateCategory = `-- name: UpdateCategory :one
 UPDATE categories SET
-    name = ?,
-    surcharge_percent = ?,
-    sort_order = ?
-WHERE id = ?
+    name = $1,
+    surcharge_percent = $2,
+    sort_order = $3
+WHERE id = $4
 RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order
 `
 
@@ -240,8 +240,8 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 
 const updateCategoryParent = `-- name: UpdateCategoryParent :one
 UPDATE categories SET
-    parent_id = ?
-WHERE id = ?
+    parent_id = $1
+WHERE id = $2
 RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order
 `
 

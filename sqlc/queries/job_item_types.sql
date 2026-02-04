@@ -1,34 +1,34 @@
 -- name: CreateJobItemType :one
 INSERT INTO job_item_types (id, job_id, name, slug, color, sort_order, surcharge_percent)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
 -- name: GetJobItemType :one
-SELECT * FROM job_item_types WHERE id = ?;
+SELECT * FROM job_item_types WHERE id = $1;
 
 -- name: GetJobItemTypeBySlug :one
 SELECT * FROM job_item_types
-WHERE job_id = ? AND slug = ?;
+WHERE job_id = $1 AND slug = $2;
 
 -- name: ListJobItemTypes :many
 SELECT * FROM job_item_types
-WHERE job_id = ?
+WHERE job_id = $1
 ORDER BY sort_order ASC, name ASC;
 
 -- name: UpdateJobItemType :one
 UPDATE job_item_types SET
-    name = ?,
-    slug = ?,
-    color = ?,
-    sort_order = ?,
-    surcharge_percent = ?
-WHERE id = ?
+    name = $1,
+    slug = $2,
+    color = $3,
+    sort_order = $4,
+    surcharge_percent = $5
+WHERE id = $6
 RETURNING *;
 
 -- name: DeleteJobItemType :exec
-DELETE FROM job_item_types WHERE id = ?;
+DELETE FROM job_item_types WHERE id = $1;
 
 -- name: CountLineItemsByType :one
 SELECT COUNT(*) FROM line_items li
 JOIN categories c ON li.category_id = c.id
-WHERE c.job_id = ? AND li.type = ?;
+WHERE c.job_id = $1 AND li.type = $2;

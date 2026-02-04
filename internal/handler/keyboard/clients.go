@@ -47,8 +47,8 @@ func (h *Handler) ListClients(w http.ResponseWriter, r *http.Request) {
 	// Get paginated clients
 	clients, err := h.queries.ListClientsPaginated(ctx, repository.ListClientsPaginatedParams{
 		Search: search,
-		Offset: offset,
-		Limit:  int64(clientsPageSize),
+		Offset: int32(offset),
+		Limit:  int32(clientsPageSize),
 	})
 	if err != nil {
 		logger.Error("failed to list clients", "error", err)

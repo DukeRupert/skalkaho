@@ -4,7 +4,7 @@ WHERE id = 'default';
 
 -- name: UpdateSettings :one
 UPDATE settings SET
-    default_surcharge_mode = ?,
-    default_surcharge_percent = ?
+    default_surcharge_mode = $1,
+    default_surcharge_percent = $2
 WHERE id = 'default'
 RETURNING *;

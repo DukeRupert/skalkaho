@@ -11,7 +11,7 @@ CREATE TABLE clients (
     zip TEXT,
     tax_id TEXT,
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (NOW())
 );
 
 CREATE INDEX idx_clients_name ON clients(name);

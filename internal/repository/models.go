@@ -6,6 +6,9 @@ package repository
 
 import (
 	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Category struct {
@@ -119,6 +122,19 @@ type LineItem struct {
 	Tag              sql.NullString  `json:"tag"`
 }
 
+type Organization struct {
+	ID                 uuid.UUID      `json:"id"`
+	Name               string         `json:"name"`
+	Subdomain          string         `json:"subdomain"`
+	StripeCustomerID   sql.NullString `json:"stripe_customer_id"`
+	Plan               string         `json:"plan"`
+	Status             string         `json:"status"`
+	TrialEndsAt        sql.NullTime   `json:"trial_ends_at"`
+	SubscriptionEndsAt sql.NullTime   `json:"subscription_ends_at"`
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
+}
+
 type PriceImport struct {
 	ID           string         `json:"id"`
 	Filename     string         `json:"filename"`
@@ -137,7 +153,7 @@ type PriceImportMatch struct {
 	SourceName        string         `json:"source_name"`
 	SourceUnit        sql.NullString `json:"source_unit"`
 	SourcePrice       float64        `json:"source_price"`
-	MatchedTemplateID sql.NullInt64  `json:"matched_template_id"`
+	MatchedTemplateID sql.NullInt32  `json:"matched_template_id"`
 	Confidence        float64        `json:"confidence"`
 	MatchReason       sql.NullString `json:"match_reason"`
 	Status            string         `json:"status"`
@@ -179,4 +195,21 @@ type SignatureRequest struct {
 	SenderIp        sql.NullString `json:"sender_ip"`
 	SenderUserAgent sql.NullString `json:"sender_user_agent"`
 	CreatedAt       string         `json:"created_at"`
+}
+
+type User struct {
+	ID                  uuid.UUID      `json:"id"`
+	OrgID               uuid.UUID      `json:"org_id"`
+	Email               string         `json:"email"`
+	PasswordHash        string         `json:"password_hash"`
+	Role                string         `json:"role"`
+	Name                string         `json:"name"`
+	EmailVerified       bool           `json:"email_verified"`
+	Status              string         `json:"status"`
+	ResetToken          sql.NullString `json:"reset_token"`
+	ResetTokenExpiresAt sql.NullTime   `json:"reset_token_expires_at"`
+	VerificationToken   sql.NullString `json:"verification_token"`
+	LastLoginAt         sql.NullTime   `json:"last_login_at"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
 }

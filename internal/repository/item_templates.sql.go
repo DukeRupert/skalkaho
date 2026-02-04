@@ -12,7 +12,7 @@ import (
 
 const createItemTemplate = `-- name: CreateItemTemplate :one
 INSERT INTO item_templates (type, category, name, default_unit, default_price)
-VALUES (?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, type, category, name, default_unit, default_price
 `
 
@@ -46,7 +46,7 @@ func (q *Queries) CreateItemTemplate(ctx context.Context, arg CreateItemTemplate
 
 const deleteItemTemplate = `-- name: DeleteItemTemplate :exec
 DELETE FROM item_templates
-WHERE id = ?
+WHERE id = $1
 `
 
 func (q *Queries) DeleteItemTemplate(ctx context.Context, id int64) error {
@@ -56,7 +56,7 @@ func (q *Queries) DeleteItemTemplate(ctx context.Context, id int64) error {
 
 const getItemTemplate = `-- name: GetItemTemplate :one
 SELECT id, type, category, name, default_unit, default_price FROM item_templates
-WHERE id = ?
+WHERE id = $1
 `
 
 func (q *Queries) GetItemTemplate(ctx context.Context, id int64) (ItemTemplate, error) {
@@ -110,7 +110,7 @@ func (q *Queries) ListItemTemplates(ctx context.Context) ([]ItemTemplate, error)
 
 const listItemTemplatesByCategory = `-- name: ListItemTemplatesByCategory :many
 SELECT id, type, category, name, default_unit, default_price FROM item_templates
-WHERE category = ?
+WHERE category = $1
 ORDER BY name
 `
 
@@ -146,7 +146,7 @@ func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, category stri
 
 const searchItemTemplates = `-- name: SearchItemTemplates :many
 SELECT id, type, category, name, default_unit, default_price FROM item_templates
-WHERE name LIKE '%' || ? || '%'
+WHERE name LIKE '%' || $1 || '%'
 ORDER BY name
 LIMIT 10
 `
@@ -183,7 +183,7 @@ func (q *Queries) SearchItemTemplates(ctx context.Context, dollar_1 sql.NullStri
 
 const searchItemTemplatesByType = `-- name: SearchItemTemplatesByType :many
 SELECT id, type, category, name, default_unit, default_price FROM item_templates
-WHERE type = ? AND name LIKE '%' || ? || '%'
+WHERE type = $1 AND name LIKE '%' || $2 || '%'
 ORDER BY name
 LIMIT 10
 `
@@ -225,8 +225,8 @@ func (q *Queries) SearchItemTemplatesByType(ctx context.Context, arg SearchItemT
 
 const updateItemTemplate = `-- name: UpdateItemTemplate :one
 UPDATE item_templates
-SET type = ?, category = ?, name = ?, default_unit = ?, default_price = ?
-WHERE id = ?
+SET type = $1, category = $2, name = $3, default_unit = $4, default_price = $5
+WHERE id = $6
 RETURNING id, type, category, name, default_unit, default_price
 `
 
@@ -261,7 +261,7 @@ func (q *Queries) UpdateItemTemplate(ctx context.Context, arg UpdateItemTemplate
 }
 
 const updateItemTemplatePrice = `-- name: UpdateItemTemplatePrice :exec
-UPDATE item_templates SET default_price = ? WHERE id = ?
+UPDATE item_templates SET default_price = $1 WHERE id = $2
 `
 
 type UpdateItemTemplatePriceParams struct {
@@ -275,7 +275,7 @@ func (q *Queries) UpdateItemTemplatePrice(ctx context.Context, arg UpdateItemTem
 }
 
 const updateItemTemplatePriceAndName = `-- name: UpdateItemTemplatePriceAndName :exec
-UPDATE item_templates SET default_price = ?, name = ? WHERE id = ?
+UPDATE item_templates SET default_price = $1, name = $2 WHERE id = $3
 `
 
 type UpdateItemTemplatePriceAndNameParams struct {

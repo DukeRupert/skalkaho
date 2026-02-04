@@ -13,7 +13,7 @@ import (
 const countLineItemsByType = `-- name: CountLineItemsByType :one
 SELECT COUNT(*) FROM line_items li
 JOIN categories c ON li.category_id = c.id
-WHERE c.job_id = ? AND li.type = ?
+WHERE c.job_id = $1 AND li.type = $2
 `
 
 type CountLineItemsByTypeParams struct {
@@ -30,7 +30,7 @@ func (q *Queries) CountLineItemsByType(ctx context.Context, arg CountLineItemsBy
 
 const createJobItemType = `-- name: CreateJobItemType :one
 INSERT INTO job_item_types (id, job_id, name, slug, color, sort_order, surcharge_percent)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, job_id, name, slug, color, sort_order, created_at, surcharge_percent
 `
 
@@ -69,7 +69,7 @@ func (q *Queries) CreateJobItemType(ctx context.Context, arg CreateJobItemTypePa
 }
 
 const deleteJobItemType = `-- name: DeleteJobItemType :exec
-DELETE FROM job_item_types WHERE id = ?
+DELETE FROM job_item_types WHERE id = $1
 `
 
 func (q *Queries) DeleteJobItemType(ctx context.Context, id string) error {
@@ -78,7 +78,7 @@ func (q *Queries) DeleteJobItemType(ctx context.Context, id string) error {
 }
 
 const getJobItemType = `-- name: GetJobItemType :one
-SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent FROM job_item_types WHERE id = ?
+SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent FROM job_item_types WHERE id = $1
 `
 
 func (q *Queries) GetJobItemType(ctx context.Context, id string) (JobItemType, error) {
@@ -99,7 +99,7 @@ func (q *Queries) GetJobItemType(ctx context.Context, id string) (JobItemType, e
 
 const getJobItemTypeBySlug = `-- name: GetJobItemTypeBySlug :one
 SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent FROM job_item_types
-WHERE job_id = ? AND slug = ?
+WHERE job_id = $1 AND slug = $2
 `
 
 type GetJobItemTypeBySlugParams struct {
@@ -125,7 +125,7 @@ func (q *Queries) GetJobItemTypeBySlug(ctx context.Context, arg GetJobItemTypeBy
 
 const listJobItemTypes = `-- name: ListJobItemTypes :many
 SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent FROM job_item_types
-WHERE job_id = ?
+WHERE job_id = $1
 ORDER BY sort_order ASC, name ASC
 `
 
@@ -163,12 +163,12 @@ func (q *Queries) ListJobItemTypes(ctx context.Context, jobID string) ([]JobItem
 
 const updateJobItemType = `-- name: UpdateJobItemType :one
 UPDATE job_item_types SET
-    name = ?,
-    slug = ?,
-    color = ?,
-    sort_order = ?,
-    surcharge_percent = ?
-WHERE id = ?
+    name = $1,
+    slug = $2,
+    color = $3,
+    sort_order = $4,
+    surcharge_percent = $5
+WHERE id = $6
 RETURNING id, job_id, name, slug, color, sort_order, created_at, surcharge_percent
 `
 

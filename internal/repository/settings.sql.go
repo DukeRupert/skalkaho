@@ -23,8 +23,8 @@ func (q *Queries) GetSettings(ctx context.Context) (Setting, error) {
 
 const updateSettings = `-- name: UpdateSettings :one
 UPDATE settings SET
-    default_surcharge_mode = ?,
-    default_surcharge_percent = ?
+    default_surcharge_mode = $1,
+    default_surcharge_percent = $2
 WHERE id = 'default'
 RETURNING id, default_surcharge_mode, default_surcharge_percent
 `

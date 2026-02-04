@@ -6,12 +6,12 @@ CREATE TABLE price_imports (
     total_rows INTEGER NOT NULL DEFAULT 0,
     matched_rows INTEGER NOT NULL DEFAULT 0,
     error_message TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (NOW()),
     applied_at TEXT
 );
 
 CREATE TABLE price_import_matches (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     import_id TEXT NOT NULL REFERENCES price_imports(id) ON DELETE CASCADE,
     row_number INTEGER NOT NULL,
     source_name TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE price_import_matches (
     match_reason TEXT,
     status TEXT NOT NULL CHECK (status IN ('pending', 'approved', 'rejected', 'auto_approved', 'created')) DEFAULT 'pending',
     new_name TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (NOW())
 );
 
 CREATE INDEX idx_price_import_matches_import ON price_import_matches(import_id);

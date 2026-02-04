@@ -77,28 +77,28 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	var jobs []repository.Job
 	params := repository.ListJobsPaginatedParams{
 		Status: status,
-		Offset: offset,
-		Limit:  pageSize,
+		Offset: int32(offset),
+		Limit:  int32(pageSize),
 	}
 
 	switch sortBy {
 	case "oldest":
 		jobs, err = h.queries.ListJobsPaginatedOldest(ctx, repository.ListJobsPaginatedOldestParams{
 			Status: status,
-			Offset: offset,
-			Limit:  pageSize,
+			Offset: int32(offset),
+			Limit:  int32(pageSize),
 		})
 	case "name_asc":
 		jobs, err = h.queries.ListJobsPaginatedByName(ctx, repository.ListJobsPaginatedByNameParams{
 			Status: status,
-			Offset: offset,
-			Limit:  pageSize,
+			Offset: int32(offset),
+			Limit:  int32(pageSize),
 		})
 	case "name_desc":
 		jobs, err = h.queries.ListJobsPaginatedByNameDesc(ctx, repository.ListJobsPaginatedByNameDescParams{
 			Status: status,
-			Offset: offset,
-			Limit:  pageSize,
+			Offset: int32(offset),
+			Limit:  int32(pageSize),
 		})
 	default: // newest
 		jobs, err = h.queries.ListJobsPaginated(ctx, params)

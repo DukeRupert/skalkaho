@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE item_templates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     type TEXT NOT NULL CHECK (type IN ('material', 'labor', 'equipment')),
     category TEXT NOT NULL,
     name TEXT NOT NULL,

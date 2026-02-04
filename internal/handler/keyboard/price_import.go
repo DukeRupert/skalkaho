@@ -249,9 +249,9 @@ func (h *Handler) processImportInBackground(importID, filename string, fileBytes
 			status = "auto_approved"
 		}
 
-		var templateID sql.NullInt64
+		var templateID sql.NullInt32
 		if item.TemplateID != nil {
-			templateID = sql.NullInt64{Int64: *item.TemplateID, Valid: true}
+			templateID = sql.NullInt32{Int32: int32(*item.TemplateID), Valid: true}
 		}
 
 		var sourceUnit sql.NullString
@@ -506,7 +506,7 @@ func (h *Handler) CreateTemplateFromMatch(w http.ResponseWriter, r *http.Request
 	// Mark the match as created and link to the new template
 	match, err := h.queries.MarkMatchAsCreated(ctx, repository.MarkMatchAsCreatedParams{
 		ID:                id,
-		MatchedTemplateID: sql.NullInt64{Int64: template.ID, Valid: true},
+		MatchedTemplateID: sql.NullInt32{Int32: int32(template.ID), Valid: true},
 	})
 	if err != nil {
 		logger.Error("failed to update match", "error", err)
@@ -614,7 +614,7 @@ func (h *Handler) BulkCreateTemplates(w http.ResponseWriter, r *http.Request) {
 		// Mark the match as created and link to the new template
 		_, err = h.queries.MarkMatchAsCreated(ctx, repository.MarkMatchAsCreatedParams{
 			ID:                item.ID,
-			MatchedTemplateID: sql.NullInt64{Int64: template.ID, Valid: true},
+			MatchedTemplateID: sql.NullInt32{Int32: int32(template.ID), Valid: true},
 		})
 		if err != nil {
 			logger.Error("failed to update match", "error", err, "match_id", item.ID)
@@ -663,19 +663,19 @@ func (h *Handler) ApplyPriceUpdates(w http.ResponseWriter, r *http.Request) {
 		// If a new name was specified, update both name and price
 		if match.NewName.Valid && match.NewName.String != "" {
 			if err := h.queries.UpdateItemTemplatePriceAndName(ctx, repository.UpdateItemTemplatePriceAndNameParams{
-				ID:           match.MatchedTemplateID.Int64,
+				ID:           int64(match.MatchedTemplateID.Int32),
 				DefaultPrice: match.SourcePrice,
 				Name:         match.NewName.String,
 			}); err != nil {
-				logger.Error("failed to update template price and name", "error", err, "template_id", match.MatchedTemplateID.Int64)
+				logger.Error("failed to update template price and name", "error", err, "template_id", match.MatchedTemplateID.Int32)
 				continue
 			}
 		} else {
 			if err := h.queries.UpdateItemTemplatePrice(ctx, repository.UpdateItemTemplatePriceParams{
-				ID:           match.MatchedTemplateID.Int64,
+				ID:           int64(match.MatchedTemplateID.Int32),
 				DefaultPrice: match.SourcePrice,
 			}); err != nil {
-				logger.Error("failed to update template price", "error", err, "template_id", match.MatchedTemplateID.Int64)
+				logger.Error("failed to update template price", "error", err, "template_id", match.MatchedTemplateID.Int32)
 				continue
 			}
 		}

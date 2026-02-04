@@ -7,7 +7,7 @@ CREATE TABLE job_item_types (
     slug TEXT NOT NULL,
     color TEXT NOT NULL DEFAULT 'slate',
     sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at TEXT NOT NULL DEFAULT (NOW()),
     UNIQUE(job_id, slug)
 );
 

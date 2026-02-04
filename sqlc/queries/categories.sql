@@ -1,50 +1,50 @@
 -- name: CreateCategory :one
 INSERT INTO categories (id, job_id, parent_id, name, surcharge_percent, sort_order)
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetCategory :one
 SELECT * FROM categories
-WHERE id = ?;
+WHERE id = $1;
 
 -- name: ListCategoriesByJob :many
 SELECT * FROM categories
-WHERE job_id = ?
+WHERE job_id = $1
 ORDER BY sort_order ASC;
 
 -- name: ListTopLevelCategories :many
 SELECT * FROM categories
-WHERE job_id = ? AND parent_id IS NULL
+WHERE job_id = $1 AND parent_id IS NULL
 ORDER BY sort_order ASC;
 
 -- name: ListChildCategories :many
 SELECT * FROM categories
-WHERE parent_id = ?
+WHERE parent_id = $1
 ORDER BY sort_order ASC;
 
 -- name: UpdateCategory :one
 UPDATE categories SET
-    name = ?,
-    surcharge_percent = ?,
-    sort_order = ?
-WHERE id = ?
+    name = $1,
+    surcharge_percent = $2,
+    sort_order = $3
+WHERE id = $4
 RETURNING *;
 
 -- name: UpdateCategoryParent :one
 UPDATE categories SET
-    parent_id = ?
-WHERE id = ?
+    parent_id = $1
+WHERE id = $2
 RETURNING *;
 
 -- name: DeleteCategory :exec
 DELETE FROM categories
-WHERE id = ?;
+WHERE id = $1;
 
 -- name: CountCategoryAncestors :one
 WITH RECURSIVE ancestors AS (
     SELECT categories.id, categories.parent_id, 0 as depth
     FROM categories
-    WHERE categories.id = ?
+    WHERE categories.id = $1
     UNION ALL
     SELECT c.id, c.parent_id, a.depth + 1
     FROM categories c

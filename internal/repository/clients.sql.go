@@ -11,7 +11,7 @@ import (
 )
 
 const clientHasJobs = `-- name: ClientHasJobs :one
-SELECT COUNT(*) > 0 FROM jobs WHERE client_id = ?
+SELECT COUNT(*) > 0 FROM jobs WHERE client_id = $1
 `
 
 func (q *Queries) ClientHasJobs(ctx context.Context, clientID sql.NullString) (bool, error) {
@@ -23,7 +23,7 @@ func (q *Queries) ClientHasJobs(ctx context.Context, clientID sql.NullString) (b
 
 const countClients = `-- name: CountClients :one
 SELECT COUNT(*) FROM clients
-WHERE (?1 = '' OR name LIKE '%' || ?1 || '%' OR company LIKE '%' || ?1 || '%')
+WHERE ($1 = '' OR name LIKE '%' || $1 || '%' OR company LIKE '%' || $1 || '%')
 `
 
 func (q *Queries) CountClients(ctx context.Context, search interface{}) (int64, error) {
@@ -35,7 +35,7 @@ func (q *Queries) CountClients(ctx context.Context, search interface{}) (int64, 
 
 const createClient = `-- name: CreateClient :one
 INSERT INTO clients (id, name, company, email, phone, address, city, state, zip, tax_id, notes)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at
 `
 
@@ -86,7 +86,7 @@ func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) (Cli
 }
 
 const deleteClient = `-- name: DeleteClient :exec
-DELETE FROM clients WHERE id = ?
+DELETE FROM clients WHERE id = $1
 `
 
 func (q *Queries) DeleteClient(ctx context.Context, id string) error {
@@ -95,7 +95,7 @@ func (q *Queries) DeleteClient(ctx context.Context, id string) error {
 }
 
 const getClient = `-- name: GetClient :one
-SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients WHERE id = ?
+SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients WHERE id = $1
 `
 
 func (q *Queries) GetClient(ctx context.Context, id string) (Client, error) {
@@ -119,7 +119,7 @@ func (q *Queries) GetClient(ctx context.Context, id string) (Client, error) {
 }
 
 const getClientByName = `-- name: GetClientByName :one
-SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients WHERE name = ?
+SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients WHERE name = $1
 `
 
 func (q *Queries) GetClientByName(ctx context.Context, name string) (Client, error) {
@@ -184,15 +184,15 @@ func (q *Queries) ListClients(ctx context.Context) ([]Client, error) {
 
 const listClientsPaginated = `-- name: ListClientsPaginated :many
 SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients
-WHERE (?1 = '' OR name LIKE '%' || ?1 || '%' OR company LIKE '%' || ?1 || '%')
+WHERE ($1 = '' OR name LIKE '%' || $1 || '%' OR company LIKE '%' || $1 || '%')
 ORDER BY name ASC
-LIMIT ?3 OFFSET ?2
+LIMIT $3 OFFSET $2
 `
 
 type ListClientsPaginatedParams struct {
 	Search interface{} `json:"search"`
-	Offset int64       `json:"offset"`
-	Limit  int64       `json:"limit"`
+	Offset int32       `json:"offset"`
+	Limit  int32       `json:"limit"`
 }
 
 func (q *Queries) ListClientsPaginated(ctx context.Context, arg ListClientsPaginatedParams) ([]Client, error) {
@@ -233,17 +233,17 @@ func (q *Queries) ListClientsPaginated(ctx context.Context, arg ListClientsPagin
 
 const updateClient = `-- name: UpdateClient :one
 UPDATE clients SET
-    name = ?,
-    company = ?,
-    email = ?,
-    phone = ?,
-    address = ?,
-    city = ?,
-    state = ?,
-    zip = ?,
-    tax_id = ?,
-    notes = ?
-WHERE id = ?
+    name = $1,
+    company = $2,
+    email = $3,
+    phone = $4,
+    address = $5,
+    city = $6,
+    state = $7,
+    zip = $8,
+    tax_id = $9,
+    notes = $10
+WHERE id = $11
 RETURNING id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at
 `
 
