@@ -18,6 +18,7 @@ const clientsPageSize = 20
 func (h *Handler) ListClients(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	// Parse query params
 	search := r.URL.Query().Get("q")
@@ -32,7 +33,10 @@ func (h *Handler) ListClients(w http.ResponseWriter, r *http.Request) {
 	offset := int64((page - 1) * clientsPageSize)
 
 	// Get total count for pagination
-	totalCount, err := h.queries.CountClients(ctx, search)
+	totalCount, err := h.queries.CountClients(ctx, repository.CountClientsParams{
+		OrgID:  orgID,
+		Search: search,
+	})
 	if err != nil {
 		logger.Error("failed to count clients", "error", err)
 		http.Error(w, "Failed to load clients", http.StatusInternalServerError)
@@ -46,6 +50,7 @@ func (h *Handler) ListClients(w http.ResponseWriter, r *http.Request) {
 
 	// Get paginated clients
 	clients, err := h.queries.ListClientsPaginated(ctx, repository.ListClientsPaginatedParams{
+		OrgID:  orgID,
 		Search: search,
 		Offset: int32(offset),
 		Limit:  int32(clientsPageSize),
@@ -79,6 +84,7 @@ func (h *Handler) ListClients(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetClient(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	id := r.PathValue("id")
 	if id == "" {
@@ -86,7 +92,10 @@ func (h *Handler) GetClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, err := h.queries.GetClient(ctx, id)
+	client, err := h.queries.GetClient(ctx, repository.GetClientParams{
+		ID:    id,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get client", "error", err, "id", id)
 		http.Error(w, "Client not found", http.StatusNotFound)
@@ -94,13 +103,19 @@ func (h *Handler) GetClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get jobs associated with this client (with estimate/signature status)
-	clientJobs, err := h.queries.ListJobsByClientWithEstimateStatus(ctx, sql.NullString{String: id, Valid: true})
+	clientJobs, err := h.queries.ListJobsByClientWithEstimateStatus(ctx, repository.ListJobsByClientWithEstimateStatusParams{
+		ClientID: sql.NullString{String: id, Valid: true},
+		OrgID:    orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list client jobs", "error", err)
 	}
 
 	// Check if client can be deleted
-	hasJobs, _ := h.queries.ClientHasJobs(ctx, sql.NullString{String: id, Valid: true})
+	hasJobs, _ := h.queries.ClientHasJobs(ctx, repository.ClientHasJobsParams{
+		ClientID: sql.NullString{String: id, Valid: true},
+		OrgID:    orgID,
+	})
 
 	data := map[string]interface{}{
 		"Client":  client,
@@ -133,6 +148,7 @@ func (h *Handler) GetClientForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateClient(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -146,7 +162,10 @@ func (h *Handler) CreateClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check for duplicate name
-	_, err := h.queries.GetClientByName(ctx, name)
+	_, err := h.queries.GetClientByName(ctx, repository.GetClientByNameParams{
+		Name:  name,
+		OrgID: orgID,
+	})
 	if err == nil {
 		http.Error(w, "A client with this name already exists", http.StatusConflict)
 		return
@@ -154,6 +173,7 @@ func (h *Handler) CreateClient(w http.ResponseWriter, r *http.Request) {
 
 	client, err := h.queries.CreateClient(ctx, repository.CreateClientParams{
 		ID:      uuid.New().String(),
+		OrgID:   orgID,
 		Name:    name,
 		Company: toNullString(r.FormValue("company")),
 		Email:   toNullString(r.FormValue("email")),
@@ -185,6 +205,7 @@ func (h *Handler) CreateClient(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetClientEditForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	id := r.PathValue("id")
 	if id == "" {
@@ -192,7 +213,10 @@ func (h *Handler) GetClientEditForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client, err := h.queries.GetClient(ctx, id)
+	client, err := h.queries.GetClient(ctx, repository.GetClientParams{
+		ID:    id,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get client", "error", err, "id", id)
 		http.Error(w, "Client not found", http.StatusNotFound)
@@ -218,6 +242,7 @@ func (h *Handler) GetClientEditForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateClient(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	id := r.PathValue("id")
 	if id == "" {
@@ -237,7 +262,10 @@ func (h *Handler) UpdateClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check for duplicate name (excluding current client)
-	existing, err := h.queries.GetClientByName(ctx, name)
+	existing, err := h.queries.GetClientByName(ctx, repository.GetClientByNameParams{
+		Name:  name,
+		OrgID: orgID,
+	})
 	if err == nil && existing.ID != id {
 		http.Error(w, "A client with this name already exists", http.StatusConflict)
 		return
@@ -276,6 +304,7 @@ func (h *Handler) UpdateClient(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteClient(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	id := r.PathValue("id")
 	if id == "" {
@@ -284,7 +313,10 @@ func (h *Handler) DeleteClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if client has jobs
-	hasJobs, err := h.queries.ClientHasJobs(ctx, sql.NullString{String: id, Valid: true})
+	hasJobs, err := h.queries.ClientHasJobs(ctx, repository.ClientHasJobsParams{
+		ClientID: sql.NullString{String: id, Valid: true},
+		OrgID:    orgID,
+	})
 	if err != nil {
 		logger.Error("failed to check client jobs", "error", err)
 		http.Error(w, "Failed to delete client", http.StatusInternalServerError)
@@ -296,7 +328,10 @@ func (h *Handler) DeleteClient(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.queries.DeleteClient(ctx, id); err != nil {
+	if err := h.queries.DeleteClient(ctx, repository.DeleteClientParams{
+		ID:    id,
+		OrgID: orgID,
+	}); err != nil {
 		logger.Error("failed to delete client", "error", err)
 		http.Error(w, "Failed to delete client", http.StatusInternalServerError)
 		return

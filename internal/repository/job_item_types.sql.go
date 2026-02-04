@@ -8,34 +8,38 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const countLineItemsByType = `-- name: CountLineItemsByType :one
 SELECT COUNT(*) FROM line_items li
 JOIN categories c ON li.category_id = c.id
-WHERE c.job_id = $1 AND li.type = $2
+WHERE c.job_id = $1 AND c.org_id = $2 AND li.type = $3 AND li.org_id = $2
 `
 
 type CountLineItemsByTypeParams struct {
-	JobID string `json:"job_id"`
-	Type  string `json:"type"`
+	JobID string        `json:"job_id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+	Type  string        `json:"type"`
 }
 
 func (q *Queries) CountLineItemsByType(ctx context.Context, arg CountLineItemsByTypeParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countLineItemsByType, arg.JobID, arg.Type)
+	row := q.db.QueryRowContext(ctx, countLineItemsByType, arg.JobID, arg.OrgID, arg.Type)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const createJobItemType = `-- name: CreateJobItemType :one
-INSERT INTO job_item_types (id, job_id, name, slug, color, sort_order, surcharge_percent)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, job_id, name, slug, color, sort_order, created_at, surcharge_percent
+INSERT INTO job_item_types (id, org_id, job_id, name, slug, color, sort_order, surcharge_percent)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id, job_id, name, slug, color, sort_order, created_at, surcharge_percent, org_id
 `
 
 type CreateJobItemTypeParams struct {
 	ID               string          `json:"id"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 	JobID            string          `json:"job_id"`
 	Name             string          `json:"name"`
 	Slug             string          `json:"slug"`
@@ -47,6 +51,7 @@ type CreateJobItemTypeParams struct {
 func (q *Queries) CreateJobItemType(ctx context.Context, arg CreateJobItemTypeParams) (JobItemType, error) {
 	row := q.db.QueryRowContext(ctx, createJobItemType,
 		arg.ID,
+		arg.OrgID,
 		arg.JobID,
 		arg.Name,
 		arg.Slug,
@@ -64,25 +69,36 @@ func (q *Queries) CreateJobItemType(ctx context.Context, arg CreateJobItemTypePa
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.SurchargePercent,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const deleteJobItemType = `-- name: DeleteJobItemType :exec
-DELETE FROM job_item_types WHERE id = $1
+DELETE FROM job_item_types WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) DeleteJobItemType(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteJobItemType, id)
+type DeleteJobItemTypeParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) DeleteJobItemType(ctx context.Context, arg DeleteJobItemTypeParams) error {
+	_, err := q.db.ExecContext(ctx, deleteJobItemType, arg.ID, arg.OrgID)
 	return err
 }
 
 const getJobItemType = `-- name: GetJobItemType :one
-SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent FROM job_item_types WHERE id = $1
+SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent, org_id FROM job_item_types WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetJobItemType(ctx context.Context, id string) (JobItemType, error) {
-	row := q.db.QueryRowContext(ctx, getJobItemType, id)
+type GetJobItemTypeParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetJobItemType(ctx context.Context, arg GetJobItemTypeParams) (JobItemType, error) {
+	row := q.db.QueryRowContext(ctx, getJobItemType, arg.ID, arg.OrgID)
 	var i JobItemType
 	err := row.Scan(
 		&i.ID,
@@ -93,22 +109,24 @@ func (q *Queries) GetJobItemType(ctx context.Context, id string) (JobItemType, e
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.SurchargePercent,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getJobItemTypeBySlug = `-- name: GetJobItemTypeBySlug :one
-SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent FROM job_item_types
-WHERE job_id = $1 AND slug = $2
+SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent, org_id FROM job_item_types
+WHERE job_id = $1 AND org_id = $2 AND slug = $3
 `
 
 type GetJobItemTypeBySlugParams struct {
-	JobID string `json:"job_id"`
-	Slug  string `json:"slug"`
+	JobID string        `json:"job_id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+	Slug  string        `json:"slug"`
 }
 
 func (q *Queries) GetJobItemTypeBySlug(ctx context.Context, arg GetJobItemTypeBySlugParams) (JobItemType, error) {
-	row := q.db.QueryRowContext(ctx, getJobItemTypeBySlug, arg.JobID, arg.Slug)
+	row := q.db.QueryRowContext(ctx, getJobItemTypeBySlug, arg.JobID, arg.OrgID, arg.Slug)
 	var i JobItemType
 	err := row.Scan(
 		&i.ID,
@@ -119,18 +137,24 @@ func (q *Queries) GetJobItemTypeBySlug(ctx context.Context, arg GetJobItemTypeBy
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.SurchargePercent,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const listJobItemTypes = `-- name: ListJobItemTypes :many
-SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent FROM job_item_types
-WHERE job_id = $1
+SELECT id, job_id, name, slug, color, sort_order, created_at, surcharge_percent, org_id FROM job_item_types
+WHERE job_id = $1 AND org_id = $2
 ORDER BY sort_order ASC, name ASC
 `
 
-func (q *Queries) ListJobItemTypes(ctx context.Context, jobID string) ([]JobItemType, error) {
-	rows, err := q.db.QueryContext(ctx, listJobItemTypes, jobID)
+type ListJobItemTypesParams struct {
+	JobID string        `json:"job_id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListJobItemTypes(ctx context.Context, arg ListJobItemTypesParams) ([]JobItemType, error) {
+	rows, err := q.db.QueryContext(ctx, listJobItemTypes, arg.JobID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +171,7 @@ func (q *Queries) ListJobItemTypes(ctx context.Context, jobID string) ([]JobItem
 			&i.SortOrder,
 			&i.CreatedAt,
 			&i.SurchargePercent,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -168,8 +193,8 @@ UPDATE job_item_types SET
     color = $3,
     sort_order = $4,
     surcharge_percent = $5
-WHERE id = $6
-RETURNING id, job_id, name, slug, color, sort_order, created_at, surcharge_percent
+WHERE id = $6 AND org_id = $7
+RETURNING id, job_id, name, slug, color, sort_order, created_at, surcharge_percent, org_id
 `
 
 type UpdateJobItemTypeParams struct {
@@ -179,6 +204,7 @@ type UpdateJobItemTypeParams struct {
 	SortOrder        int64           `json:"sort_order"`
 	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
 	ID               string          `json:"id"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 }
 
 func (q *Queries) UpdateJobItemType(ctx context.Context, arg UpdateJobItemTypeParams) (JobItemType, error) {
@@ -189,6 +215,7 @@ func (q *Queries) UpdateJobItemType(ctx context.Context, arg UpdateJobItemTypePa
 		arg.SortOrder,
 		arg.SurchargePercent,
 		arg.ID,
+		arg.OrgID,
 	)
 	var i JobItemType
 	err := row.Scan(
@@ -200,6 +227,7 @@ func (q *Queries) UpdateJobItemType(ctx context.Context, arg UpdateJobItemTypePa
 		&i.SortOrder,
 		&i.CreatedAt,
 		&i.SurchargePercent,
+		&i.OrgID,
 	)
 	return i, err
 }

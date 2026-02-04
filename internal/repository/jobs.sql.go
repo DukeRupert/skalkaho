@@ -8,28 +8,37 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const countJobs = `-- name: CountJobs :one
 SELECT COUNT(*) FROM jobs
-WHERE ($1 = '' OR status = $1)
+WHERE org_id = $1
+  AND ($2 = '' OR status = $2)
 `
 
-func (q *Queries) CountJobs(ctx context.Context, status interface{}) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countJobs, status)
+type CountJobsParams struct {
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Status interface{}   `json:"status"`
+}
+
+func (q *Queries) CountJobs(ctx context.Context, arg CountJobsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countJobs, arg.OrgID, arg.Status)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const createJob = `-- name: CreateJob :one
-INSERT INTO jobs (id, name, customer_name, surcharge_percent, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, surcharge_mode, status, expires_at, client_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent
+INSERT INTO jobs (id, org_id, name, customer_name, surcharge_percent, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, surcharge_mode, status, expires_at, client_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id
 `
 
 type CreateJobParams struct {
 	ID                        string          `json:"id"`
+	OrgID                     uuid.NullUUID   `json:"org_id"`
 	Name                      string          `json:"name"`
 	CustomerName              sql.NullString  `json:"customer_name"`
 	SurchargePercent          float64         `json:"surcharge_percent"`
@@ -45,6 +54,7 @@ type CreateJobParams struct {
 func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, error) {
 	row := q.db.QueryRowContext(ctx, createJob,
 		arg.ID,
+		arg.OrgID,
 		arg.Name,
 		arg.CustomerName,
 		arg.SurchargePercent,
@@ -70,27 +80,38 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, erro
 		&i.MaterialSurchargePercent,
 		&i.LaborSurchargePercent,
 		&i.EquipmentSurchargePercent,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const deleteJob = `-- name: DeleteJob :exec
 DELETE FROM jobs
-WHERE id = $1
+WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) DeleteJob(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteJob, id)
+type DeleteJobParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) DeleteJob(ctx context.Context, arg DeleteJobParams) error {
+	_, err := q.db.ExecContext(ctx, deleteJob, arg.ID, arg.OrgID)
 	return err
 }
 
 const getJob = `-- name: GetJob :one
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent FROM jobs
-WHERE id = $1
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetJob(ctx context.Context, id string) (Job, error) {
-	row := q.db.QueryRowContext(ctx, getJob, id)
+type GetJobParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetJob(ctx context.Context, arg GetJobParams) (Job, error) {
+	row := q.db.QueryRowContext(ctx, getJob, arg.ID, arg.OrgID)
 	var i Job
 	err := row.Scan(
 		&i.ID,
@@ -105,17 +126,19 @@ func (q *Queries) GetJob(ctx context.Context, id string) (Job, error) {
 		&i.MaterialSurchargePercent,
 		&i.LaborSurchargePercent,
 		&i.EquipmentSurchargePercent,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const listJobs = `-- name: ListJobs :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+WHERE org_id = $1
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListJobs(ctx context.Context) ([]Job, error) {
-	rows, err := q.db.QueryContext(ctx, listJobs)
+func (q *Queries) ListJobs(ctx context.Context, orgID uuid.NullUUID) ([]Job, error) {
+	rows, err := q.db.QueryContext(ctx, listJobs, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -136,6 +159,7 @@ func (q *Queries) ListJobs(ctx context.Context) ([]Job, error) {
 			&i.MaterialSurchargePercent,
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -152,17 +176,22 @@ func (q *Queries) ListJobs(ctx context.Context) ([]Job, error) {
 
 const listJobsByClientWithEstimateStatus = `-- name: ListJobsByClientWithEstimateStatus :many
 SELECT
-    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent,
-    (SELECT COUNT(*) FROM estimates WHERE job_id = j.id) as estimate_count,
-    (SELECT status FROM estimates WHERE job_id = j.id ORDER BY version DESC LIMIT 1) as latest_estimate_status,
+    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent, j.org_id,
+    (SELECT COUNT(*) FROM estimates WHERE job_id = j.id AND org_id = j.org_id) as estimate_count,
+    (SELECT status FROM estimates WHERE job_id = j.id AND org_id = j.org_id ORDER BY version DESC LIMIT 1) as latest_estimate_status,
     (SELECT sr.status FROM signature_requests sr
      INNER JOIN estimates e ON sr.estimate_id = e.id
-     WHERE e.job_id = j.id
+     WHERE e.job_id = j.id AND sr.org_id = j.org_id
      ORDER BY sr.created_at DESC LIMIT 1) as latest_signature_status
 FROM jobs j
-WHERE j.client_id = $1
+WHERE j.client_id = $1 AND j.org_id = $2
 ORDER BY j.created_at DESC
 `
+
+type ListJobsByClientWithEstimateStatusParams struct {
+	ClientID sql.NullString `json:"client_id"`
+	OrgID    uuid.NullUUID  `json:"org_id"`
+}
 
 type ListJobsByClientWithEstimateStatusRow struct {
 	ID                        string          `json:"id"`
@@ -177,13 +206,14 @@ type ListJobsByClientWithEstimateStatusRow struct {
 	MaterialSurchargePercent  sql.NullFloat64 `json:"material_surcharge_percent"`
 	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
 	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
+	OrgID                     uuid.NullUUID   `json:"org_id"`
 	EstimateCount             int64           `json:"estimate_count"`
 	LatestEstimateStatus      string          `json:"latest_estimate_status"`
 	LatestSignatureStatus     string          `json:"latest_signature_status"`
 }
 
-func (q *Queries) ListJobsByClientWithEstimateStatus(ctx context.Context, clientID sql.NullString) ([]ListJobsByClientWithEstimateStatusRow, error) {
-	rows, err := q.db.QueryContext(ctx, listJobsByClientWithEstimateStatus, clientID)
+func (q *Queries) ListJobsByClientWithEstimateStatus(ctx context.Context, arg ListJobsByClientWithEstimateStatusParams) ([]ListJobsByClientWithEstimateStatusRow, error) {
+	rows, err := q.db.QueryContext(ctx, listJobsByClientWithEstimateStatus, arg.ClientID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,6 +234,7 @@ func (q *Queries) ListJobsByClientWithEstimateStatus(ctx context.Context, client
 			&i.MaterialSurchargePercent,
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
+			&i.OrgID,
 			&i.EstimateCount,
 			&i.LatestEstimateStatus,
 			&i.LatestSignatureStatus,
@@ -222,20 +253,27 @@ func (q *Queries) ListJobsByClientWithEstimateStatus(ctx context.Context, client
 }
 
 const listJobsPaginated = `-- name: ListJobsPaginated :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent FROM jobs
-WHERE ($1 = '' OR status = $1)
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+WHERE org_id = $1
+  AND ($2 = '' OR status = $2)
 ORDER BY created_at DESC
-LIMIT $3 OFFSET $2
+LIMIT $4 OFFSET $3
 `
 
 type ListJobsPaginatedParams struct {
-	Status interface{} `json:"status"`
-	Offset int32       `json:"offset"`
-	Limit  int32       `json:"limit"`
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Status interface{}   `json:"status"`
+	Offset int32         `json:"offset"`
+	Limit  int32         `json:"limit"`
 }
 
 func (q *Queries) ListJobsPaginated(ctx context.Context, arg ListJobsPaginatedParams) ([]Job, error) {
-	rows, err := q.db.QueryContext(ctx, listJobsPaginated, arg.Status, arg.Offset, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, listJobsPaginated,
+		arg.OrgID,
+		arg.Status,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +294,7 @@ func (q *Queries) ListJobsPaginated(ctx context.Context, arg ListJobsPaginatedPa
 			&i.MaterialSurchargePercent,
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -271,20 +310,27 @@ func (q *Queries) ListJobsPaginated(ctx context.Context, arg ListJobsPaginatedPa
 }
 
 const listJobsPaginatedByName = `-- name: ListJobsPaginatedByName :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent FROM jobs
-WHERE ($1 = '' OR status = $1)
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+WHERE org_id = $1
+  AND ($2 = '' OR status = $2)
 ORDER BY name ASC
-LIMIT $3 OFFSET $2
+LIMIT $4 OFFSET $3
 `
 
 type ListJobsPaginatedByNameParams struct {
-	Status interface{} `json:"status"`
-	Offset int32       `json:"offset"`
-	Limit  int32       `json:"limit"`
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Status interface{}   `json:"status"`
+	Offset int32         `json:"offset"`
+	Limit  int32         `json:"limit"`
 }
 
 func (q *Queries) ListJobsPaginatedByName(ctx context.Context, arg ListJobsPaginatedByNameParams) ([]Job, error) {
-	rows, err := q.db.QueryContext(ctx, listJobsPaginatedByName, arg.Status, arg.Offset, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, listJobsPaginatedByName,
+		arg.OrgID,
+		arg.Status,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -305,6 +351,7 @@ func (q *Queries) ListJobsPaginatedByName(ctx context.Context, arg ListJobsPagin
 			&i.MaterialSurchargePercent,
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -320,20 +367,27 @@ func (q *Queries) ListJobsPaginatedByName(ctx context.Context, arg ListJobsPagin
 }
 
 const listJobsPaginatedByNameDesc = `-- name: ListJobsPaginatedByNameDesc :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent FROM jobs
-WHERE ($1 = '' OR status = $1)
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+WHERE org_id = $1
+  AND ($2 = '' OR status = $2)
 ORDER BY name DESC
-LIMIT $3 OFFSET $2
+LIMIT $4 OFFSET $3
 `
 
 type ListJobsPaginatedByNameDescParams struct {
-	Status interface{} `json:"status"`
-	Offset int32       `json:"offset"`
-	Limit  int32       `json:"limit"`
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Status interface{}   `json:"status"`
+	Offset int32         `json:"offset"`
+	Limit  int32         `json:"limit"`
 }
 
 func (q *Queries) ListJobsPaginatedByNameDesc(ctx context.Context, arg ListJobsPaginatedByNameDescParams) ([]Job, error) {
-	rows, err := q.db.QueryContext(ctx, listJobsPaginatedByNameDesc, arg.Status, arg.Offset, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, listJobsPaginatedByNameDesc,
+		arg.OrgID,
+		arg.Status,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -354,6 +408,7 @@ func (q *Queries) ListJobsPaginatedByNameDesc(ctx context.Context, arg ListJobsP
 			&i.MaterialSurchargePercent,
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -369,20 +424,27 @@ func (q *Queries) ListJobsPaginatedByNameDesc(ctx context.Context, arg ListJobsP
 }
 
 const listJobsPaginatedOldest = `-- name: ListJobsPaginatedOldest :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent FROM jobs
-WHERE ($1 = '' OR status = $1)
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+WHERE org_id = $1
+  AND ($2 = '' OR status = $2)
 ORDER BY created_at ASC
-LIMIT $3 OFFSET $2
+LIMIT $4 OFFSET $3
 `
 
 type ListJobsPaginatedOldestParams struct {
-	Status interface{} `json:"status"`
-	Offset int32       `json:"offset"`
-	Limit  int32       `json:"limit"`
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Status interface{}   `json:"status"`
+	Offset int32         `json:"offset"`
+	Limit  int32         `json:"limit"`
 }
 
 func (q *Queries) ListJobsPaginatedOldest(ctx context.Context, arg ListJobsPaginatedOldestParams) ([]Job, error) {
-	rows, err := q.db.QueryContext(ctx, listJobsPaginatedOldest, arg.Status, arg.Offset, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, listJobsPaginatedOldest,
+		arg.OrgID,
+		arg.Status,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -403,6 +465,7 @@ func (q *Queries) ListJobsPaginatedOldest(ctx context.Context, arg ListJobsPagin
 			&i.MaterialSurchargePercent,
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -419,23 +482,25 @@ func (q *Queries) ListJobsPaginatedOldest(ctx context.Context, arg ListJobsPagin
 
 const listJobsWithEstimateStatus = `-- name: ListJobsWithEstimateStatus :many
 SELECT
-    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent,
-    (SELECT COUNT(*) FROM estimates WHERE job_id = j.id) as estimate_count,
-    (SELECT status FROM estimates WHERE job_id = j.id ORDER BY version DESC LIMIT 1) as latest_estimate_status,
+    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent, j.org_id,
+    (SELECT COUNT(*) FROM estimates WHERE job_id = j.id AND org_id = j.org_id) as estimate_count,
+    (SELECT status FROM estimates WHERE job_id = j.id AND org_id = j.org_id ORDER BY version DESC LIMIT 1) as latest_estimate_status,
     (SELECT sr.status FROM signature_requests sr
      INNER JOIN estimates e ON sr.estimate_id = e.id
-     WHERE e.job_id = j.id
+     WHERE e.job_id = j.id AND sr.org_id = j.org_id
      ORDER BY sr.created_at DESC LIMIT 1) as latest_signature_status
 FROM jobs j
-WHERE ($1 = '' OR j.status = $1)
+WHERE j.org_id = $1
+  AND ($2 = '' OR j.status = $2)
 ORDER BY j.created_at DESC
-LIMIT $3 OFFSET $2
+LIMIT $4 OFFSET $3
 `
 
 type ListJobsWithEstimateStatusParams struct {
-	Status interface{} `json:"status"`
-	Offset int32       `json:"offset"`
-	Limit  int32       `json:"limit"`
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Status interface{}   `json:"status"`
+	Offset int32         `json:"offset"`
+	Limit  int32         `json:"limit"`
 }
 
 type ListJobsWithEstimateStatusRow struct {
@@ -451,13 +516,19 @@ type ListJobsWithEstimateStatusRow struct {
 	MaterialSurchargePercent  sql.NullFloat64 `json:"material_surcharge_percent"`
 	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
 	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
+	OrgID                     uuid.NullUUID   `json:"org_id"`
 	EstimateCount             int64           `json:"estimate_count"`
 	LatestEstimateStatus      string          `json:"latest_estimate_status"`
 	LatestSignatureStatus     string          `json:"latest_signature_status"`
 }
 
 func (q *Queries) ListJobsWithEstimateStatus(ctx context.Context, arg ListJobsWithEstimateStatusParams) ([]ListJobsWithEstimateStatusRow, error) {
-	rows, err := q.db.QueryContext(ctx, listJobsWithEstimateStatus, arg.Status, arg.Offset, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, listJobsWithEstimateStatus,
+		arg.OrgID,
+		arg.Status,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -478,6 +549,7 @@ func (q *Queries) ListJobsWithEstimateStatus(ctx context.Context, arg ListJobsWi
 			&i.MaterialSurchargePercent,
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
+			&i.OrgID,
 			&i.EstimateCount,
 			&i.LatestEstimateStatus,
 			&i.LatestSignatureStatus,
@@ -507,8 +579,8 @@ UPDATE jobs SET
     status = $8,
     expires_at = $9,
     client_id = $10
-WHERE id = $11
-RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent
+WHERE id = $11 AND org_id = $12
+RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id
 `
 
 type UpdateJobParams struct {
@@ -523,6 +595,7 @@ type UpdateJobParams struct {
 	ExpiresAt                 sql.NullString  `json:"expires_at"`
 	ClientID                  sql.NullString  `json:"client_id"`
 	ID                        string          `json:"id"`
+	OrgID                     uuid.NullUUID   `json:"org_id"`
 }
 
 func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, error) {
@@ -538,6 +611,7 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		arg.ExpiresAt,
 		arg.ClientID,
 		arg.ID,
+		arg.OrgID,
 	)
 	var i Job
 	err := row.Scan(
@@ -553,21 +627,23 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		&i.MaterialSurchargePercent,
 		&i.LaborSurchargePercent,
 		&i.EquipmentSurchargePercent,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const updateJobStatus = `-- name: UpdateJobStatus :one
-UPDATE jobs SET status = $1 WHERE id = $2 RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent
+UPDATE jobs SET status = $1 WHERE id = $2 AND org_id = $3 RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id
 `
 
 type UpdateJobStatusParams struct {
-	Status string `json:"status"`
-	ID     string `json:"id"`
+	Status string        `json:"status"`
+	ID     string        `json:"id"`
+	OrgID  uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams) (Job, error) {
-	row := q.db.QueryRowContext(ctx, updateJobStatus, arg.Status, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateJobStatus, arg.Status, arg.ID, arg.OrgID)
 	var i Job
 	err := row.Scan(
 		&i.ID,
@@ -582,6 +658,7 @@ func (q *Queries) UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams
 		&i.MaterialSurchargePercent,
 		&i.LaborSurchargePercent,
 		&i.EquipmentSurchargePercent,
+		&i.OrgID,
 	)
 	return i, err
 }

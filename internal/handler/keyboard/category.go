@@ -134,7 +134,10 @@ func (h *Handler) GetCategoryMarkupForm(w http.ResponseWriter, r *http.Request) 
 	logger := middleware.LoggerFromContext(ctx)
 	categoryID := r.PathValue("id")
 
-	category, err := h.queries.GetCategory(ctx, categoryID)
+	category, err := h.queries.GetCategory(ctx, repository.GetCategoryParams{
+		ID:    categoryID,
+		OrgID: GetOrgID(ctx),
+	})
 	if err != nil {
 		logger.Error("failed to get category", "error", err)
 		http.Error(w, "Category not found", http.StatusNotFound)
@@ -162,7 +165,10 @@ func (h *Handler) GetCategoryRenameForm(w http.ResponseWriter, r *http.Request) 
 	logger := middleware.LoggerFromContext(ctx)
 	categoryID := r.PathValue("id")
 
-	category, err := h.queries.GetCategory(ctx, categoryID)
+	category, err := h.queries.GetCategory(ctx, repository.GetCategoryParams{
+		ID:    categoryID,
+		OrgID: GetOrgID(ctx),
+	})
 	if err != nil {
 		logger.Error("failed to get category", "error", err)
 		http.Error(w, "Category not found", http.StatusNotFound)
@@ -190,7 +196,10 @@ func (h *Handler) UpdateCategoryName(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.LoggerFromContext(ctx)
 	categoryID := r.PathValue("id")
 
-	category, err := h.queries.GetCategory(ctx, categoryID)
+	category, err := h.queries.GetCategory(ctx, repository.GetCategoryParams{
+		ID:    categoryID,
+		OrgID: GetOrgID(ctx),
+	})
 	if err != nil {
 		logger.Error("failed to get category", "error", err)
 		http.Error(w, "Category not found", http.StatusNotFound)
@@ -233,7 +242,10 @@ func (h *Handler) UpdateCategoryMarkup(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.LoggerFromContext(ctx)
 	categoryID := r.PathValue("id")
 
-	category, err := h.queries.GetCategory(ctx, categoryID)
+	category, err := h.queries.GetCategory(ctx, repository.GetCategoryParams{
+		ID:    categoryID,
+		OrgID: GetOrgID(ctx),
+	})
 	if err != nil {
 		logger.Error("failed to get category", "error", err)
 		http.Error(w, "Category not found", http.StatusNotFound)
@@ -278,7 +290,10 @@ func (h *Handler) GetEditForm(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.LoggerFromContext(ctx)
 	itemID := r.PathValue("id")
 
-	item, err := h.queries.GetLineItem(ctx, itemID)
+	item, err := h.queries.GetLineItem(ctx, repository.GetLineItemParams{
+		ID:    itemID,
+		OrgID: GetOrgID(ctx),
+	})
 	if err != nil {
 		logger.Error("failed to get line item", "error", err)
 		http.Error(w, "Item not found", http.StatusNotFound)
@@ -286,7 +301,10 @@ func (h *Handler) GetEditForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch existing items to get tags for autocomplete
-	items, err := h.queries.ListLineItemsByCategory(ctx, item.CategoryID)
+	items, err := h.queries.ListLineItemsByCategory(ctx, repository.ListLineItemsByCategoryParams{
+		CategoryID: item.CategoryID,
+		OrgID:      GetOrgID(ctx),
+	})
 	if err != nil {
 		logger.Error("failed to list items for tags", "error", err)
 		items = []repository.LineItem{} // Continue with empty list
@@ -317,7 +335,10 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.LoggerFromContext(ctx)
 	itemID := r.PathValue("id")
 
-	item, err := h.queries.GetLineItem(ctx, itemID)
+	item, err := h.queries.GetLineItem(ctx, repository.GetLineItemParams{
+		ID:    itemID,
+		OrgID: GetOrgID(ctx),
+	})
 	if err != nil {
 		logger.Error("failed to get line item", "error", err)
 		http.Error(w, "Item not found", http.StatusNotFound)
@@ -398,8 +419,9 @@ func (h *Handler) SearchItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	items, err := h.queries.SearchItemTemplatesByType(ctx, repository.SearchItemTemplatesByTypeParams{
+		OrgID:   GetOrgID(ctx),
 		Type:    itemType,
-		Column2: sql.NullString{String: query, Valid: true},
+		Column3: sql.NullString{String: query, Valid: true},
 	})
 	if err != nil {
 		logger.Error("failed to search items", "error", err)
@@ -424,7 +446,11 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.LoggerFromContext(ctx)
 	categoryID := r.PathValue("id")
 
-	category, err := h.queries.GetCategory(ctx, categoryID)
+	orgID := GetOrgID(ctx)
+	category, err := h.queries.GetCategory(ctx, repository.GetCategoryParams{
+		ID:    categoryID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Category not found", http.StatusNotFound)
@@ -435,21 +461,30 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := h.queries.GetJob(ctx, category.JobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    category.JobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Failed to load job", http.StatusInternalServerError)
 		return
 	}
 
-	categories, err := h.queries.ListCategoriesByJob(ctx, job.ID)
+	categories, err := h.queries.ListCategoriesByJob(ctx, repository.ListCategoriesByJobParams{
+		JobID: job.ID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list categories", "error", err)
 		http.Error(w, "Failed to load categories", http.StatusInternalServerError)
 		return
 	}
 
-	lineItems, err := h.queries.ListLineItemsByJob(ctx, job.ID)
+	lineItems, err := h.queries.ListLineItemsByJob(ctx, repository.ListLineItemsByJobParams{
+		JobID: job.ID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list line items", "error", err)
 		http.Error(w, "Failed to load line items", http.StatusInternalServerError)
@@ -457,7 +492,10 @@ func (h *Handler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get custom item types for this job (needed for surcharge calculations)
-	customTypes, err := h.queries.ListJobItemTypes(ctx, job.ID)
+	customTypes, err := h.queries.ListJobItemTypes(ctx, repository.ListJobItemTypesParams{
+		JobID: job.ID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list job item types", "error", err)
 		customTypes = []repository.JobItemType{} // Continue with empty list
@@ -570,8 +608,12 @@ func (h *Handler) CreateSubcategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	parentID := r.PathValue("parentID")
+	orgID := GetOrgID(ctx)
 
-	parent, err := h.queries.GetCategory(ctx, parentID)
+	parent, err := h.queries.GetCategory(ctx, repository.GetCategoryParams{
+		ID:    parentID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get parent category", "error", err)
 		http.Error(w, "Parent category not found", http.StatusNotFound)
@@ -579,7 +621,10 @@ func (h *Handler) CreateSubcategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check depth
-	categories, _ := h.queries.ListCategoriesByJob(ctx, parent.JobID)
+	categories, _ := h.queries.ListCategoriesByJob(ctx, repository.ListCategoriesByJobParams{
+		JobID: parent.JobID,
+		OrgID: orgID,
+	})
 	depth := h.getCategoryDepth(categories, parentID)
 	if depth >= 3 {
 		http.Error(w, "Maximum category depth reached", http.StatusBadRequest)
@@ -623,8 +668,12 @@ func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	categoryID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
-	category, err := h.queries.GetCategory(ctx, categoryID)
+	category, err := h.queries.GetCategory(ctx, repository.GetCategoryParams{
+		ID:    categoryID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get category", "error", err)
 		http.Error(w, "Category not found", http.StatusNotFound)
@@ -636,7 +685,10 @@ func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 		redirectURL = "/categories/" + category.ParentID.String
 	}
 
-	if err := h.queries.DeleteCategory(ctx, categoryID); err != nil {
+	if err := h.queries.DeleteCategory(ctx, repository.DeleteCategoryParams{
+		ID:    categoryID,
+		OrgID: orgID,
+	}); err != nil {
 		logger.Error("failed to delete category", "error", err)
 		http.Error(w, "Failed to delete category", http.StatusInternalServerError)
 		return
@@ -727,15 +779,22 @@ func (h *Handler) DeleteLineItem(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	itemID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
-	item, err := h.queries.GetLineItem(ctx, itemID)
+	item, err := h.queries.GetLineItem(ctx, repository.GetLineItemParams{
+		ID:    itemID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get line item", "error", err)
 		http.Error(w, "Line item not found", http.StatusNotFound)
 		return
 	}
 
-	if err := h.queries.DeleteLineItem(ctx, itemID); err != nil {
+	if err := h.queries.DeleteLineItem(ctx, repository.DeleteLineItemParams{
+		ID:    itemID,
+		OrgID: orgID,
+	}); err != nil {
 		logger.Error("failed to delete line item", "error", err)
 		http.Error(w, "Failed to delete line item", http.StatusInternalServerError)
 		return
@@ -770,7 +829,10 @@ func (h *Handler) GetInlineForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch existing items to get tags for autocomplete
-	items, err := h.queries.ListLineItemsByCategory(ctx, categoryID)
+	items, err := h.queries.ListLineItemsByCategory(ctx, repository.ListLineItemsByCategoryParams{
+		CategoryID: categoryID,
+		OrgID:      GetOrgID(ctx),
+	})
 	if err != nil {
 		logger.Error("failed to list items for tags", "error", err)
 		items = []repository.LineItem{} // Continue with empty list

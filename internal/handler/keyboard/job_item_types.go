@@ -19,15 +19,22 @@ func (h *Handler) ListJobItemTypes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	jobID := r.PathValue("jobID")
+	orgID := GetOrgID(ctx)
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
 		return
 	}
 
-	itemTypes, err := h.queries.ListJobItemTypes(ctx, jobID)
+	itemTypes, err := h.queries.ListJobItemTypes(ctx, repository.ListJobItemTypesParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list job item types", "error", err)
 		http.Error(w, "Failed to load item types", http.StatusInternalServerError)
@@ -51,8 +58,12 @@ func (h *Handler) GetJobItemTypeForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	jobID := r.PathValue("jobID")
+	orgID := GetOrgID(ctx)
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -80,6 +91,7 @@ func (h *Handler) CreateJobItemType(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	jobID := r.PathValue("jobID")
+	orgID := GetOrgID(ctx)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -137,6 +149,7 @@ func (h *Handler) CreateJobItemType(w http.ResponseWriter, r *http.Request) {
 	_, err := h.queries.GetJobItemTypeBySlug(ctx, repository.GetJobItemTypeBySlugParams{
 		JobID: jobID,
 		Slug:  slug,
+		OrgID: orgID,
 	})
 	if err == nil {
 		http.Error(w, "A type with this slug already exists", http.StatusConflict)
@@ -145,6 +158,7 @@ func (h *Handler) CreateJobItemType(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.queries.CreateJobItemType(ctx, repository.CreateJobItemTypeParams{
 		ID:               uuid.New().String(),
+		OrgID:            orgID,
 		JobID:            jobID,
 		Name:             name,
 		Slug:             slug,
@@ -173,8 +187,12 @@ func (h *Handler) UpdateJobItemType(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	typeID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
-	itemType, err := h.queries.GetJobItemType(ctx, typeID)
+	itemType, err := h.queries.GetJobItemType(ctx, repository.GetJobItemTypeParams{
+		ID:    typeID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job item type", "error", err)
 		http.Error(w, "Item type not found", http.StatusNotFound)
@@ -239,6 +257,7 @@ func (h *Handler) UpdateJobItemType(w http.ResponseWriter, r *http.Request) {
 		existing, err := h.queries.GetJobItemTypeBySlug(ctx, repository.GetJobItemTypeBySlugParams{
 			JobID: itemType.JobID,
 			Slug:  slug,
+			OrgID: orgID,
 		})
 		if err == nil && existing.ID != typeID {
 			http.Error(w, "A type with this slug already exists", http.StatusConflict)
@@ -275,8 +294,12 @@ func (h *Handler) DeleteJobItemType(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	typeID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
-	itemType, err := h.queries.GetJobItemType(ctx, typeID)
+	itemType, err := h.queries.GetJobItemType(ctx, repository.GetJobItemTypeParams{
+		ID:    typeID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job item type", "error", err)
 		http.Error(w, "Item type not found", http.StatusNotFound)
@@ -287,6 +310,7 @@ func (h *Handler) DeleteJobItemType(w http.ResponseWriter, r *http.Request) {
 	count, err := h.queries.CountLineItemsByType(ctx, repository.CountLineItemsByTypeParams{
 		JobID: itemType.JobID,
 		Type:  itemType.Slug,
+		OrgID: orgID,
 	})
 	if err != nil {
 		logger.Error("failed to count line items by type", "error", err)
@@ -299,7 +323,10 @@ func (h *Handler) DeleteJobItemType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.queries.DeleteJobItemType(ctx, typeID); err != nil {
+	if err := h.queries.DeleteJobItemType(ctx, repository.DeleteJobItemTypeParams{
+		ID:    typeID,
+		OrgID: orgID,
+	}); err != nil {
 		logger.Error("failed to delete job item type", "error", err)
 		http.Error(w, "Failed to delete item type", http.StatusInternalServerError)
 		return

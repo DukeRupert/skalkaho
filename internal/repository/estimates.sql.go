@@ -8,16 +8,19 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const createEstimate = `-- name: CreateEstimate :one
-INSERT INTO estimates (id, job_id, version, status, grand_total, notes)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
+INSERT INTO estimates (id, org_id, job_id, version, status, grand_total, notes)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at, org_id
 `
 
 type CreateEstimateParams struct {
 	ID         string         `json:"id"`
+	OrgID      uuid.NullUUID  `json:"org_id"`
 	JobID      string         `json:"job_id"`
 	Version    int64          `json:"version"`
 	Status     string         `json:"status"`
@@ -28,6 +31,7 @@ type CreateEstimateParams struct {
 func (q *Queries) CreateEstimate(ctx context.Context, arg CreateEstimateParams) (Estimate, error) {
 	row := q.db.QueryRowContext(ctx, createEstimate,
 		arg.ID,
+		arg.OrgID,
 		arg.JobID,
 		arg.Version,
 		arg.Status,
@@ -45,18 +49,20 @@ func (q *Queries) CreateEstimate(ctx context.Context, arg CreateEstimateParams) 
 		&i.SentAt,
 		&i.RespondedAt,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const createEstimateCategory = `-- name: CreateEstimateCategory :one
-INSERT INTO estimate_categories (id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order
+INSERT INTO estimate_categories (id, org_id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order, org_id
 `
 
 type CreateEstimateCategoryParams struct {
 	ID               string         `json:"id"`
+	OrgID            uuid.NullUUID  `json:"org_id"`
 	EstimateID       string         `json:"estimate_id"`
 	CategoryID       string         `json:"category_id"`
 	ParentCategoryID sql.NullString `json:"parent_category_id"`
@@ -70,6 +76,7 @@ type CreateEstimateCategoryParams struct {
 func (q *Queries) CreateEstimateCategory(ctx context.Context, arg CreateEstimateCategoryParams) (EstimateCategory, error) {
 	row := q.db.QueryRowContext(ctx, createEstimateCategory,
 		arg.ID,
+		arg.OrgID,
 		arg.EstimateID,
 		arg.CategoryID,
 		arg.ParentCategoryID,
@@ -90,34 +97,50 @@ func (q *Queries) CreateEstimateCategory(ctx context.Context, arg CreateEstimate
 		&i.Description,
 		&i.Total,
 		&i.SortOrder,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const deleteEstimate = `-- name: DeleteEstimate :exec
-DELETE FROM estimates WHERE id = $1
+DELETE FROM estimates WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) DeleteEstimate(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteEstimate, id)
+type DeleteEstimateParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) DeleteEstimate(ctx context.Context, arg DeleteEstimateParams) error {
+	_, err := q.db.ExecContext(ctx, deleteEstimate, arg.ID, arg.OrgID)
 	return err
 }
 
 const deleteEstimateCategoriesByEstimate = `-- name: DeleteEstimateCategoriesByEstimate :exec
-DELETE FROM estimate_categories WHERE estimate_id = $1
+DELETE FROM estimate_categories WHERE estimate_id = $1 AND org_id = $2
 `
 
-func (q *Queries) DeleteEstimateCategoriesByEstimate(ctx context.Context, estimateID string) error {
-	_, err := q.db.ExecContext(ctx, deleteEstimateCategoriesByEstimate, estimateID)
+type DeleteEstimateCategoriesByEstimateParams struct {
+	EstimateID string        `json:"estimate_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) DeleteEstimateCategoriesByEstimate(ctx context.Context, arg DeleteEstimateCategoriesByEstimateParams) error {
+	_, err := q.db.ExecContext(ctx, deleteEstimateCategoriesByEstimate, arg.EstimateID, arg.OrgID)
 	return err
 }
 
 const getEstimate = `-- name: GetEstimate :one
-SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at FROM estimates WHERE id = $1
+SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at, org_id FROM estimates WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetEstimate(ctx context.Context, id string) (Estimate, error) {
-	row := q.db.QueryRowContext(ctx, getEstimate, id)
+type GetEstimateParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetEstimate(ctx context.Context, arg GetEstimateParams) (Estimate, error) {
+	row := q.db.QueryRowContext(ctx, getEstimate, arg.ID, arg.OrgID)
 	var i Estimate
 	err := row.Scan(
 		&i.ID,
@@ -129,21 +152,23 @@ func (q *Queries) GetEstimate(ctx context.Context, id string) (Estimate, error) 
 		&i.SentAt,
 		&i.RespondedAt,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getEstimateByJobAndVersion = `-- name: GetEstimateByJobAndVersion :one
-SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at FROM estimates WHERE job_id = $1 AND version = $2
+SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at, org_id FROM estimates WHERE job_id = $1 AND version = $2 AND org_id = $3
 `
 
 type GetEstimateByJobAndVersionParams struct {
-	JobID   string `json:"job_id"`
-	Version int64  `json:"version"`
+	JobID   string        `json:"job_id"`
+	Version int64         `json:"version"`
+	OrgID   uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) GetEstimateByJobAndVersion(ctx context.Context, arg GetEstimateByJobAndVersionParams) (Estimate, error) {
-	row := q.db.QueryRowContext(ctx, getEstimateByJobAndVersion, arg.JobID, arg.Version)
+	row := q.db.QueryRowContext(ctx, getEstimateByJobAndVersion, arg.JobID, arg.Version, arg.OrgID)
 	var i Estimate
 	err := row.Scan(
 		&i.ID,
@@ -155,16 +180,22 @@ func (q *Queries) GetEstimateByJobAndVersion(ctx context.Context, arg GetEstimat
 		&i.SentAt,
 		&i.RespondedAt,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getEstimateCategory = `-- name: GetEstimateCategory :one
-SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories WHERE id = $1
+SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order, org_id FROM estimate_categories WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetEstimateCategory(ctx context.Context, id string) (EstimateCategory, error) {
-	row := q.db.QueryRowContext(ctx, getEstimateCategory, id)
+type GetEstimateCategoryParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetEstimateCategory(ctx context.Context, arg GetEstimateCategoryParams) (EstimateCategory, error) {
+	row := q.db.QueryRowContext(ctx, getEstimateCategory, arg.ID, arg.OrgID)
 	var i EstimateCategory
 	err := row.Scan(
 		&i.ID,
@@ -176,6 +207,7 @@ func (q *Queries) GetEstimateCategory(ctx context.Context, id string) (EstimateC
 		&i.Description,
 		&i.Total,
 		&i.SortOrder,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -183,24 +215,34 @@ func (q *Queries) GetEstimateCategory(ctx context.Context, id string) (EstimateC
 const getLatestEstimateVersion = `-- name: GetLatestEstimateVersion :one
 SELECT CAST(COALESCE(MAX(version), 0) AS INTEGER) as max_version
 FROM estimates
-WHERE job_id = $1
+WHERE job_id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetLatestEstimateVersion(ctx context.Context, jobID string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, getLatestEstimateVersion, jobID)
+type GetLatestEstimateVersionParams struct {
+	JobID string        `json:"job_id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetLatestEstimateVersion(ctx context.Context, arg GetLatestEstimateVersionParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getLatestEstimateVersion, arg.JobID, arg.OrgID)
 	var max_version int64
 	err := row.Scan(&max_version)
 	return max_version, err
 }
 
 const listEstimateCategoriesByEstimate = `-- name: ListEstimateCategoriesByEstimate :many
-SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories
-WHERE estimate_id = $1
+SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order, org_id FROM estimate_categories
+WHERE estimate_id = $1 AND org_id = $2
 ORDER BY tier ASC, sort_order ASC
 `
 
-func (q *Queries) ListEstimateCategoriesByEstimate(ctx context.Context, estimateID string) ([]EstimateCategory, error) {
-	rows, err := q.db.QueryContext(ctx, listEstimateCategoriesByEstimate, estimateID)
+type ListEstimateCategoriesByEstimateParams struct {
+	EstimateID string        `json:"estimate_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListEstimateCategoriesByEstimate(ctx context.Context, arg ListEstimateCategoriesByEstimateParams) ([]EstimateCategory, error) {
+	rows, err := q.db.QueryContext(ctx, listEstimateCategoriesByEstimate, arg.EstimateID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -218,6 +260,7 @@ func (q *Queries) ListEstimateCategoriesByEstimate(ctx context.Context, estimate
 			&i.Description,
 			&i.Total,
 			&i.SortOrder,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -233,18 +276,19 @@ func (q *Queries) ListEstimateCategoriesByEstimate(ctx context.Context, estimate
 }
 
 const listEstimateCategoriesByParent = `-- name: ListEstimateCategoriesByParent :many
-SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories
-WHERE estimate_id = $1 AND parent_category_id = $2
+SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order, org_id FROM estimate_categories
+WHERE estimate_id = $1 AND org_id = $2 AND parent_category_id = $3
 ORDER BY sort_order ASC
 `
 
 type ListEstimateCategoriesByParentParams struct {
 	EstimateID       string         `json:"estimate_id"`
+	OrgID            uuid.NullUUID  `json:"org_id"`
 	ParentCategoryID sql.NullString `json:"parent_category_id"`
 }
 
 func (q *Queries) ListEstimateCategoriesByParent(ctx context.Context, arg ListEstimateCategoriesByParentParams) ([]EstimateCategory, error) {
-	rows, err := q.db.QueryContext(ctx, listEstimateCategoriesByParent, arg.EstimateID, arg.ParentCategoryID)
+	rows, err := q.db.QueryContext(ctx, listEstimateCategoriesByParent, arg.EstimateID, arg.OrgID, arg.ParentCategoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -262,6 +306,7 @@ func (q *Queries) ListEstimateCategoriesByParent(ctx context.Context, arg ListEs
 			&i.Description,
 			&i.Total,
 			&i.SortOrder,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -277,13 +322,18 @@ func (q *Queries) ListEstimateCategoriesByParent(ctx context.Context, arg ListEs
 }
 
 const listEstimateCategoriesTier1 = `-- name: ListEstimateCategoriesTier1 :many
-SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order FROM estimate_categories
-WHERE estimate_id = $1 AND tier = 1
+SELECT id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order, org_id FROM estimate_categories
+WHERE estimate_id = $1 AND org_id = $2 AND tier = 1
 ORDER BY sort_order ASC
 `
 
-func (q *Queries) ListEstimateCategoriesTier1(ctx context.Context, estimateID string) ([]EstimateCategory, error) {
-	rows, err := q.db.QueryContext(ctx, listEstimateCategoriesTier1, estimateID)
+type ListEstimateCategoriesTier1Params struct {
+	EstimateID string        `json:"estimate_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListEstimateCategoriesTier1(ctx context.Context, arg ListEstimateCategoriesTier1Params) ([]EstimateCategory, error) {
+	rows, err := q.db.QueryContext(ctx, listEstimateCategoriesTier1, arg.EstimateID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -301,6 +351,7 @@ func (q *Queries) ListEstimateCategoriesTier1(ctx context.Context, estimateID st
 			&i.Description,
 			&i.Total,
 			&i.SortOrder,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -316,13 +367,18 @@ func (q *Queries) ListEstimateCategoriesTier1(ctx context.Context, estimateID st
 }
 
 const listEstimatesByJob = `-- name: ListEstimatesByJob :many
-SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at FROM estimates
-WHERE job_id = $1
+SELECT id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at, org_id FROM estimates
+WHERE job_id = $1 AND org_id = $2
 ORDER BY version DESC
 `
 
-func (q *Queries) ListEstimatesByJob(ctx context.Context, jobID string) ([]Estimate, error) {
-	rows, err := q.db.QueryContext(ctx, listEstimatesByJob, jobID)
+type ListEstimatesByJobParams struct {
+	JobID string        `json:"job_id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListEstimatesByJob(ctx context.Context, arg ListEstimatesByJobParams) ([]Estimate, error) {
+	rows, err := q.db.QueryContext(ctx, listEstimatesByJob, arg.JobID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -340,6 +396,7 @@ func (q *Queries) ListEstimatesByJob(ctx context.Context, jobID string) ([]Estim
 			&i.SentAt,
 			&i.RespondedAt,
 			&i.CreatedAt,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -355,13 +412,18 @@ func (q *Queries) ListEstimatesByJob(ctx context.Context, jobID string) ([]Estim
 }
 
 const markEstimateAccepted = `-- name: MarkEstimateAccepted :one
-UPDATE estimates SET status = 'accepted', responded_at = datetime('now')
-WHERE id = $1
-RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
+UPDATE estimates SET status = 'accepted', responded_at = NOW()
+WHERE id = $1 AND org_id = $2
+RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at, org_id
 `
 
-func (q *Queries) MarkEstimateAccepted(ctx context.Context, id string) (Estimate, error) {
-	row := q.db.QueryRowContext(ctx, markEstimateAccepted, id)
+type MarkEstimateAcceptedParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) MarkEstimateAccepted(ctx context.Context, arg MarkEstimateAcceptedParams) (Estimate, error) {
+	row := q.db.QueryRowContext(ctx, markEstimateAccepted, arg.ID, arg.OrgID)
 	var i Estimate
 	err := row.Scan(
 		&i.ID,
@@ -373,18 +435,24 @@ func (q *Queries) MarkEstimateAccepted(ctx context.Context, id string) (Estimate
 		&i.SentAt,
 		&i.RespondedAt,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const markEstimateSent = `-- name: MarkEstimateSent :one
-UPDATE estimates SET status = 'sent', sent_at = datetime('now')
-WHERE id = $1
-RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
+UPDATE estimates SET status = 'sent', sent_at = NOW()
+WHERE id = $1 AND org_id = $2
+RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at, org_id
 `
 
-func (q *Queries) MarkEstimateSent(ctx context.Context, id string) (Estimate, error) {
-	row := q.db.QueryRowContext(ctx, markEstimateSent, id)
+type MarkEstimateSentParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) MarkEstimateSent(ctx context.Context, arg MarkEstimateSentParams) (Estimate, error) {
+	row := q.db.QueryRowContext(ctx, markEstimateSent, arg.ID, arg.OrgID)
 	var i Estimate
 	err := row.Scan(
 		&i.ID,
@@ -396,6 +464,7 @@ func (q *Queries) MarkEstimateSent(ctx context.Context, id string) (Estimate, er
 		&i.SentAt,
 		&i.RespondedAt,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -406,8 +475,8 @@ UPDATE estimates SET
     notes = $2,
     sent_at = $3,
     responded_at = $4
-WHERE id = $5
-RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
+WHERE id = $5 AND org_id = $6
+RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at, org_id
 `
 
 type UpdateEstimateParams struct {
@@ -416,6 +485,7 @@ type UpdateEstimateParams struct {
 	SentAt      sql.NullString `json:"sent_at"`
 	RespondedAt sql.NullString `json:"responded_at"`
 	ID          string         `json:"id"`
+	OrgID       uuid.NullUUID  `json:"org_id"`
 }
 
 func (q *Queries) UpdateEstimate(ctx context.Context, arg UpdateEstimateParams) (Estimate, error) {
@@ -425,6 +495,7 @@ func (q *Queries) UpdateEstimate(ctx context.Context, arg UpdateEstimateParams) 
 		arg.SentAt,
 		arg.RespondedAt,
 		arg.ID,
+		arg.OrgID,
 	)
 	var i Estimate
 	err := row.Scan(
@@ -437,23 +508,25 @@ func (q *Queries) UpdateEstimate(ctx context.Context, arg UpdateEstimateParams) 
 		&i.SentAt,
 		&i.RespondedAt,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const updateEstimateCategoryDescription = `-- name: UpdateEstimateCategoryDescription :one
 UPDATE estimate_categories SET description = $1
-WHERE id = $2
-RETURNING id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order
+WHERE id = $2 AND org_id = $3
+RETURNING id, estimate_id, category_id, parent_category_id, tier, name, description, total, sort_order, org_id
 `
 
 type UpdateEstimateCategoryDescriptionParams struct {
 	Description sql.NullString `json:"description"`
 	ID          string         `json:"id"`
+	OrgID       uuid.NullUUID  `json:"org_id"`
 }
 
 func (q *Queries) UpdateEstimateCategoryDescription(ctx context.Context, arg UpdateEstimateCategoryDescriptionParams) (EstimateCategory, error) {
-	row := q.db.QueryRowContext(ctx, updateEstimateCategoryDescription, arg.Description, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateEstimateCategoryDescription, arg.Description, arg.ID, arg.OrgID)
 	var i EstimateCategory
 	err := row.Scan(
 		&i.ID,
@@ -465,23 +538,25 @@ func (q *Queries) UpdateEstimateCategoryDescription(ctx context.Context, arg Upd
 		&i.Description,
 		&i.Total,
 		&i.SortOrder,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const updateEstimateStatus = `-- name: UpdateEstimateStatus :one
 UPDATE estimates SET status = $1
-WHERE id = $2
-RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at
+WHERE id = $2 AND org_id = $3
+RETURNING id, job_id, version, status, grand_total, notes, sent_at, responded_at, created_at, org_id
 `
 
 type UpdateEstimateStatusParams struct {
-	Status string `json:"status"`
-	ID     string `json:"id"`
+	Status string        `json:"status"`
+	ID     string        `json:"id"`
+	OrgID  uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) UpdateEstimateStatus(ctx context.Context, arg UpdateEstimateStatusParams) (Estimate, error) {
-	row := q.db.QueryRowContext(ctx, updateEstimateStatus, arg.Status, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateEstimateStatus, arg.Status, arg.ID, arg.OrgID)
 	var i Estimate
 	err := row.Scan(
 		&i.ID,
@@ -493,6 +568,7 @@ func (q *Queries) UpdateEstimateStatus(ctx context.Context, arg UpdateEstimateSt
 		&i.SentAt,
 		&i.RespondedAt,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }

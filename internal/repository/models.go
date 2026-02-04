@@ -18,6 +18,7 @@ type Category struct {
 	Name             string          `json:"name"`
 	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
 	SortOrder        int64           `json:"sort_order"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 }
 
 type Client struct {
@@ -33,10 +34,10 @@ type Client struct {
 	TaxID     sql.NullString `json:"tax_id"`
 	Notes     sql.NullString `json:"notes"`
 	CreatedAt string         `json:"created_at"`
+	OrgID     uuid.NullUUID  `json:"org_id"`
 }
 
 type CompanyProfile struct {
-	ID        string         `json:"id"`
 	Name      string         `json:"name"`
 	Email     sql.NullString `json:"email"`
 	Phone     sql.NullString `json:"phone"`
@@ -47,6 +48,7 @@ type CompanyProfile struct {
 	LogoPath  sql.NullString `json:"logo_path"`
 	CreatedAt string         `json:"created_at"`
 	UpdatedAt string         `json:"updated_at"`
+	OrgID     uuid.UUID      `json:"org_id"`
 }
 
 type Estimate struct {
@@ -59,6 +61,7 @@ type Estimate struct {
 	SentAt      sql.NullString `json:"sent_at"`
 	RespondedAt sql.NullString `json:"responded_at"`
 	CreatedAt   string         `json:"created_at"`
+	OrgID       uuid.NullUUID  `json:"org_id"`
 }
 
 type EstimateCategory struct {
@@ -71,15 +74,17 @@ type EstimateCategory struct {
 	Description      sql.NullString `json:"description"`
 	Total            float64        `json:"total"`
 	SortOrder        int64          `json:"sort_order"`
+	OrgID            uuid.NullUUID  `json:"org_id"`
 }
 
 type ItemTemplate struct {
-	ID           int64   `json:"id"`
-	Type         string  `json:"type"`
-	Category     string  `json:"category"`
-	Name         string  `json:"name"`
-	DefaultUnit  string  `json:"default_unit"`
-	DefaultPrice float64 `json:"default_price"`
+	ID           int64         `json:"id"`
+	Type         string        `json:"type"`
+	Category     string        `json:"category"`
+	Name         string        `json:"name"`
+	DefaultUnit  string        `json:"default_unit"`
+	DefaultPrice float64       `json:"default_price"`
+	OrgID        uuid.NullUUID `json:"org_id"`
 }
 
 type Job struct {
@@ -95,6 +100,7 @@ type Job struct {
 	MaterialSurchargePercent  sql.NullFloat64 `json:"material_surcharge_percent"`
 	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
 	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
+	OrgID                     uuid.NullUUID   `json:"org_id"`
 }
 
 type JobItemType struct {
@@ -106,6 +112,7 @@ type JobItemType struct {
 	SortOrder        int64           `json:"sort_order"`
 	CreatedAt        string          `json:"created_at"`
 	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 }
 
 type LineItem struct {
@@ -120,6 +127,7 @@ type LineItem struct {
 	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
 	SortOrder        int64           `json:"sort_order"`
 	Tag              sql.NullString  `json:"tag"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 }
 
 type Organization struct {
@@ -144,6 +152,7 @@ type PriceImport struct {
 	ErrorMessage sql.NullString `json:"error_message"`
 	CreatedAt    string         `json:"created_at"`
 	AppliedAt    sql.NullString `json:"applied_at"`
+	OrgID        uuid.NullUUID  `json:"org_id"`
 }
 
 type PriceImportMatch struct {
@@ -159,12 +168,13 @@ type PriceImportMatch struct {
 	Status            string         `json:"status"`
 	NewName           sql.NullString `json:"new_name"`
 	CreatedAt         string         `json:"created_at"`
+	OrgID             uuid.NullUUID  `json:"org_id"`
 }
 
 type Setting struct {
-	ID                      string  `json:"id"`
-	DefaultSurchargeMode    string  `json:"default_surcharge_mode"`
-	DefaultSurchargePercent float64 `json:"default_surcharge_percent"`
+	DefaultSurchargeMode    string    `json:"default_surcharge_mode"`
+	DefaultSurchargePercent float64   `json:"default_surcharge_percent"`
+	OrgID                   uuid.UUID `json:"org_id"`
 }
 
 type Signature struct {
@@ -179,6 +189,7 @@ type Signature struct {
 	SignerEmail        string         `json:"signer_email"`
 	CertificatePdfPath sql.NullString `json:"certificate_pdf_path"`
 	CreatedAt          string         `json:"created_at"`
+	OrgID              uuid.NullUUID  `json:"org_id"`
 }
 
 type SignatureRequest struct {
@@ -195,6 +206,7 @@ type SignatureRequest struct {
 	SenderIp        sql.NullString `json:"sender_ip"`
 	SenderUserAgent sql.NullString `json:"sender_user_agent"`
 	CreatedAt       string         `json:"created_at"`
+	OrgID           uuid.NullUUID  `json:"org_id"`
 }
 
 type User struct {

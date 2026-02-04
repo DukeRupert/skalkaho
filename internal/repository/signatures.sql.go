@@ -8,16 +8,23 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const cancelSignatureRequest = `-- name: CancelSignatureRequest :one
 UPDATE signature_requests SET status = 'cancelled'
-WHERE id = $1 AND status = 'pending'
-RETURNING id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at
+WHERE id = $1 AND org_id = $2 AND status = 'pending'
+RETURNING id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at, org_id
 `
 
-func (q *Queries) CancelSignatureRequest(ctx context.Context, id string) (SignatureRequest, error) {
-	row := q.db.QueryRowContext(ctx, cancelSignatureRequest, id)
+type CancelSignatureRequestParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) CancelSignatureRequest(ctx context.Context, arg CancelSignatureRequestParams) (SignatureRequest, error) {
+	row := q.db.QueryRowContext(ctx, cancelSignatureRequest, arg.ID, arg.OrgID)
 	var i SignatureRequest
 	err := row.Scan(
 		&i.ID,
@@ -33,6 +40,7 @@ func (q *Queries) CancelSignatureRequest(ctx context.Context, id string) (Signat
 		&i.SenderIp,
 		&i.SenderUserAgent,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -40,16 +48,17 @@ func (q *Queries) CancelSignatureRequest(ctx context.Context, id string) (Signat
 const createSignature = `-- name: CreateSignature :one
 
 INSERT INTO signatures (
-    id, request_id, legal_name, consent_text, document_hash,
+    id, org_id, request_id, legal_name, consent_text, document_hash,
     signed_at, signer_ip, signer_user_agent, signer_email,
     certificate_pdf_path
 )
-VALUES ($1, $2, $3, $4, $5, datetime('now'), $6, $7, $8, $9)
-RETURNING id, request_id, legal_name, consent_text, document_hash, signed_at, signer_ip, signer_user_agent, signer_email, certificate_pdf_path, created_at
+VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8, $9, $10)
+RETURNING id, request_id, legal_name, consent_text, document_hash, signed_at, signer_ip, signer_user_agent, signer_email, certificate_pdf_path, created_at, org_id
 `
 
 type CreateSignatureParams struct {
 	ID                 string         `json:"id"`
+	OrgID              uuid.NullUUID  `json:"org_id"`
 	RequestID          string         `json:"request_id"`
 	LegalName          string         `json:"legal_name"`
 	ConsentText        string         `json:"consent_text"`
@@ -64,6 +73,7 @@ type CreateSignatureParams struct {
 func (q *Queries) CreateSignature(ctx context.Context, arg CreateSignatureParams) (Signature, error) {
 	row := q.db.QueryRowContext(ctx, createSignature,
 		arg.ID,
+		arg.OrgID,
 		arg.RequestID,
 		arg.LegalName,
 		arg.ConsentText,
@@ -86,6 +96,7 @@ func (q *Queries) CreateSignature(ctx context.Context, arg CreateSignatureParams
 		&i.SignerEmail,
 		&i.CertificatePdfPath,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -93,16 +104,17 @@ func (q *Queries) CreateSignature(ctx context.Context, arg CreateSignatureParams
 const createSignatureRequest = `-- name: CreateSignatureRequest :one
 
 INSERT INTO signature_requests (
-    id, estimate_id, recipient_email, recipient_name, token,
+    id, org_id, estimate_id, recipient_email, recipient_name, token,
     document_hash, quote_snapshot, message, status, expires_at,
     sender_ip, sender_user_agent
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+RETURNING id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at, org_id
 `
 
 type CreateSignatureRequestParams struct {
 	ID              string         `json:"id"`
+	OrgID           uuid.NullUUID  `json:"org_id"`
 	EstimateID      string         `json:"estimate_id"`
 	RecipientEmail  string         `json:"recipient_email"`
 	RecipientName   string         `json:"recipient_name"`
@@ -120,6 +132,7 @@ type CreateSignatureRequestParams struct {
 func (q *Queries) CreateSignatureRequest(ctx context.Context, arg CreateSignatureRequestParams) (SignatureRequest, error) {
 	row := q.db.QueryRowContext(ctx, createSignatureRequest,
 		arg.ID,
+		arg.OrgID,
 		arg.EstimateID,
 		arg.RecipientEmail,
 		arg.RecipientName,
@@ -147,13 +160,14 @@ func (q *Queries) CreateSignatureRequest(ctx context.Context, arg CreateSignatur
 		&i.SenderIp,
 		&i.SenderUserAgent,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const expireOldSignatureRequests = `-- name: ExpireOldSignatureRequests :exec
 UPDATE signature_requests SET status = 'expired'
-WHERE status = 'pending' AND expires_at < datetime('now')
+WHERE status = 'pending' AND expires_at < NOW()
 `
 
 func (q *Queries) ExpireOldSignatureRequests(ctx context.Context) error {
@@ -162,14 +176,19 @@ func (q *Queries) ExpireOldSignatureRequests(ctx context.Context) error {
 }
 
 const getPendingSignatureRequestByEstimate = `-- name: GetPendingSignatureRequestByEstimate :one
-SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at FROM signature_requests
-WHERE estimate_id = $1 AND status = 'pending'
+SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at, org_id FROM signature_requests
+WHERE estimate_id = $1 AND org_id = $2 AND status = 'pending'
 ORDER BY created_at DESC
 LIMIT 1
 `
 
-func (q *Queries) GetPendingSignatureRequestByEstimate(ctx context.Context, estimateID string) (SignatureRequest, error) {
-	row := q.db.QueryRowContext(ctx, getPendingSignatureRequestByEstimate, estimateID)
+type GetPendingSignatureRequestByEstimateParams struct {
+	EstimateID string        `json:"estimate_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetPendingSignatureRequestByEstimate(ctx context.Context, arg GetPendingSignatureRequestByEstimateParams) (SignatureRequest, error) {
+	row := q.db.QueryRowContext(ctx, getPendingSignatureRequestByEstimate, arg.EstimateID, arg.OrgID)
 	var i SignatureRequest
 	err := row.Scan(
 		&i.ID,
@@ -185,16 +204,22 @@ func (q *Queries) GetPendingSignatureRequestByEstimate(ctx context.Context, esti
 		&i.SenderIp,
 		&i.SenderUserAgent,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getSignature = `-- name: GetSignature :one
-SELECT id, request_id, legal_name, consent_text, document_hash, signed_at, signer_ip, signer_user_agent, signer_email, certificate_pdf_path, created_at FROM signatures WHERE id = $1
+SELECT id, request_id, legal_name, consent_text, document_hash, signed_at, signer_ip, signer_user_agent, signer_email, certificate_pdf_path, created_at, org_id FROM signatures WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetSignature(ctx context.Context, id string) (Signature, error) {
-	row := q.db.QueryRowContext(ctx, getSignature, id)
+type GetSignatureParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetSignature(ctx context.Context, arg GetSignatureParams) (Signature, error) {
+	row := q.db.QueryRowContext(ctx, getSignature, arg.ID, arg.OrgID)
 	var i Signature
 	err := row.Scan(
 		&i.ID,
@@ -208,16 +233,22 @@ func (q *Queries) GetSignature(ctx context.Context, id string) (Signature, error
 		&i.SignerEmail,
 		&i.CertificatePdfPath,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getSignatureByRequest = `-- name: GetSignatureByRequest :one
-SELECT id, request_id, legal_name, consent_text, document_hash, signed_at, signer_ip, signer_user_agent, signer_email, certificate_pdf_path, created_at FROM signatures WHERE request_id = $1
+SELECT id, request_id, legal_name, consent_text, document_hash, signed_at, signer_ip, signer_user_agent, signer_email, certificate_pdf_path, created_at, org_id FROM signatures WHERE request_id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetSignatureByRequest(ctx context.Context, requestID string) (Signature, error) {
-	row := q.db.QueryRowContext(ctx, getSignatureByRequest, requestID)
+type GetSignatureByRequestParams struct {
+	RequestID string        `json:"request_id"`
+	OrgID     uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetSignatureByRequest(ctx context.Context, arg GetSignatureByRequestParams) (Signature, error) {
+	row := q.db.QueryRowContext(ctx, getSignatureByRequest, arg.RequestID, arg.OrgID)
 	var i Signature
 	err := row.Scan(
 		&i.ID,
@@ -231,16 +262,22 @@ func (q *Queries) GetSignatureByRequest(ctx context.Context, requestID string) (
 		&i.SignerEmail,
 		&i.CertificatePdfPath,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getSignatureRequest = `-- name: GetSignatureRequest :one
-SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at FROM signature_requests WHERE id = $1
+SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at, org_id FROM signature_requests WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetSignatureRequest(ctx context.Context, id string) (SignatureRequest, error) {
-	row := q.db.QueryRowContext(ctx, getSignatureRequest, id)
+type GetSignatureRequestParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetSignatureRequest(ctx context.Context, arg GetSignatureRequestParams) (SignatureRequest, error) {
+	row := q.db.QueryRowContext(ctx, getSignatureRequest, arg.ID, arg.OrgID)
 	var i SignatureRequest
 	err := row.Scan(
 		&i.ID,
@@ -256,19 +293,25 @@ func (q *Queries) GetSignatureRequest(ctx context.Context, id string) (Signature
 		&i.SenderIp,
 		&i.SenderUserAgent,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getSignatureRequestByEstimate = `-- name: GetSignatureRequestByEstimate :one
-SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at FROM signature_requests
-WHERE estimate_id = $1
+SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at, org_id FROM signature_requests
+WHERE estimate_id = $1 AND org_id = $2
 ORDER BY created_at DESC
 LIMIT 1
 `
 
-func (q *Queries) GetSignatureRequestByEstimate(ctx context.Context, estimateID string) (SignatureRequest, error) {
-	row := q.db.QueryRowContext(ctx, getSignatureRequestByEstimate, estimateID)
+type GetSignatureRequestByEstimateParams struct {
+	EstimateID string        `json:"estimate_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetSignatureRequestByEstimate(ctx context.Context, arg GetSignatureRequestByEstimateParams) (SignatureRequest, error) {
+	row := q.db.QueryRowContext(ctx, getSignatureRequestByEstimate, arg.EstimateID, arg.OrgID)
 	var i SignatureRequest
 	err := row.Scan(
 		&i.ID,
@@ -284,12 +327,13 @@ func (q *Queries) GetSignatureRequestByEstimate(ctx context.Context, estimateID 
 		&i.SenderIp,
 		&i.SenderUserAgent,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getSignatureRequestByToken = `-- name: GetSignatureRequestByToken :one
-SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at FROM signature_requests WHERE token = $1
+SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at, org_id FROM signature_requests WHERE token = $1
 `
 
 func (q *Queries) GetSignatureRequestByToken(ctx context.Context, token string) (SignatureRequest, error) {
@@ -309,6 +353,7 @@ func (q *Queries) GetSignatureRequestByToken(ctx context.Context, token string) 
 		&i.SenderIp,
 		&i.SenderUserAgent,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -316,13 +361,18 @@ func (q *Queries) GetSignatureRequestByToken(ctx context.Context, token string) 
 const hasPendingSignatureRequest = `-- name: HasPendingSignatureRequest :one
 SELECT EXISTS(
     SELECT 1 FROM signature_requests
-    WHERE estimate_id = $1 AND status = 'pending'
+    WHERE estimate_id = $1 AND org_id = $2 AND status = 'pending'
 ) as has_pending
 `
 
+type HasPendingSignatureRequestParams struct {
+	EstimateID string        `json:"estimate_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
 // Check if estimate has any pending signature requests (for locking)
-func (q *Queries) HasPendingSignatureRequest(ctx context.Context, estimateID string) (bool, error) {
-	row := q.db.QueryRowContext(ctx, hasPendingSignatureRequest, estimateID)
+func (q *Queries) HasPendingSignatureRequest(ctx context.Context, arg HasPendingSignatureRequestParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, hasPendingSignatureRequest, arg.EstimateID, arg.OrgID)
 	var has_pending bool
 	err := row.Scan(&has_pending)
 	return has_pending, err
@@ -332,26 +382,36 @@ const hasSignedRequest = `-- name: HasSignedRequest :one
 SELECT EXISTS(
     SELECT 1 FROM signature_requests sr
     INNER JOIN signatures s ON s.request_id = sr.id
-    WHERE sr.estimate_id = $1
+    WHERE sr.estimate_id = $1 AND sr.org_id = $2
 ) as has_signed
 `
 
+type HasSignedRequestParams struct {
+	EstimateID string        `json:"estimate_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
 // Check if estimate has been signed
-func (q *Queries) HasSignedRequest(ctx context.Context, estimateID string) (bool, error) {
-	row := q.db.QueryRowContext(ctx, hasSignedRequest, estimateID)
+func (q *Queries) HasSignedRequest(ctx context.Context, arg HasSignedRequestParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, hasSignedRequest, arg.EstimateID, arg.OrgID)
 	var has_signed bool
 	err := row.Scan(&has_signed)
 	return has_signed, err
 }
 
 const listSignatureRequestsByEstimate = `-- name: ListSignatureRequestsByEstimate :many
-SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at FROM signature_requests
-WHERE estimate_id = $1
+SELECT id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at, org_id FROM signature_requests
+WHERE estimate_id = $1 AND org_id = $2
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListSignatureRequestsByEstimate(ctx context.Context, estimateID string) ([]SignatureRequest, error) {
-	rows, err := q.db.QueryContext(ctx, listSignatureRequestsByEstimate, estimateID)
+type ListSignatureRequestsByEstimateParams struct {
+	EstimateID string        `json:"estimate_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListSignatureRequestsByEstimate(ctx context.Context, arg ListSignatureRequestsByEstimateParams) ([]SignatureRequest, error) {
+	rows, err := q.db.QueryContext(ctx, listSignatureRequestsByEstimate, arg.EstimateID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -373,6 +433,7 @@ func (q *Queries) ListSignatureRequestsByEstimate(ctx context.Context, estimateI
 			&i.SenderIp,
 			&i.SenderUserAgent,
 			&i.CreatedAt,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -389,17 +450,18 @@ func (q *Queries) ListSignatureRequestsByEstimate(ctx context.Context, estimateI
 
 const updateSignatureCertificatePath = `-- name: UpdateSignatureCertificatePath :one
 UPDATE signatures SET certificate_pdf_path = $1
-WHERE id = $2
-RETURNING id, request_id, legal_name, consent_text, document_hash, signed_at, signer_ip, signer_user_agent, signer_email, certificate_pdf_path, created_at
+WHERE id = $2 AND org_id = $3
+RETURNING id, request_id, legal_name, consent_text, document_hash, signed_at, signer_ip, signer_user_agent, signer_email, certificate_pdf_path, created_at, org_id
 `
 
 type UpdateSignatureCertificatePathParams struct {
 	CertificatePdfPath sql.NullString `json:"certificate_pdf_path"`
 	ID                 string         `json:"id"`
+	OrgID              uuid.NullUUID  `json:"org_id"`
 }
 
 func (q *Queries) UpdateSignatureCertificatePath(ctx context.Context, arg UpdateSignatureCertificatePathParams) (Signature, error) {
-	row := q.db.QueryRowContext(ctx, updateSignatureCertificatePath, arg.CertificatePdfPath, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateSignatureCertificatePath, arg.CertificatePdfPath, arg.ID, arg.OrgID)
 	var i Signature
 	err := row.Scan(
 		&i.ID,
@@ -413,23 +475,25 @@ func (q *Queries) UpdateSignatureCertificatePath(ctx context.Context, arg Update
 		&i.SignerEmail,
 		&i.CertificatePdfPath,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const updateSignatureRequestStatus = `-- name: UpdateSignatureRequestStatus :one
 UPDATE signature_requests SET status = $1
-WHERE id = $2
-RETURNING id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at
+WHERE id = $2 AND org_id = $3
+RETURNING id, estimate_id, recipient_email, recipient_name, token, document_hash, quote_snapshot, message, status, expires_at, sender_ip, sender_user_agent, created_at, org_id
 `
 
 type UpdateSignatureRequestStatusParams struct {
-	Status string `json:"status"`
-	ID     string `json:"id"`
+	Status string        `json:"status"`
+	ID     string        `json:"id"`
+	OrgID  uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) UpdateSignatureRequestStatus(ctx context.Context, arg UpdateSignatureRequestStatusParams) (SignatureRequest, error) {
-	row := q.db.QueryRowContext(ctx, updateSignatureRequestStatus, arg.Status, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateSignatureRequestStatus, arg.Status, arg.ID, arg.OrgID)
 	var i SignatureRequest
 	err := row.Scan(
 		&i.ID,
@@ -445,6 +509,7 @@ func (q *Queries) UpdateSignatureRequestStatus(ctx context.Context, arg UpdateSi
 		&i.SenderIp,
 		&i.SenderUserAgent,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }

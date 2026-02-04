@@ -12,8 +12,9 @@ import (
 func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
-	settings, err := h.queries.GetSettings(ctx)
+	settings, err := h.queries.GetSettings(ctx, orgID.UUID)
 	if err != nil {
 		logger.Error("failed to get settings", "error", err)
 		http.Error(w, "Failed to load settings", http.StatusInternalServerError)
@@ -33,6 +34,7 @@ func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -44,6 +46,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	_, err := h.queries.UpdateSettings(ctx, repository.UpdateSettingsParams{
 		DefaultSurchargeMode:    r.FormValue("default_surcharge_mode"),
 		DefaultSurchargePercent: surchargePercent,
+		OrgID:                   orgID.UUID,
 	})
 	if err != nil {
 		logger.Error("failed to update settings", "error", err)

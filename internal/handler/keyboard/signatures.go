@@ -16,9 +16,13 @@ import (
 func (h *Handler) GetSendSignatureForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	estimateID := r.PathValue("id")
 
-	estimate, err := h.queries.GetEstimate(ctx, estimateID)
+	estimate, err := h.queries.GetEstimate(ctx, repository.GetEstimateParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Estimate not found", http.StatusNotFound)
@@ -29,7 +33,10 @@ func (h *Handler) GetSendSignatureForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := h.queries.GetJob(ctx, estimate.JobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    estimate.JobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Failed to load job", http.StatusInternalServerError)
@@ -39,14 +46,17 @@ func (h *Handler) GetSendSignatureForm(w http.ResponseWriter, r *http.Request) {
 	// Get client info to pre-fill form
 	var client *repository.Client
 	if job.ClientID.Valid {
-		c, err := h.queries.GetClient(ctx, job.ClientID.String)
+		c, err := h.queries.GetClient(ctx, repository.GetClientParams{
+			ID:    job.ClientID.String,
+			OrgID: orgID,
+		})
 		if err == nil {
 			client = &c
 		}
 	}
 
 	// Get company profile
-	company, _ := h.queries.GetCompanyProfile(ctx)
+	company, _ := h.queries.GetCompanyProfile(ctx, orgID.UUID)
 
 	data := map[string]any{
 		"Estimate": estimate,
@@ -64,6 +74,7 @@ func (h *Handler) GetSendSignatureForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	estimateID := r.PathValue("id")
 
 	if err := r.ParseForm(); err != nil {
@@ -85,7 +96,10 @@ func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get estimate
-	estimate, err := h.queries.GetEstimate(ctx, estimateID)
+	estimate, err := h.queries.GetEstimate(ctx, repository.GetEstimateParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Estimate not found", http.StatusNotFound)
@@ -97,14 +111,20 @@ func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check for existing pending request
-	existingRequest, err := h.queries.GetPendingSignatureRequestByEstimate(ctx, estimateID)
+	existingRequest, err := h.queries.GetPendingSignatureRequestByEstimate(ctx, repository.GetPendingSignatureRequestByEstimateParams{
+		EstimateID: estimateID,
+		OrgID:      orgID,
+	})
 	if err == nil && existingRequest.ID != "" {
 		http.Error(w, "This estimate already has a pending signature request. Cancel it first.", http.StatusBadRequest)
 		return
 	}
 
 	// Get job and client for snapshot
-	job, err := h.queries.GetJob(ctx, estimate.JobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    estimate.JobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Failed to load job", http.StatusInternalServerError)
@@ -112,7 +132,10 @@ func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get estimate categories for snapshot
-	categories, err := h.queries.ListEstimateCategoriesByEstimate(ctx, estimateID)
+	categories, err := h.queries.ListEstimateCategoriesByEstimate(ctx, repository.ListEstimateCategoriesByEstimateParams{
+		EstimateID: estimateID,
+		OrgID:      orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get estimate categories", "error", err)
 		http.Error(w, "Failed to load estimate categories", http.StatusInternalServerError)
@@ -189,6 +212,7 @@ func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.queries.CreateSignatureRequest(ctx, repository.CreateSignatureRequestParams{
 		ID:              uuid.New().String(),
+		OrgID:           orgID,
 		EstimateID:      estimateID,
 		RecipientEmail:  input.RecipientEmail,
 		RecipientName:   input.RecipientName,
@@ -208,7 +232,10 @@ func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update estimate status to 'sent'
-	_, err = h.queries.MarkEstimateSent(ctx, estimateID)
+	_, err = h.queries.MarkEstimateSent(ctx, repository.MarkEstimateSentParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to update estimate status", "error", err)
 		// Non-fatal: signature request was created, just log the error
@@ -254,6 +281,7 @@ func (h *Handler) SendForSignature(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetSignaturePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	token := r.PathValue("token")
 
 	// Look up request by token
@@ -296,7 +324,7 @@ func (h *Handler) GetSignaturePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get company profile
-	company, _ := h.queries.GetCompanyProfile(ctx)
+	company, _ := h.queries.GetCompanyProfile(ctx, orgID.UUID)
 
 	data := map[string]any{
 		"Request":     request,
@@ -315,6 +343,7 @@ func (h *Handler) GetSignaturePage(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) SubmitSignature(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	token := r.PathValue("token")
 
 	if err := r.ParseForm(); err != nil {
@@ -354,6 +383,7 @@ func (h *Handler) SubmitSignature(w http.ResponseWriter, r *http.Request) {
 	// Create signature record
 	_, err = h.queries.CreateSignature(ctx, repository.CreateSignatureParams{
 		ID:              uuid.New().String(),
+		OrgID:           orgID,
 		RequestID:       request.ID,
 		LegalName:       input.LegalName,
 		ConsentText:     domain.ConsentText,
@@ -372,13 +402,17 @@ func (h *Handler) SubmitSignature(w http.ResponseWriter, r *http.Request) {
 	_, err = h.queries.UpdateSignatureRequestStatus(ctx, repository.UpdateSignatureRequestStatusParams{
 		Status: string(domain.SignatureRequestStatusSigned),
 		ID:     request.ID,
+		OrgID:  orgID,
 	})
 	if err != nil {
 		logger.Error("failed to update signature request status", "error", err)
 	}
 
 	// Update estimate status to 'accepted'
-	_, err = h.queries.MarkEstimateAccepted(ctx, request.EstimateID)
+	_, err = h.queries.MarkEstimateAccepted(ctx, repository.MarkEstimateAcceptedParams{
+		ID:    request.EstimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to update estimate status to accepted", "error", err)
 		// Non-fatal: signature was captured, just log the error
@@ -398,6 +432,7 @@ func (h *Handler) SubmitSignature(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetSignatureComplete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	token := r.PathValue("token")
 
 	// Look up request by token
@@ -419,7 +454,10 @@ func (h *Handler) GetSignatureComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get signature details
-	signature, err := h.queries.GetSignatureByRequest(ctx, request.ID)
+	signature, err := h.queries.GetSignatureByRequest(ctx, repository.GetSignatureByRequestParams{
+		RequestID: request.ID,
+		OrgID:     orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get signature", "error", err)
 		h.renderSignatureError(w, "Error", "Failed to load signature details.")
@@ -433,7 +471,7 @@ func (h *Handler) GetSignatureComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get company profile
-	company, _ := h.queries.GetCompanyProfile(ctx)
+	company, _ := h.queries.GetCompanyProfile(ctx, orgID.UUID)
 
 	data := map[string]any{
 		"Request":   request,
@@ -452,10 +490,14 @@ func (h *Handler) GetSignatureComplete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CancelSignatureRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	estimateID := r.PathValue("id")
 
 	// Get the pending request
-	request, err := h.queries.GetPendingSignatureRequestByEstimate(ctx, estimateID)
+	request, err := h.queries.GetPendingSignatureRequestByEstimate(ctx, repository.GetPendingSignatureRequestByEstimateParams{
+		EstimateID: estimateID,
+		OrgID:      orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "No pending signature request found", http.StatusNotFound)
@@ -467,7 +509,10 @@ func (h *Handler) CancelSignatureRequest(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Cancel it
-	_, err = h.queries.CancelSignatureRequest(ctx, request.ID)
+	_, err = h.queries.CancelSignatureRequest(ctx, repository.CancelSignatureRequestParams{
+		ID:    request.ID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to cancel signature request", "error", err)
 		http.Error(w, "Failed to cancel request", http.StatusInternalServerError)

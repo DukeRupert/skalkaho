@@ -8,14 +8,21 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const clientHasJobs = `-- name: ClientHasJobs :one
-SELECT COUNT(*) > 0 FROM jobs WHERE client_id = $1
+SELECT COUNT(*) > 0 FROM jobs WHERE client_id = $1 AND org_id = $2
 `
 
-func (q *Queries) ClientHasJobs(ctx context.Context, clientID sql.NullString) (bool, error) {
-	row := q.db.QueryRowContext(ctx, clientHasJobs, clientID)
+type ClientHasJobsParams struct {
+	ClientID sql.NullString `json:"client_id"`
+	OrgID    uuid.NullUUID  `json:"org_id"`
+}
+
+func (q *Queries) ClientHasJobs(ctx context.Context, arg ClientHasJobsParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, clientHasJobs, arg.ClientID, arg.OrgID)
 	var column_1 bool
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -23,24 +30,31 @@ func (q *Queries) ClientHasJobs(ctx context.Context, clientID sql.NullString) (b
 
 const countClients = `-- name: CountClients :one
 SELECT COUNT(*) FROM clients
-WHERE ($1 = '' OR name LIKE '%' || $1 || '%' OR company LIKE '%' || $1 || '%')
+WHERE org_id = $1
+  AND ($2 = '' OR name LIKE '%' || $2 || '%' OR company LIKE '%' || $2 || '%')
 `
 
-func (q *Queries) CountClients(ctx context.Context, search interface{}) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countClients, search)
+type CountClientsParams struct {
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Search interface{}   `json:"search"`
+}
+
+func (q *Queries) CountClients(ctx context.Context, arg CountClientsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countClients, arg.OrgID, arg.Search)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const createClient = `-- name: CreateClient :one
-INSERT INTO clients (id, name, company, email, phone, address, city, state, zip, tax_id, notes)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at
+INSERT INTO clients (id, org_id, name, company, email, phone, address, city, state, zip, tax_id, notes)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at, org_id
 `
 
 type CreateClientParams struct {
 	ID      string         `json:"id"`
+	OrgID   uuid.NullUUID  `json:"org_id"`
 	Name    string         `json:"name"`
 	Company sql.NullString `json:"company"`
 	Email   sql.NullString `json:"email"`
@@ -56,6 +70,7 @@ type CreateClientParams struct {
 func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) (Client, error) {
 	row := q.db.QueryRowContext(ctx, createClient,
 		arg.ID,
+		arg.OrgID,
 		arg.Name,
 		arg.Company,
 		arg.Email,
@@ -81,25 +96,36 @@ func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) (Cli
 		&i.TaxID,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const deleteClient = `-- name: DeleteClient :exec
-DELETE FROM clients WHERE id = $1
+DELETE FROM clients WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) DeleteClient(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteClient, id)
+type DeleteClientParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) DeleteClient(ctx context.Context, arg DeleteClientParams) error {
+	_, err := q.db.ExecContext(ctx, deleteClient, arg.ID, arg.OrgID)
 	return err
 }
 
 const getClient = `-- name: GetClient :one
-SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients WHERE id = $1
+SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at, org_id FROM clients WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetClient(ctx context.Context, id string) (Client, error) {
-	row := q.db.QueryRowContext(ctx, getClient, id)
+type GetClientParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetClient(ctx context.Context, arg GetClientParams) (Client, error) {
+	row := q.db.QueryRowContext(ctx, getClient, arg.ID, arg.OrgID)
 	var i Client
 	err := row.Scan(
 		&i.ID,
@@ -114,16 +140,22 @@ func (q *Queries) GetClient(ctx context.Context, id string) (Client, error) {
 		&i.TaxID,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getClientByName = `-- name: GetClientByName :one
-SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients WHERE name = $1
+SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at, org_id FROM clients WHERE name = $1 AND org_id = $2
 `
 
-func (q *Queries) GetClientByName(ctx context.Context, name string) (Client, error) {
-	row := q.db.QueryRowContext(ctx, getClientByName, name)
+type GetClientByNameParams struct {
+	Name  string        `json:"name"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetClientByName(ctx context.Context, arg GetClientByNameParams) (Client, error) {
+	row := q.db.QueryRowContext(ctx, getClientByName, arg.Name, arg.OrgID)
 	var i Client
 	err := row.Scan(
 		&i.ID,
@@ -138,16 +170,17 @@ func (q *Queries) GetClientByName(ctx context.Context, name string) (Client, err
 		&i.TaxID,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const listClients = `-- name: ListClients :many
-SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients ORDER BY name ASC
+SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at, org_id FROM clients WHERE org_id = $1 ORDER BY name ASC
 `
 
-func (q *Queries) ListClients(ctx context.Context) ([]Client, error) {
-	rows, err := q.db.QueryContext(ctx, listClients)
+func (q *Queries) ListClients(ctx context.Context, orgID uuid.NullUUID) ([]Client, error) {
+	rows, err := q.db.QueryContext(ctx, listClients, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +201,7 @@ func (q *Queries) ListClients(ctx context.Context) ([]Client, error) {
 			&i.TaxID,
 			&i.Notes,
 			&i.CreatedAt,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -183,20 +217,27 @@ func (q *Queries) ListClients(ctx context.Context) ([]Client, error) {
 }
 
 const listClientsPaginated = `-- name: ListClientsPaginated :many
-SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at FROM clients
-WHERE ($1 = '' OR name LIKE '%' || $1 || '%' OR company LIKE '%' || $1 || '%')
+SELECT id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at, org_id FROM clients
+WHERE org_id = $1
+  AND ($2 = '' OR name LIKE '%' || $2 || '%' OR company LIKE '%' || $2 || '%')
 ORDER BY name ASC
-LIMIT $3 OFFSET $2
+LIMIT $4 OFFSET $3
 `
 
 type ListClientsPaginatedParams struct {
-	Search interface{} `json:"search"`
-	Offset int32       `json:"offset"`
-	Limit  int32       `json:"limit"`
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Search interface{}   `json:"search"`
+	Offset int32         `json:"offset"`
+	Limit  int32         `json:"limit"`
 }
 
 func (q *Queries) ListClientsPaginated(ctx context.Context, arg ListClientsPaginatedParams) ([]Client, error) {
-	rows, err := q.db.QueryContext(ctx, listClientsPaginated, arg.Search, arg.Offset, arg.Limit)
+	rows, err := q.db.QueryContext(ctx, listClientsPaginated,
+		arg.OrgID,
+		arg.Search,
+		arg.Offset,
+		arg.Limit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -217,6 +258,7 @@ func (q *Queries) ListClientsPaginated(ctx context.Context, arg ListClientsPagin
 			&i.TaxID,
 			&i.Notes,
 			&i.CreatedAt,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -243,8 +285,8 @@ UPDATE clients SET
     zip = $8,
     tax_id = $9,
     notes = $10
-WHERE id = $11
-RETURNING id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at
+WHERE id = $11 AND org_id = $12
+RETURNING id, name, company, email, phone, address, city, state, zip, tax_id, notes, created_at, org_id
 `
 
 type UpdateClientParams struct {
@@ -259,6 +301,7 @@ type UpdateClientParams struct {
 	TaxID   sql.NullString `json:"tax_id"`
 	Notes   sql.NullString `json:"notes"`
 	ID      string         `json:"id"`
+	OrgID   uuid.NullUUID  `json:"org_id"`
 }
 
 func (q *Queries) UpdateClient(ctx context.Context, arg UpdateClientParams) (Client, error) {
@@ -274,6 +317,7 @@ func (q *Queries) UpdateClient(ctx context.Context, arg UpdateClientParams) (Cli
 		arg.TaxID,
 		arg.Notes,
 		arg.ID,
+		arg.OrgID,
 	)
 	var i Client
 	err := row.Scan(
@@ -289,6 +333,7 @@ func (q *Queries) UpdateClient(ctx context.Context, arg UpdateClientParams) (Cli
 		&i.TaxID,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }

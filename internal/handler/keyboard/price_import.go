@@ -40,6 +40,7 @@ func (h *Handler) checkPriceImportAuth(r *http.Request) bool {
 func (h *Handler) GetPriceImportPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	// Check if token authentication is required and valid
 	requiresToken := h.config.PriceImportToken != ""
@@ -50,6 +51,7 @@ func (h *Handler) GetPriceImportPage(w http.ResponseWriter, r *http.Request) {
 
 	// Get list of imports
 	imports, err := h.queries.ListPriceImports(ctx, repository.ListPriceImportsParams{
+		OrgID:  orgID,
 		Limit:  20,
 		Offset: 0,
 	})
@@ -137,6 +139,7 @@ func (h *Handler) ValidatePriceImportToken(w http.ResponseWriter, r *http.Reques
 func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	// Verify authentication
 	if !h.checkPriceImportAuth(r) {
@@ -186,6 +189,7 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 	importID := uuid.New().String()
 	_, err = h.queries.CreatePriceImport(ctx, repository.CreatePriceImportParams{
 		ID:        importID,
+		OrgID:     orgID,
 		Filename:  filename,
 		Status:    "processing",
 		TotalRows: 0, // Will be updated after processing
@@ -199,7 +203,7 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 	logger.Info("starting background price import processing", "import_id", importID, "filename", filename)
 
 	// Process in background goroutine
-	go h.processImportInBackground(importID, filename, fileBytes, logger)
+	go h.processImportInBackground(importID, orgID, filename, fileBytes, logger)
 
 	// Return immediately to the imports list page
 	if r.Header.Get("HX-Request") == "true" {
@@ -210,7 +214,7 @@ func (h *Handler) UploadPriceFile(w http.ResponseWriter, r *http.Request) {
 }
 
 // processImportInBackground handles the Claude API call and match storage.
-func (h *Handler) processImportInBackground(importID, filename string, fileBytes []byte, logger *slog.Logger) {
+func (h *Handler) processImportInBackground(importID string, orgID uuid.NullUUID, filename string, fileBytes []byte, logger *slog.Logger) {
 	// Use background context since the request context is gone
 	ctx := context.Background()
 
@@ -219,15 +223,15 @@ func (h *Handler) processImportInBackground(importID, filename string, fileBytes
 	spreadsheet, err := parser.ParseToText(bytes.NewReader(fileBytes), filename)
 	if err != nil {
 		logger.Error("failed to parse excel file", "error", err, "import_id", importID)
-		h.updateImportError(ctx, importID, "Failed to parse Excel file: "+err.Error())
+		h.updateImportError(ctx, importID, orgID, "Failed to parse Excel file: "+err.Error())
 		return
 	}
 
 	// Get all item templates for matching
-	templates, err := h.queries.ListItemTemplates(ctx)
+	templates, err := h.queries.ListItemTemplates(ctx, orgID)
 	if err != nil {
 		logger.Error("failed to list templates", "error", err, "import_id", importID)
-		h.updateImportError(ctx, importID, "Failed to load item templates")
+		h.updateImportError(ctx, importID, orgID, "Failed to load item templates")
 		return
 	}
 
@@ -235,7 +239,7 @@ func (h *Handler) processImportInBackground(importID, filename string, fileBytes
 	extractResult, err := h.matcher.ExtractAndMatchItems(ctx, spreadsheet, templates)
 	if err != nil {
 		logger.Error("failed to extract and match items with Claude", "error", err, "import_id", importID)
-		h.updateImportError(ctx, importID, "AI extraction/matching failed: "+err.Error())
+		h.updateImportError(ctx, importID, orgID, "AI extraction/matching failed: "+err.Error())
 		return
 	}
 
@@ -265,6 +269,7 @@ func (h *Handler) processImportInBackground(importID, filename string, fileBytes
 		}
 
 		_, err = h.queries.CreatePriceImportMatch(ctx, repository.CreatePriceImportMatchParams{
+			OrgID:             orgID,
 			ImportID:          importID,
 			RowNumber:         int64(item.RowNumber),
 			SourceName:        item.Name,
@@ -301,7 +306,7 @@ func (h *Handler) processImportInBackground(importID, filename string, fileBytes
 }
 
 // updateImportError marks an import as failed with an error message.
-func (h *Handler) updateImportError(ctx context.Context, importID string, errMsg string) {
+func (h *Handler) updateImportError(ctx context.Context, importID string, orgID uuid.NullUUID, errMsg string) {
 	_, _ = h.queries.UpdatePriceImportStatus(ctx, repository.UpdatePriceImportStatusParams{
 		ID:           importID,
 		Status:       "failed",
@@ -315,6 +320,7 @@ func (h *Handler) updateImportError(ctx context.Context, importID string, errMsg
 func (h *Handler) GetImportReview(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	importID := r.PathValue("id")
 	if importID == "" {
@@ -323,7 +329,10 @@ func (h *Handler) GetImportReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get import record
-	priceImport, err := h.queries.GetPriceImport(ctx, importID)
+	priceImport, err := h.queries.GetPriceImport(ctx, repository.GetPriceImportParams{
+		ID:    importID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Import not found", http.StatusNotFound)
@@ -335,7 +344,10 @@ func (h *Handler) GetImportReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get matches
-	matches, err := h.queries.ListMatchesByImport(ctx, importID)
+	matches, err := h.queries.ListMatchesByImport(ctx, repository.ListMatchesByImportParams{
+		ImportID: importID,
+		OrgID:    orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list matches", "error", err)
 		http.Error(w, "Failed to load matches", http.StatusInternalServerError)
@@ -343,7 +355,10 @@ func (h *Handler) GetImportReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get match counts by status
-	statusCounts, err := h.queries.CountMatchesByStatus(ctx, importID)
+	statusCounts, err := h.queries.CountMatchesByStatus(ctx, repository.CountMatchesByStatusParams{
+		ImportID: importID,
+		OrgID:    orgID,
+	})
 	if err != nil {
 		logger.Error("failed to count matches", "error", err)
 	}
@@ -360,7 +375,10 @@ func (h *Handler) GetImportReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Count unmatched items (pending with no template)
-	unmatched, err := h.queries.ListUnmatchedItems(ctx, importID)
+	unmatched, err := h.queries.ListUnmatchedItems(ctx, repository.ListUnmatchedItemsParams{
+		ImportID: importID,
+		OrgID:    orgID,
+	})
 	if err != nil {
 		logger.Error("failed to count unmatched", "error", err)
 	}
@@ -450,6 +468,7 @@ func (h *Handler) UpdateMatchStatus(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateTemplateFromMatch(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	matchID := r.PathValue("id")
 	if matchID == "" {
@@ -491,6 +510,7 @@ func (h *Handler) CreateTemplateFromMatch(w http.ResponseWriter, r *http.Request
 
 	// Create the new template
 	template, err := h.queries.CreateItemTemplate(ctx, repository.CreateItemTemplateParams{
+		OrgID:        orgID,
 		Type:         itemType,
 		Category:     category,
 		Name:         name,
@@ -574,6 +594,7 @@ func (h *Handler) BulkApproveMatches(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) BulkCreateTemplates(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	importID := r.PathValue("id")
 	if importID == "" {
@@ -588,7 +609,10 @@ func (h *Handler) BulkCreateTemplates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get all unmatched items
-	unmatched, err := h.queries.ListUnmatchedItems(ctx, importID)
+	unmatched, err := h.queries.ListUnmatchedItems(ctx, repository.ListUnmatchedItemsParams{
+		ImportID: importID,
+		OrgID:    orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list unmatched items", "error", err)
 		http.Error(w, "Failed to load unmatched items", http.StatusInternalServerError)
@@ -600,6 +624,7 @@ func (h *Handler) BulkCreateTemplates(w http.ResponseWriter, r *http.Request) {
 	for _, item := range unmatched {
 		// Create the new template
 		template, err := h.queries.CreateItemTemplate(ctx, repository.CreateItemTemplateParams{
+			OrgID:        orgID,
 			Type:         itemType,
 			Category:     "", // No category for bulk create
 			Name:         item.SourceName,
@@ -638,6 +663,7 @@ func (h *Handler) BulkCreateTemplates(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) ApplyPriceUpdates(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	importID := r.PathValue("id")
 	if importID == "" {
@@ -646,7 +672,10 @@ func (h *Handler) ApplyPriceUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get approved matches
-	matches, err := h.queries.ListApprovedMatches(ctx, importID)
+	matches, err := h.queries.ListApprovedMatches(ctx, repository.ListApprovedMatchesParams{
+		ImportID: importID,
+		OrgID:    orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list approved matches", "error", err)
 		http.Error(w, "Failed to load matches", http.StatusInternalServerError)
@@ -683,7 +712,10 @@ func (h *Handler) ApplyPriceUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Mark import as applied
-	_, err = h.queries.MarkPriceImportApplied(ctx, importID)
+	_, err = h.queries.MarkPriceImportApplied(ctx, repository.MarkPriceImportAppliedParams{
+		ID:    importID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to mark import applied", "error", err)
 	}

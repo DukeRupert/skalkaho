@@ -8,36 +8,45 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const countCategoryAncestors = `-- name: CountCategoryAncestors :one
 WITH RECURSIVE ancestors AS (
     SELECT categories.id, categories.parent_id, 0 as depth
     FROM categories
-    WHERE categories.id = $1
+    WHERE categories.id = $1 AND categories.org_id = $2
     UNION ALL
     SELECT c.id, c.parent_id, a.depth + 1
     FROM categories c
     JOIN ancestors a ON c.id = a.parent_id
+    WHERE c.org_id = $2
 )
 SELECT MAX(depth) as max_depth FROM ancestors
 `
 
-func (q *Queries) CountCategoryAncestors(ctx context.Context, id string) (interface{}, error) {
-	row := q.db.QueryRowContext(ctx, countCategoryAncestors, id)
+type CountCategoryAncestorsParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) CountCategoryAncestors(ctx context.Context, arg CountCategoryAncestorsParams) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, countCategoryAncestors, arg.ID, arg.OrgID)
 	var max_depth interface{}
 	err := row.Scan(&max_depth)
 	return max_depth, err
 }
 
 const createCategory = `-- name: CreateCategory :one
-INSERT INTO categories (id, job_id, parent_id, name, surcharge_percent, sort_order)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order
+INSERT INTO categories (id, org_id, job_id, parent_id, name, surcharge_percent, sort_order)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order, org_id
 `
 
 type CreateCategoryParams struct {
 	ID               string          `json:"id"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 	JobID            string          `json:"job_id"`
 	ParentID         sql.NullString  `json:"parent_id"`
 	Name             string          `json:"name"`
@@ -48,6 +57,7 @@ type CreateCategoryParams struct {
 func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
 	row := q.db.QueryRowContext(ctx, createCategory,
 		arg.ID,
+		arg.OrgID,
 		arg.JobID,
 		arg.ParentID,
 		arg.Name,
@@ -62,27 +72,38 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 		&i.Name,
 		&i.SurchargePercent,
 		&i.SortOrder,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const deleteCategory = `-- name: DeleteCategory :exec
 DELETE FROM categories
-WHERE id = $1
+WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) DeleteCategory(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteCategory, id)
+type DeleteCategoryParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) DeleteCategory(ctx context.Context, arg DeleteCategoryParams) error {
+	_, err := q.db.ExecContext(ctx, deleteCategory, arg.ID, arg.OrgID)
 	return err
 }
 
 const getCategory = `-- name: GetCategory :one
-SELECT id, job_id, parent_id, name, surcharge_percent, sort_order FROM categories
-WHERE id = $1
+SELECT id, job_id, parent_id, name, surcharge_percent, sort_order, org_id FROM categories
+WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetCategory(ctx context.Context, id string) (Category, error) {
-	row := q.db.QueryRowContext(ctx, getCategory, id)
+type GetCategoryParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetCategory(ctx context.Context, arg GetCategoryParams) (Category, error) {
+	row := q.db.QueryRowContext(ctx, getCategory, arg.ID, arg.OrgID)
 	var i Category
 	err := row.Scan(
 		&i.ID,
@@ -91,18 +112,24 @@ func (q *Queries) GetCategory(ctx context.Context, id string) (Category, error) 
 		&i.Name,
 		&i.SurchargePercent,
 		&i.SortOrder,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const listCategoriesByJob = `-- name: ListCategoriesByJob :many
-SELECT id, job_id, parent_id, name, surcharge_percent, sort_order FROM categories
-WHERE job_id = $1
+SELECT id, job_id, parent_id, name, surcharge_percent, sort_order, org_id FROM categories
+WHERE job_id = $1 AND org_id = $2
 ORDER BY sort_order ASC
 `
 
-func (q *Queries) ListCategoriesByJob(ctx context.Context, jobID string) ([]Category, error) {
-	rows, err := q.db.QueryContext(ctx, listCategoriesByJob, jobID)
+type ListCategoriesByJobParams struct {
+	JobID string        `json:"job_id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListCategoriesByJob(ctx context.Context, arg ListCategoriesByJobParams) ([]Category, error) {
+	rows, err := q.db.QueryContext(ctx, listCategoriesByJob, arg.JobID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +144,7 @@ func (q *Queries) ListCategoriesByJob(ctx context.Context, jobID string) ([]Cate
 			&i.Name,
 			&i.SurchargePercent,
 			&i.SortOrder,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -132,13 +160,18 @@ func (q *Queries) ListCategoriesByJob(ctx context.Context, jobID string) ([]Cate
 }
 
 const listChildCategories = `-- name: ListChildCategories :many
-SELECT id, job_id, parent_id, name, surcharge_percent, sort_order FROM categories
-WHERE parent_id = $1
+SELECT id, job_id, parent_id, name, surcharge_percent, sort_order, org_id FROM categories
+WHERE parent_id = $1 AND org_id = $2
 ORDER BY sort_order ASC
 `
 
-func (q *Queries) ListChildCategories(ctx context.Context, parentID sql.NullString) ([]Category, error) {
-	rows, err := q.db.QueryContext(ctx, listChildCategories, parentID)
+type ListChildCategoriesParams struct {
+	ParentID sql.NullString `json:"parent_id"`
+	OrgID    uuid.NullUUID  `json:"org_id"`
+}
+
+func (q *Queries) ListChildCategories(ctx context.Context, arg ListChildCategoriesParams) ([]Category, error) {
+	rows, err := q.db.QueryContext(ctx, listChildCategories, arg.ParentID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -153,6 +186,7 @@ func (q *Queries) ListChildCategories(ctx context.Context, parentID sql.NullStri
 			&i.Name,
 			&i.SurchargePercent,
 			&i.SortOrder,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -168,13 +202,18 @@ func (q *Queries) ListChildCategories(ctx context.Context, parentID sql.NullStri
 }
 
 const listTopLevelCategories = `-- name: ListTopLevelCategories :many
-SELECT id, job_id, parent_id, name, surcharge_percent, sort_order FROM categories
-WHERE job_id = $1 AND parent_id IS NULL
+SELECT id, job_id, parent_id, name, surcharge_percent, sort_order, org_id FROM categories
+WHERE job_id = $1 AND org_id = $2 AND parent_id IS NULL
 ORDER BY sort_order ASC
 `
 
-func (q *Queries) ListTopLevelCategories(ctx context.Context, jobID string) ([]Category, error) {
-	rows, err := q.db.QueryContext(ctx, listTopLevelCategories, jobID)
+type ListTopLevelCategoriesParams struct {
+	JobID string        `json:"job_id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListTopLevelCategories(ctx context.Context, arg ListTopLevelCategoriesParams) ([]Category, error) {
+	rows, err := q.db.QueryContext(ctx, listTopLevelCategories, arg.JobID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -189,6 +228,7 @@ func (q *Queries) ListTopLevelCategories(ctx context.Context, jobID string) ([]C
 			&i.Name,
 			&i.SurchargePercent,
 			&i.SortOrder,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -208,8 +248,8 @@ UPDATE categories SET
     name = $1,
     surcharge_percent = $2,
     sort_order = $3
-WHERE id = $4
-RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order
+WHERE id = $4 AND org_id = $5
+RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order, org_id
 `
 
 type UpdateCategoryParams struct {
@@ -217,6 +257,7 @@ type UpdateCategoryParams struct {
 	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
 	SortOrder        int64           `json:"sort_order"`
 	ID               string          `json:"id"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 }
 
 func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
@@ -225,6 +266,7 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 		arg.SurchargePercent,
 		arg.SortOrder,
 		arg.ID,
+		arg.OrgID,
 	)
 	var i Category
 	err := row.Scan(
@@ -234,6 +276,7 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 		&i.Name,
 		&i.SurchargePercent,
 		&i.SortOrder,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -241,17 +284,18 @@ func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) 
 const updateCategoryParent = `-- name: UpdateCategoryParent :one
 UPDATE categories SET
     parent_id = $1
-WHERE id = $2
-RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order
+WHERE id = $2 AND org_id = $3
+RETURNING id, job_id, parent_id, name, surcharge_percent, sort_order, org_id
 `
 
 type UpdateCategoryParentParams struct {
 	ParentID sql.NullString `json:"parent_id"`
 	ID       string         `json:"id"`
+	OrgID    uuid.NullUUID  `json:"org_id"`
 }
 
 func (q *Queries) UpdateCategoryParent(ctx context.Context, arg UpdateCategoryParentParams) (Category, error) {
-	row := q.db.QueryRowContext(ctx, updateCategoryParent, arg.ParentID, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateCategoryParent, arg.ParentID, arg.ID, arg.OrgID)
 	var i Category
 	err := row.Scan(
 		&i.ID,
@@ -260,6 +304,7 @@ func (q *Queries) UpdateCategoryParent(ctx context.Context, arg UpdateCategoryPa
 		&i.Name,
 		&i.SurchargePercent,
 		&i.SortOrder,
+		&i.OrgID,
 	)
 	return i, err
 }

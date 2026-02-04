@@ -8,38 +8,46 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const bulkAutoApproveMatches = `-- name: BulkAutoApproveMatches :exec
 UPDATE price_import_matches
 SET status = 'auto_approved'
-WHERE import_id = $1 AND confidence >= $2 AND status = 'pending'
+WHERE import_id = $1 AND org_id = $2 AND confidence >= $3 AND status = 'pending'
 `
 
 type BulkAutoApproveMatchesParams struct {
-	ImportID   string  `json:"import_id"`
-	Confidence float64 `json:"confidence"`
+	ImportID   string        `json:"import_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+	Confidence float64       `json:"confidence"`
 }
 
 func (q *Queries) BulkAutoApproveMatches(ctx context.Context, arg BulkAutoApproveMatchesParams) error {
-	_, err := q.db.ExecContext(ctx, bulkAutoApproveMatches, arg.ImportID, arg.Confidence)
+	_, err := q.db.ExecContext(ctx, bulkAutoApproveMatches, arg.ImportID, arg.OrgID, arg.Confidence)
 	return err
 }
 
 const countMatchesByStatus = `-- name: CountMatchesByStatus :many
 SELECT status, COUNT(*) as count
 FROM price_import_matches
-WHERE import_id = $1
+WHERE import_id = $1 AND org_id = $2
 GROUP BY status
 `
+
+type CountMatchesByStatusParams struct {
+	ImportID string        `json:"import_id"`
+	OrgID    uuid.NullUUID `json:"org_id"`
+}
 
 type CountMatchesByStatusRow struct {
 	Status string `json:"status"`
 	Count  int64  `json:"count"`
 }
 
-func (q *Queries) CountMatchesByStatus(ctx context.Context, importID string) ([]CountMatchesByStatusRow, error) {
-	rows, err := q.db.QueryContext(ctx, countMatchesByStatus, importID)
+func (q *Queries) CountMatchesByStatus(ctx context.Context, arg CountMatchesByStatusParams) ([]CountMatchesByStatusRow, error) {
+	rows, err := q.db.QueryContext(ctx, countMatchesByStatus, arg.ImportID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -62,21 +70,23 @@ func (q *Queries) CountMatchesByStatus(ctx context.Context, importID string) ([]
 }
 
 const createPriceImport = `-- name: CreatePriceImport :one
-INSERT INTO price_imports (id, filename, status, total_rows)
-VALUES ($1, $2, $3, $4)
-RETURNING id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at
+INSERT INTO price_imports (id, org_id, filename, status, total_rows)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at, org_id
 `
 
 type CreatePriceImportParams struct {
-	ID        string `json:"id"`
-	Filename  string `json:"filename"`
-	Status    string `json:"status"`
-	TotalRows int64  `json:"total_rows"`
+	ID        string        `json:"id"`
+	OrgID     uuid.NullUUID `json:"org_id"`
+	Filename  string        `json:"filename"`
+	Status    string        `json:"status"`
+	TotalRows int64         `json:"total_rows"`
 }
 
 func (q *Queries) CreatePriceImport(ctx context.Context, arg CreatePriceImportParams) (PriceImport, error) {
 	row := q.db.QueryRowContext(ctx, createPriceImport,
 		arg.ID,
+		arg.OrgID,
 		arg.Filename,
 		arg.Status,
 		arg.TotalRows,
@@ -91,19 +101,21 @@ func (q *Queries) CreatePriceImport(ctx context.Context, arg CreatePriceImportPa
 		&i.ErrorMessage,
 		&i.CreatedAt,
 		&i.AppliedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const createPriceImportMatch = `-- name: CreatePriceImportMatch :one
 INSERT INTO price_import_matches (
-    import_id, row_number, source_name, source_unit, source_price,
+    org_id, import_id, row_number, source_name, source_unit, source_price,
     matched_template_id, confidence, match_reason, status
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at, org_id
 `
 
 type CreatePriceImportMatchParams struct {
+	OrgID             uuid.NullUUID  `json:"org_id"`
 	ImportID          string         `json:"import_id"`
 	RowNumber         int64          `json:"row_number"`
 	SourceName        string         `json:"source_name"`
@@ -117,6 +129,7 @@ type CreatePriceImportMatchParams struct {
 
 func (q *Queries) CreatePriceImportMatch(ctx context.Context, arg CreatePriceImportMatchParams) (PriceImportMatch, error) {
 	row := q.db.QueryRowContext(ctx, createPriceImportMatch,
+		arg.OrgID,
 		arg.ImportID,
 		arg.RowNumber,
 		arg.SourceName,
@@ -141,16 +154,22 @@ func (q *Queries) CreatePriceImportMatch(ctx context.Context, arg CreatePriceImp
 		&i.Status,
 		&i.NewName,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const getPriceImport = `-- name: GetPriceImport :one
-SELECT id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at FROM price_imports WHERE id = $1
+SELECT id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at, org_id FROM price_imports WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetPriceImport(ctx context.Context, id string) (PriceImport, error) {
-	row := q.db.QueryRowContext(ctx, getPriceImport, id)
+type GetPriceImportParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetPriceImport(ctx context.Context, arg GetPriceImportParams) (PriceImport, error) {
+	row := q.db.QueryRowContext(ctx, getPriceImport, arg.ID, arg.OrgID)
 	var i PriceImport
 	err := row.Scan(
 		&i.ID,
@@ -161,18 +180,24 @@ func (q *Queries) GetPriceImport(ctx context.Context, id string) (PriceImport, e
 		&i.ErrorMessage,
 		&i.CreatedAt,
 		&i.AppliedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const listApprovedMatches = `-- name: ListApprovedMatches :many
 SELECT
-    m.id, m.import_id, m.row_number, m.source_name, m.source_unit, m.source_price, m.matched_template_id, m.confidence, m.match_reason, m.status, m.new_name, m.created_at,
+    m.id, m.import_id, m.row_number, m.source_name, m.source_unit, m.source_price, m.matched_template_id, m.confidence, m.match_reason, m.status, m.new_name, m.created_at, m.org_id,
     t.name as template_name
 FROM price_import_matches m
 JOIN item_templates t ON m.matched_template_id = t.id
-WHERE m.import_id = $1 AND m.status IN ('approved', 'auto_approved')
+WHERE m.import_id = $1 AND m.org_id = $2 AND m.status IN ('approved', 'auto_approved')
 `
+
+type ListApprovedMatchesParams struct {
+	ImportID string        `json:"import_id"`
+	OrgID    uuid.NullUUID `json:"org_id"`
+}
 
 type ListApprovedMatchesRow struct {
 	ID                int64          `json:"id"`
@@ -187,11 +212,12 @@ type ListApprovedMatchesRow struct {
 	Status            string         `json:"status"`
 	NewName           sql.NullString `json:"new_name"`
 	CreatedAt         string         `json:"created_at"`
+	OrgID             uuid.NullUUID  `json:"org_id"`
 	TemplateName      string         `json:"template_name"`
 }
 
-func (q *Queries) ListApprovedMatches(ctx context.Context, importID string) ([]ListApprovedMatchesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listApprovedMatches, importID)
+func (q *Queries) ListApprovedMatches(ctx context.Context, arg ListApprovedMatchesParams) ([]ListApprovedMatchesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listApprovedMatches, arg.ImportID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -212,6 +238,7 @@ func (q *Queries) ListApprovedMatches(ctx context.Context, importID string) ([]L
 			&i.Status,
 			&i.NewName,
 			&i.CreatedAt,
+			&i.OrgID,
 			&i.TemplateName,
 		); err != nil {
 			return nil, err
@@ -229,15 +256,20 @@ func (q *Queries) ListApprovedMatches(ctx context.Context, importID string) ([]L
 
 const listMatchesByImport = `-- name: ListMatchesByImport :many
 SELECT
-    m.id, m.import_id, m.row_number, m.source_name, m.source_unit, m.source_price, m.matched_template_id, m.confidence, m.match_reason, m.status, m.new_name, m.created_at,
+    m.id, m.import_id, m.row_number, m.source_name, m.source_unit, m.source_price, m.matched_template_id, m.confidence, m.match_reason, m.status, m.new_name, m.created_at, m.org_id,
     t.name as template_name,
     t.default_unit as template_unit,
     t.default_price as template_price
 FROM price_import_matches m
 LEFT JOIN item_templates t ON m.matched_template_id = t.id
-WHERE m.import_id = $1
+WHERE m.import_id = $1 AND m.org_id = $2
 ORDER BY m.confidence DESC, m.row_number
 `
+
+type ListMatchesByImportParams struct {
+	ImportID string        `json:"import_id"`
+	OrgID    uuid.NullUUID `json:"org_id"`
+}
 
 type ListMatchesByImportRow struct {
 	ID                int64           `json:"id"`
@@ -252,13 +284,14 @@ type ListMatchesByImportRow struct {
 	Status            string          `json:"status"`
 	NewName           sql.NullString  `json:"new_name"`
 	CreatedAt         string          `json:"created_at"`
+	OrgID             uuid.NullUUID   `json:"org_id"`
 	TemplateName      sql.NullString  `json:"template_name"`
 	TemplateUnit      sql.NullString  `json:"template_unit"`
 	TemplatePrice     sql.NullFloat64 `json:"template_price"`
 }
 
-func (q *Queries) ListMatchesByImport(ctx context.Context, importID string) ([]ListMatchesByImportRow, error) {
-	rows, err := q.db.QueryContext(ctx, listMatchesByImport, importID)
+func (q *Queries) ListMatchesByImport(ctx context.Context, arg ListMatchesByImportParams) ([]ListMatchesByImportRow, error) {
+	rows, err := q.db.QueryContext(ctx, listMatchesByImport, arg.ImportID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -279,6 +312,7 @@ func (q *Queries) ListMatchesByImport(ctx context.Context, importID string) ([]L
 			&i.Status,
 			&i.NewName,
 			&i.CreatedAt,
+			&i.OrgID,
 			&i.TemplateName,
 			&i.TemplateUnit,
 			&i.TemplatePrice,
@@ -297,18 +331,20 @@ func (q *Queries) ListMatchesByImport(ctx context.Context, importID string) ([]L
 }
 
 const listPriceImports = `-- name: ListPriceImports :many
-SELECT id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at FROM price_imports
+SELECT id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at, org_id FROM price_imports
+WHERE org_id = $1
 ORDER BY created_at DESC
-LIMIT $1 OFFSET $2
+LIMIT $2 OFFSET $3
 `
 
 type ListPriceImportsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	OrgID  uuid.NullUUID `json:"org_id"`
+	Limit  int32         `json:"limit"`
+	Offset int32         `json:"offset"`
 }
 
 func (q *Queries) ListPriceImports(ctx context.Context, arg ListPriceImportsParams) ([]PriceImport, error) {
-	rows, err := q.db.QueryContext(ctx, listPriceImports, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listPriceImports, arg.OrgID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -325,6 +361,7 @@ func (q *Queries) ListPriceImports(ctx context.Context, arg ListPriceImportsPara
 			&i.ErrorMessage,
 			&i.CreatedAt,
 			&i.AppliedAt,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -340,13 +377,18 @@ func (q *Queries) ListPriceImports(ctx context.Context, arg ListPriceImportsPara
 }
 
 const listUnmatchedItems = `-- name: ListUnmatchedItems :many
-SELECT id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at FROM price_import_matches
-WHERE import_id = $1 AND matched_template_id IS NULL AND status = 'pending'
+SELECT id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at, org_id FROM price_import_matches
+WHERE import_id = $1 AND org_id = $2 AND matched_template_id IS NULL AND status = 'pending'
 ORDER BY row_number
 `
 
-func (q *Queries) ListUnmatchedItems(ctx context.Context, importID string) ([]PriceImportMatch, error) {
-	rows, err := q.db.QueryContext(ctx, listUnmatchedItems, importID)
+type ListUnmatchedItemsParams struct {
+	ImportID string        `json:"import_id"`
+	OrgID    uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListUnmatchedItems(ctx context.Context, arg ListUnmatchedItemsParams) ([]PriceImportMatch, error) {
+	rows, err := q.db.QueryContext(ctx, listUnmatchedItems, arg.ImportID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -367,6 +409,7 @@ func (q *Queries) ListUnmatchedItems(ctx context.Context, importID string) ([]Pr
 			&i.Status,
 			&i.NewName,
 			&i.CreatedAt,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -384,17 +427,18 @@ func (q *Queries) ListUnmatchedItems(ctx context.Context, importID string) ([]Pr
 const markMatchAsCreated = `-- name: MarkMatchAsCreated :one
 UPDATE price_import_matches
 SET status = 'created', matched_template_id = $1
-WHERE id = $2
-RETURNING id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at
+WHERE id = $2 AND org_id = $3
+RETURNING id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at, org_id
 `
 
 type MarkMatchAsCreatedParams struct {
 	MatchedTemplateID sql.NullInt32 `json:"matched_template_id"`
 	ID                int64         `json:"id"`
+	OrgID             uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) MarkMatchAsCreated(ctx context.Context, arg MarkMatchAsCreatedParams) (PriceImportMatch, error) {
-	row := q.db.QueryRowContext(ctx, markMatchAsCreated, arg.MatchedTemplateID, arg.ID)
+	row := q.db.QueryRowContext(ctx, markMatchAsCreated, arg.MatchedTemplateID, arg.ID, arg.OrgID)
 	var i PriceImportMatch
 	err := row.Scan(
 		&i.ID,
@@ -409,19 +453,25 @@ func (q *Queries) MarkMatchAsCreated(ctx context.Context, arg MarkMatchAsCreated
 		&i.Status,
 		&i.NewName,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const markPriceImportApplied = `-- name: MarkPriceImportApplied :one
 UPDATE price_imports
-SET status = 'applied', applied_at = datetime('now')
-WHERE id = $1
-RETURNING id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at
+SET status = 'applied', applied_at = NOW()
+WHERE id = $1 AND org_id = $2
+RETURNING id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at, org_id
 `
 
-func (q *Queries) MarkPriceImportApplied(ctx context.Context, id string) (PriceImport, error) {
-	row := q.db.QueryRowContext(ctx, markPriceImportApplied, id)
+type MarkPriceImportAppliedParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) MarkPriceImportApplied(ctx context.Context, arg MarkPriceImportAppliedParams) (PriceImport, error) {
+	row := q.db.QueryRowContext(ctx, markPriceImportApplied, arg.ID, arg.OrgID)
 	var i PriceImport
 	err := row.Scan(
 		&i.ID,
@@ -432,21 +482,23 @@ func (q *Queries) MarkPriceImportApplied(ctx context.Context, id string) (PriceI
 		&i.ErrorMessage,
 		&i.CreatedAt,
 		&i.AppliedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const updateMatchStatus = `-- name: UpdateMatchStatus :one
-UPDATE price_import_matches SET status = $1 WHERE id = $2 RETURNING id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at
+UPDATE price_import_matches SET status = $1 WHERE id = $2 AND org_id = $3 RETURNING id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at, org_id
 `
 
 type UpdateMatchStatusParams struct {
-	Status string `json:"status"`
-	ID     int64  `json:"id"`
+	Status string        `json:"status"`
+	ID     int64         `json:"id"`
+	OrgID  uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) UpdateMatchStatus(ctx context.Context, arg UpdateMatchStatusParams) (PriceImportMatch, error) {
-	row := q.db.QueryRowContext(ctx, updateMatchStatus, arg.Status, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateMatchStatus, arg.Status, arg.ID, arg.OrgID)
 	var i PriceImportMatch
 	err := row.Scan(
 		&i.ID,
@@ -461,6 +513,7 @@ func (q *Queries) UpdateMatchStatus(ctx context.Context, arg UpdateMatchStatusPa
 		&i.Status,
 		&i.NewName,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -468,18 +521,24 @@ func (q *Queries) UpdateMatchStatus(ctx context.Context, arg UpdateMatchStatusPa
 const updateMatchWithName = `-- name: UpdateMatchWithName :one
 UPDATE price_import_matches
 SET status = $1, new_name = $2
-WHERE id = $3
-RETURNING id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at
+WHERE id = $3 AND org_id = $4
+RETURNING id, import_id, row_number, source_name, source_unit, source_price, matched_template_id, confidence, match_reason, status, new_name, created_at, org_id
 `
 
 type UpdateMatchWithNameParams struct {
 	Status  string         `json:"status"`
 	NewName sql.NullString `json:"new_name"`
 	ID      int64          `json:"id"`
+	OrgID   uuid.NullUUID  `json:"org_id"`
 }
 
 func (q *Queries) UpdateMatchWithName(ctx context.Context, arg UpdateMatchWithNameParams) (PriceImportMatch, error) {
-	row := q.db.QueryRowContext(ctx, updateMatchWithName, arg.Status, arg.NewName, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateMatchWithName,
+		arg.Status,
+		arg.NewName,
+		arg.ID,
+		arg.OrgID,
+	)
 	var i PriceImportMatch
 	err := row.Scan(
 		&i.ID,
@@ -494,6 +553,7 @@ func (q *Queries) UpdateMatchWithName(ctx context.Context, arg UpdateMatchWithNa
 		&i.Status,
 		&i.NewName,
 		&i.CreatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -501,8 +561,8 @@ func (q *Queries) UpdateMatchWithName(ctx context.Context, arg UpdateMatchWithNa
 const updatePriceImportStatus = `-- name: UpdatePriceImportStatus :one
 UPDATE price_imports
 SET status = $1, matched_rows = $2, error_message = $3, total_rows = $4
-WHERE id = $5
-RETURNING id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at
+WHERE id = $5 AND org_id = $6
+RETURNING id, filename, status, total_rows, matched_rows, error_message, created_at, applied_at, org_id
 `
 
 type UpdatePriceImportStatusParams struct {
@@ -511,6 +571,7 @@ type UpdatePriceImportStatusParams struct {
 	ErrorMessage sql.NullString `json:"error_message"`
 	TotalRows    int64          `json:"total_rows"`
 	ID           string         `json:"id"`
+	OrgID        uuid.NullUUID  `json:"org_id"`
 }
 
 func (q *Queries) UpdatePriceImportStatus(ctx context.Context, arg UpdatePriceImportStatusParams) (PriceImport, error) {
@@ -520,6 +581,7 @@ func (q *Queries) UpdatePriceImportStatus(ctx context.Context, arg UpdatePriceIm
 		arg.ErrorMessage,
 		arg.TotalRows,
 		arg.ID,
+		arg.OrgID,
 	)
 	var i PriceImport
 	err := row.Scan(
@@ -531,6 +593,7 @@ func (q *Queries) UpdatePriceImportStatus(ctx context.Context, arg UpdatePriceIm
 		&i.ErrorMessage,
 		&i.CreatedAt,
 		&i.AppliedAt,
+		&i.OrgID,
 	)
 	return i, err
 }

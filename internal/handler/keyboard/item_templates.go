@@ -13,6 +13,7 @@ import (
 func (h *Handler) ListItemTemplates(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	query := r.URL.Query().Get("q")
 	typeFilter := r.URL.Query().Get("type")
@@ -22,7 +23,7 @@ func (h *Handler) ListItemTemplates(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	// Get all items for the categories dropdown and filtering
-	allItems, err := h.queries.ListItemTemplates(ctx)
+	allItems, err := h.queries.ListItemTemplates(ctx, orgID)
 	if err != nil {
 		logger.Error("failed to list item templates", "error", err)
 		http.Error(w, "Failed to load item templates", http.StatusInternalServerError)
@@ -131,9 +132,10 @@ func stringContains(haystack, needle string) bool {
 func (h *Handler) GetItemTemplateForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	// Get categories for autocomplete
-	items, err := h.queries.ListItemTemplates(ctx)
+	items, err := h.queries.ListItemTemplates(ctx, orgID)
 	if err != nil {
 		logger.Error("failed to list item templates", "error", err)
 	}
@@ -166,6 +168,7 @@ func (h *Handler) GetItemTemplateForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateItemTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -196,6 +199,7 @@ func (h *Handler) CreateItemTemplate(w http.ResponseWriter, r *http.Request) {
 	defaultPrice, _ := strconv.ParseFloat(r.FormValue("default_price"), 64)
 
 	_, err := h.queries.CreateItemTemplate(ctx, repository.CreateItemTemplateParams{
+		OrgID:        orgID,
 		Type:         itemType,
 		Category:     category,
 		Name:         name,
@@ -222,6 +226,7 @@ func (h *Handler) CreateItemTemplate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetItemTemplateEditForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -230,7 +235,10 @@ func (h *Handler) GetItemTemplateEditForm(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	item, err := h.queries.GetItemTemplate(ctx, id)
+	item, err := h.queries.GetItemTemplate(ctx, repository.GetItemTemplateParams{
+		ID:    id,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get item template", "error", err)
 		http.Error(w, "Item template not found", http.StatusNotFound)
@@ -238,7 +246,7 @@ func (h *Handler) GetItemTemplateEditForm(w http.ResponseWriter, r *http.Request
 	}
 
 	// Get categories for autocomplete
-	items, err := h.queries.ListItemTemplates(ctx)
+	items, err := h.queries.ListItemTemplates(ctx, orgID)
 	if err != nil {
 		logger.Error("failed to list item templates", "error", err)
 	}
@@ -336,6 +344,7 @@ func (h *Handler) UpdateItemTemplate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteItemTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -344,7 +353,10 @@ func (h *Handler) DeleteItemTemplate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.queries.DeleteItemTemplate(ctx, id); err != nil {
+	if err := h.queries.DeleteItemTemplate(ctx, repository.DeleteItemTemplateParams{
+		ID:    id,
+		OrgID: orgID,
+	}); err != nil {
 		logger.Error("failed to delete item template", "error", err)
 		http.Error(w, "Failed to delete item template", http.StatusInternalServerError)
 		return

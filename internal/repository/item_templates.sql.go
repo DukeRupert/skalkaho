@@ -8,24 +8,28 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const createItemTemplate = `-- name: CreateItemTemplate :one
-INSERT INTO item_templates (type, category, name, default_unit, default_price)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, type, category, name, default_unit, default_price
+INSERT INTO item_templates (org_id, type, category, name, default_unit, default_price)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, type, category, name, default_unit, default_price, org_id
 `
 
 type CreateItemTemplateParams struct {
-	Type         string  `json:"type"`
-	Category     string  `json:"category"`
-	Name         string  `json:"name"`
-	DefaultUnit  string  `json:"default_unit"`
-	DefaultPrice float64 `json:"default_price"`
+	OrgID        uuid.NullUUID `json:"org_id"`
+	Type         string        `json:"type"`
+	Category     string        `json:"category"`
+	Name         string        `json:"name"`
+	DefaultUnit  string        `json:"default_unit"`
+	DefaultPrice float64       `json:"default_price"`
 }
 
 func (q *Queries) CreateItemTemplate(ctx context.Context, arg CreateItemTemplateParams) (ItemTemplate, error) {
 	row := q.db.QueryRowContext(ctx, createItemTemplate,
+		arg.OrgID,
 		arg.Type,
 		arg.Category,
 		arg.Name,
@@ -40,27 +44,38 @@ func (q *Queries) CreateItemTemplate(ctx context.Context, arg CreateItemTemplate
 		&i.Name,
 		&i.DefaultUnit,
 		&i.DefaultPrice,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const deleteItemTemplate = `-- name: DeleteItemTemplate :exec
 DELETE FROM item_templates
-WHERE id = $1
+WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) DeleteItemTemplate(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteItemTemplate, id)
+type DeleteItemTemplateParams struct {
+	ID    int64         `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) DeleteItemTemplate(ctx context.Context, arg DeleteItemTemplateParams) error {
+	_, err := q.db.ExecContext(ctx, deleteItemTemplate, arg.ID, arg.OrgID)
 	return err
 }
 
 const getItemTemplate = `-- name: GetItemTemplate :one
-SELECT id, type, category, name, default_unit, default_price FROM item_templates
-WHERE id = $1
+SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetItemTemplate(ctx context.Context, id int64) (ItemTemplate, error) {
-	row := q.db.QueryRowContext(ctx, getItemTemplate, id)
+type GetItemTemplateParams struct {
+	ID    int64         `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetItemTemplate(ctx context.Context, arg GetItemTemplateParams) (ItemTemplate, error) {
+	row := q.db.QueryRowContext(ctx, getItemTemplate, arg.ID, arg.OrgID)
 	var i ItemTemplate
 	err := row.Scan(
 		&i.ID,
@@ -69,17 +84,19 @@ func (q *Queries) GetItemTemplate(ctx context.Context, id int64) (ItemTemplate, 
 		&i.Name,
 		&i.DefaultUnit,
 		&i.DefaultPrice,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const listItemTemplates = `-- name: ListItemTemplates :many
-SELECT id, type, category, name, default_unit, default_price FROM item_templates
+SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+WHERE org_id = $1
 ORDER BY category, name
 `
 
-func (q *Queries) ListItemTemplates(ctx context.Context) ([]ItemTemplate, error) {
-	rows, err := q.db.QueryContext(ctx, listItemTemplates)
+func (q *Queries) ListItemTemplates(ctx context.Context, orgID uuid.NullUUID) ([]ItemTemplate, error) {
+	rows, err := q.db.QueryContext(ctx, listItemTemplates, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +111,7 @@ func (q *Queries) ListItemTemplates(ctx context.Context) ([]ItemTemplate, error)
 			&i.Name,
 			&i.DefaultUnit,
 			&i.DefaultPrice,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -109,13 +127,18 @@ func (q *Queries) ListItemTemplates(ctx context.Context) ([]ItemTemplate, error)
 }
 
 const listItemTemplatesByCategory = `-- name: ListItemTemplatesByCategory :many
-SELECT id, type, category, name, default_unit, default_price FROM item_templates
-WHERE category = $1
+SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+WHERE org_id = $1 AND category = $2
 ORDER BY name
 `
 
-func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, category string) ([]ItemTemplate, error) {
-	rows, err := q.db.QueryContext(ctx, listItemTemplatesByCategory, category)
+type ListItemTemplatesByCategoryParams struct {
+	OrgID    uuid.NullUUID `json:"org_id"`
+	Category string        `json:"category"`
+}
+
+func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, arg ListItemTemplatesByCategoryParams) ([]ItemTemplate, error) {
+	rows, err := q.db.QueryContext(ctx, listItemTemplatesByCategory, arg.OrgID, arg.Category)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +153,7 @@ func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, category stri
 			&i.Name,
 			&i.DefaultUnit,
 			&i.DefaultPrice,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -145,14 +169,19 @@ func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, category stri
 }
 
 const searchItemTemplates = `-- name: SearchItemTemplates :many
-SELECT id, type, category, name, default_unit, default_price FROM item_templates
-WHERE name LIKE '%' || $1 || '%'
+SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+WHERE org_id = $1 AND name LIKE '%' || $2 || '%'
 ORDER BY name
 LIMIT 10
 `
 
-func (q *Queries) SearchItemTemplates(ctx context.Context, dollar_1 sql.NullString) ([]ItemTemplate, error) {
-	rows, err := q.db.QueryContext(ctx, searchItemTemplates, dollar_1)
+type SearchItemTemplatesParams struct {
+	OrgID   uuid.NullUUID  `json:"org_id"`
+	Column2 sql.NullString `json:"column_2"`
+}
+
+func (q *Queries) SearchItemTemplates(ctx context.Context, arg SearchItemTemplatesParams) ([]ItemTemplate, error) {
+	rows, err := q.db.QueryContext(ctx, searchItemTemplates, arg.OrgID, arg.Column2)
 	if err != nil {
 		return nil, err
 	}
@@ -167,6 +196,7 @@ func (q *Queries) SearchItemTemplates(ctx context.Context, dollar_1 sql.NullStri
 			&i.Name,
 			&i.DefaultUnit,
 			&i.DefaultPrice,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -182,19 +212,20 @@ func (q *Queries) SearchItemTemplates(ctx context.Context, dollar_1 sql.NullStri
 }
 
 const searchItemTemplatesByType = `-- name: SearchItemTemplatesByType :many
-SELECT id, type, category, name, default_unit, default_price FROM item_templates
-WHERE type = $1 AND name LIKE '%' || $2 || '%'
+SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+WHERE org_id = $1 AND type = $2 AND name LIKE '%' || $3 || '%'
 ORDER BY name
 LIMIT 10
 `
 
 type SearchItemTemplatesByTypeParams struct {
+	OrgID   uuid.NullUUID  `json:"org_id"`
 	Type    string         `json:"type"`
-	Column2 sql.NullString `json:"column_2"`
+	Column3 sql.NullString `json:"column_3"`
 }
 
 func (q *Queries) SearchItemTemplatesByType(ctx context.Context, arg SearchItemTemplatesByTypeParams) ([]ItemTemplate, error) {
-	rows, err := q.db.QueryContext(ctx, searchItemTemplatesByType, arg.Type, arg.Column2)
+	rows, err := q.db.QueryContext(ctx, searchItemTemplatesByType, arg.OrgID, arg.Type, arg.Column3)
 	if err != nil {
 		return nil, err
 	}
@@ -209,6 +240,7 @@ func (q *Queries) SearchItemTemplatesByType(ctx context.Context, arg SearchItemT
 			&i.Name,
 			&i.DefaultUnit,
 			&i.DefaultPrice,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -226,17 +258,18 @@ func (q *Queries) SearchItemTemplatesByType(ctx context.Context, arg SearchItemT
 const updateItemTemplate = `-- name: UpdateItemTemplate :one
 UPDATE item_templates
 SET type = $1, category = $2, name = $3, default_unit = $4, default_price = $5
-WHERE id = $6
-RETURNING id, type, category, name, default_unit, default_price
+WHERE id = $6 AND org_id = $7
+RETURNING id, type, category, name, default_unit, default_price, org_id
 `
 
 type UpdateItemTemplateParams struct {
-	Type         string  `json:"type"`
-	Category     string  `json:"category"`
-	Name         string  `json:"name"`
-	DefaultUnit  string  `json:"default_unit"`
-	DefaultPrice float64 `json:"default_price"`
-	ID           int64   `json:"id"`
+	Type         string        `json:"type"`
+	Category     string        `json:"category"`
+	Name         string        `json:"name"`
+	DefaultUnit  string        `json:"default_unit"`
+	DefaultPrice float64       `json:"default_price"`
+	ID           int64         `json:"id"`
+	OrgID        uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) UpdateItemTemplate(ctx context.Context, arg UpdateItemTemplateParams) (ItemTemplate, error) {
@@ -247,6 +280,7 @@ func (q *Queries) UpdateItemTemplate(ctx context.Context, arg UpdateItemTemplate
 		arg.DefaultUnit,
 		arg.DefaultPrice,
 		arg.ID,
+		arg.OrgID,
 	)
 	var i ItemTemplate
 	err := row.Scan(
@@ -256,35 +290,43 @@ func (q *Queries) UpdateItemTemplate(ctx context.Context, arg UpdateItemTemplate
 		&i.Name,
 		&i.DefaultUnit,
 		&i.DefaultPrice,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const updateItemTemplatePrice = `-- name: UpdateItemTemplatePrice :exec
-UPDATE item_templates SET default_price = $1 WHERE id = $2
+UPDATE item_templates SET default_price = $1 WHERE id = $2 AND org_id = $3
 `
 
 type UpdateItemTemplatePriceParams struct {
-	DefaultPrice float64 `json:"default_price"`
-	ID           int64   `json:"id"`
+	DefaultPrice float64       `json:"default_price"`
+	ID           int64         `json:"id"`
+	OrgID        uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) UpdateItemTemplatePrice(ctx context.Context, arg UpdateItemTemplatePriceParams) error {
-	_, err := q.db.ExecContext(ctx, updateItemTemplatePrice, arg.DefaultPrice, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateItemTemplatePrice, arg.DefaultPrice, arg.ID, arg.OrgID)
 	return err
 }
 
 const updateItemTemplatePriceAndName = `-- name: UpdateItemTemplatePriceAndName :exec
-UPDATE item_templates SET default_price = $1, name = $2 WHERE id = $3
+UPDATE item_templates SET default_price = $1, name = $2 WHERE id = $3 AND org_id = $4
 `
 
 type UpdateItemTemplatePriceAndNameParams struct {
-	DefaultPrice float64 `json:"default_price"`
-	Name         string  `json:"name"`
-	ID           int64   `json:"id"`
+	DefaultPrice float64       `json:"default_price"`
+	Name         string        `json:"name"`
+	ID           int64         `json:"id"`
+	OrgID        uuid.NullUUID `json:"org_id"`
 }
 
 func (q *Queries) UpdateItemTemplatePriceAndName(ctx context.Context, arg UpdateItemTemplatePriceAndNameParams) error {
-	_, err := q.db.ExecContext(ctx, updateItemTemplatePriceAndName, arg.DefaultPrice, arg.Name, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateItemTemplatePriceAndName,
+		arg.DefaultPrice,
+		arg.Name,
+		arg.ID,
+		arg.OrgID,
+	)
 	return err
 }

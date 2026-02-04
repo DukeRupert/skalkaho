@@ -7,17 +7,38 @@ package repository
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
-const getSettings = `-- name: GetSettings :one
-SELECT id, default_surcharge_mode, default_surcharge_percent FROM settings
-WHERE id = 'default'
+const createSettings = `-- name: CreateSettings :one
+INSERT INTO settings (org_id, default_surcharge_mode, default_surcharge_percent)
+VALUES ($1, $2, $3)
+RETURNING default_surcharge_mode, default_surcharge_percent, org_id
 `
 
-func (q *Queries) GetSettings(ctx context.Context) (Setting, error) {
-	row := q.db.QueryRowContext(ctx, getSettings)
+type CreateSettingsParams struct {
+	OrgID                   uuid.UUID `json:"org_id"`
+	DefaultSurchargeMode    string    `json:"default_surcharge_mode"`
+	DefaultSurchargePercent float64   `json:"default_surcharge_percent"`
+}
+
+func (q *Queries) CreateSettings(ctx context.Context, arg CreateSettingsParams) (Setting, error) {
+	row := q.db.QueryRowContext(ctx, createSettings, arg.OrgID, arg.DefaultSurchargeMode, arg.DefaultSurchargePercent)
 	var i Setting
-	err := row.Scan(&i.ID, &i.DefaultSurchargeMode, &i.DefaultSurchargePercent)
+	err := row.Scan(&i.DefaultSurchargeMode, &i.DefaultSurchargePercent, &i.OrgID)
+	return i, err
+}
+
+const getSettings = `-- name: GetSettings :one
+SELECT default_surcharge_mode, default_surcharge_percent, org_id FROM settings
+WHERE org_id = $1
+`
+
+func (q *Queries) GetSettings(ctx context.Context, orgID uuid.UUID) (Setting, error) {
+	row := q.db.QueryRowContext(ctx, getSettings, orgID)
+	var i Setting
+	err := row.Scan(&i.DefaultSurchargeMode, &i.DefaultSurchargePercent, &i.OrgID)
 	return i, err
 }
 
@@ -25,18 +46,19 @@ const updateSettings = `-- name: UpdateSettings :one
 UPDATE settings SET
     default_surcharge_mode = $1,
     default_surcharge_percent = $2
-WHERE id = 'default'
-RETURNING id, default_surcharge_mode, default_surcharge_percent
+WHERE org_id = $3
+RETURNING default_surcharge_mode, default_surcharge_percent, org_id
 `
 
 type UpdateSettingsParams struct {
-	DefaultSurchargeMode    string  `json:"default_surcharge_mode"`
-	DefaultSurchargePercent float64 `json:"default_surcharge_percent"`
+	DefaultSurchargeMode    string    `json:"default_surcharge_mode"`
+	DefaultSurchargePercent float64   `json:"default_surcharge_percent"`
+	OrgID                   uuid.UUID `json:"org_id"`
 }
 
 func (q *Queries) UpdateSettings(ctx context.Context, arg UpdateSettingsParams) (Setting, error) {
-	row := q.db.QueryRowContext(ctx, updateSettings, arg.DefaultSurchargeMode, arg.DefaultSurchargePercent)
+	row := q.db.QueryRowContext(ctx, updateSettings, arg.DefaultSurchargeMode, arg.DefaultSurchargePercent, arg.OrgID)
 	var i Setting
-	err := row.Scan(&i.ID, &i.DefaultSurchargeMode, &i.DefaultSurchargePercent)
+	err := row.Scan(&i.DefaultSurchargeMode, &i.DefaultSurchargePercent, &i.OrgID)
 	return i, err
 }

@@ -8,17 +8,42 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
-const getCompanyProfile = `-- name: GetCompanyProfile :one
-SELECT id, name, email, phone, address, city, state, zip, logo_path, created_at, updated_at FROM company_profile WHERE id = 'default'
+const createCompanyProfile = `-- name: CreateCompanyProfile :one
+INSERT INTO company_profile (org_id, name, email, phone, address, city, state, zip, logo_path)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING name, email, phone, address, city, state, zip, logo_path, created_at, updated_at, org_id
 `
 
-func (q *Queries) GetCompanyProfile(ctx context.Context) (CompanyProfile, error) {
-	row := q.db.QueryRowContext(ctx, getCompanyProfile)
+type CreateCompanyProfileParams struct {
+	OrgID    uuid.UUID      `json:"org_id"`
+	Name     string         `json:"name"`
+	Email    sql.NullString `json:"email"`
+	Phone    sql.NullString `json:"phone"`
+	Address  sql.NullString `json:"address"`
+	City     sql.NullString `json:"city"`
+	State    sql.NullString `json:"state"`
+	Zip      sql.NullString `json:"zip"`
+	LogoPath sql.NullString `json:"logo_path"`
+}
+
+func (q *Queries) CreateCompanyProfile(ctx context.Context, arg CreateCompanyProfileParams) (CompanyProfile, error) {
+	row := q.db.QueryRowContext(ctx, createCompanyProfile,
+		arg.OrgID,
+		arg.Name,
+		arg.Email,
+		arg.Phone,
+		arg.Address,
+		arg.City,
+		arg.State,
+		arg.Zip,
+		arg.LogoPath,
+	)
 	var i CompanyProfile
 	err := row.Scan(
-		&i.ID,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
@@ -29,6 +54,30 @@ func (q *Queries) GetCompanyProfile(ctx context.Context) (CompanyProfile, error)
 		&i.LogoPath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrgID,
+	)
+	return i, err
+}
+
+const getCompanyProfile = `-- name: GetCompanyProfile :one
+SELECT name, email, phone, address, city, state, zip, logo_path, created_at, updated_at, org_id FROM company_profile WHERE org_id = $1
+`
+
+func (q *Queries) GetCompanyProfile(ctx context.Context, orgID uuid.UUID) (CompanyProfile, error) {
+	row := q.db.QueryRowContext(ctx, getCompanyProfile, orgID)
+	var i CompanyProfile
+	err := row.Scan(
+		&i.Name,
+		&i.Email,
+		&i.Phone,
+		&i.Address,
+		&i.City,
+		&i.State,
+		&i.Zip,
+		&i.LogoPath,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }
@@ -43,9 +92,9 @@ UPDATE company_profile SET
     state = $6,
     zip = $7,
     logo_path = $8,
-    updated_at = datetime('now')
-WHERE id = 'default'
-RETURNING id, name, email, phone, address, city, state, zip, logo_path, created_at, updated_at
+    updated_at = NOW()
+WHERE org_id = $9
+RETURNING name, email, phone, address, city, state, zip, logo_path, created_at, updated_at, org_id
 `
 
 type UpdateCompanyProfileParams struct {
@@ -57,6 +106,7 @@ type UpdateCompanyProfileParams struct {
 	State    sql.NullString `json:"state"`
 	Zip      sql.NullString `json:"zip"`
 	LogoPath sql.NullString `json:"logo_path"`
+	OrgID    uuid.UUID      `json:"org_id"`
 }
 
 func (q *Queries) UpdateCompanyProfile(ctx context.Context, arg UpdateCompanyProfileParams) (CompanyProfile, error) {
@@ -69,10 +119,10 @@ func (q *Queries) UpdateCompanyProfile(ctx context.Context, arg UpdateCompanyPro
 		arg.State,
 		arg.Zip,
 		arg.LogoPath,
+		arg.OrgID,
 	)
 	var i CompanyProfile
 	err := row.Scan(
-		&i.ID,
 		&i.Name,
 		&i.Email,
 		&i.Phone,
@@ -83,6 +133,7 @@ func (q *Queries) UpdateCompanyProfile(ctx context.Context, arg UpdateCompanyPro
 		&i.LogoPath,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrgID,
 	)
 	return i, err
 }

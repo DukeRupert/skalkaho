@@ -8,16 +8,19 @@ package repository
 import (
 	"context"
 	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 const createLineItem = `-- name: CreateLineItem :one
-INSERT INTO line_items (id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag
+INSERT INTO line_items (id, org_id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag, org_id
 `
 
 type CreateLineItemParams struct {
 	ID               string          `json:"id"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 	CategoryID       string          `json:"category_id"`
 	Type             string          `json:"type"`
 	Name             string          `json:"name"`
@@ -33,6 +36,7 @@ type CreateLineItemParams struct {
 func (q *Queries) CreateLineItem(ctx context.Context, arg CreateLineItemParams) (LineItem, error) {
 	row := q.db.QueryRowContext(ctx, createLineItem,
 		arg.ID,
+		arg.OrgID,
 		arg.CategoryID,
 		arg.Type,
 		arg.Name,
@@ -57,27 +61,38 @@ func (q *Queries) CreateLineItem(ctx context.Context, arg CreateLineItemParams) 
 		&i.SurchargePercent,
 		&i.SortOrder,
 		&i.Tag,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const deleteLineItem = `-- name: DeleteLineItem :exec
 DELETE FROM line_items
-WHERE id = $1
+WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) DeleteLineItem(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteLineItem, id)
+type DeleteLineItemParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) DeleteLineItem(ctx context.Context, arg DeleteLineItemParams) error {
+	_, err := q.db.ExecContext(ctx, deleteLineItem, arg.ID, arg.OrgID)
 	return err
 }
 
 const getLineItem = `-- name: GetLineItem :one
-SELECT id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag FROM line_items
-WHERE id = $1
+SELECT id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag, org_id FROM line_items
+WHERE id = $1 AND org_id = $2
 `
 
-func (q *Queries) GetLineItem(ctx context.Context, id string) (LineItem, error) {
-	row := q.db.QueryRowContext(ctx, getLineItem, id)
+type GetLineItemParams struct {
+	ID    string        `json:"id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) GetLineItem(ctx context.Context, arg GetLineItemParams) (LineItem, error) {
+	row := q.db.QueryRowContext(ctx, getLineItem, arg.ID, arg.OrgID)
 	var i LineItem
 	err := row.Scan(
 		&i.ID,
@@ -91,18 +106,24 @@ func (q *Queries) GetLineItem(ctx context.Context, id string) (LineItem, error) 
 		&i.SurchargePercent,
 		&i.SortOrder,
 		&i.Tag,
+		&i.OrgID,
 	)
 	return i, err
 }
 
 const listLineItemsByCategory = `-- name: ListLineItemsByCategory :many
-SELECT id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag FROM line_items
-WHERE category_id = $1
+SELECT id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag, org_id FROM line_items
+WHERE category_id = $1 AND org_id = $2
 ORDER BY sort_order ASC
 `
 
-func (q *Queries) ListLineItemsByCategory(ctx context.Context, categoryID string) ([]LineItem, error) {
-	rows, err := q.db.QueryContext(ctx, listLineItemsByCategory, categoryID)
+type ListLineItemsByCategoryParams struct {
+	CategoryID string        `json:"category_id"`
+	OrgID      uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListLineItemsByCategory(ctx context.Context, arg ListLineItemsByCategoryParams) ([]LineItem, error) {
+	rows, err := q.db.QueryContext(ctx, listLineItemsByCategory, arg.CategoryID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +143,7 @@ func (q *Queries) ListLineItemsByCategory(ctx context.Context, categoryID string
 			&i.SurchargePercent,
 			&i.SortOrder,
 			&i.Tag,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -137,14 +159,19 @@ func (q *Queries) ListLineItemsByCategory(ctx context.Context, categoryID string
 }
 
 const listLineItemsByJob = `-- name: ListLineItemsByJob :many
-SELECT li.id, li.category_id, li.type, li.name, li.description, li.quantity, li.unit, li.unit_price, li.surcharge_percent, li.sort_order, li.tag FROM line_items li
+SELECT li.id, li.category_id, li.type, li.name, li.description, li.quantity, li.unit, li.unit_price, li.surcharge_percent, li.sort_order, li.tag, li.org_id FROM line_items li
 JOIN categories c ON li.category_id = c.id
-WHERE c.job_id = $1
+WHERE c.job_id = $1 AND li.org_id = $2 AND c.org_id = $2
 ORDER BY li.sort_order ASC
 `
 
-func (q *Queries) ListLineItemsByJob(ctx context.Context, jobID string) ([]LineItem, error) {
-	rows, err := q.db.QueryContext(ctx, listLineItemsByJob, jobID)
+type ListLineItemsByJobParams struct {
+	JobID string        `json:"job_id"`
+	OrgID uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) ListLineItemsByJob(ctx context.Context, arg ListLineItemsByJobParams) ([]LineItem, error) {
+	rows, err := q.db.QueryContext(ctx, listLineItemsByJob, arg.JobID, arg.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +191,7 @@ func (q *Queries) ListLineItemsByJob(ctx context.Context, jobID string) ([]LineI
 			&i.SurchargePercent,
 			&i.SortOrder,
 			&i.Tag,
+			&i.OrgID,
 		); err != nil {
 			return nil, err
 		}
@@ -189,8 +217,8 @@ UPDATE line_items SET
     surcharge_percent = $7,
     sort_order = $8,
     tag = $9
-WHERE id = $10
-RETURNING id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag
+WHERE id = $10 AND org_id = $11
+RETURNING id, category_id, type, name, description, quantity, unit, unit_price, surcharge_percent, sort_order, tag, org_id
 `
 
 type UpdateLineItemParams struct {
@@ -204,6 +232,7 @@ type UpdateLineItemParams struct {
 	SortOrder        int64           `json:"sort_order"`
 	Tag              sql.NullString  `json:"tag"`
 	ID               string          `json:"id"`
+	OrgID            uuid.NullUUID   `json:"org_id"`
 }
 
 func (q *Queries) UpdateLineItem(ctx context.Context, arg UpdateLineItemParams) (LineItem, error) {
@@ -218,6 +247,7 @@ func (q *Queries) UpdateLineItem(ctx context.Context, arg UpdateLineItemParams) 
 		arg.SortOrder,
 		arg.Tag,
 		arg.ID,
+		arg.OrgID,
 	)
 	var i LineItem
 	err := row.Scan(
@@ -232,6 +262,7 @@ func (q *Queries) UpdateLineItem(ctx context.Context, arg UpdateLineItemParams) 
 		&i.SurchargePercent,
 		&i.SortOrder,
 		&i.Tag,
+		&i.OrgID,
 	)
 	return i, err
 }

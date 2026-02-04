@@ -44,6 +44,7 @@ type EstimateWithStatus struct {
 func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	// Parse query parameters
 	pageStr := r.URL.Query().Get("page")
@@ -61,7 +62,10 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	offset := int64((page - 1) * pageSize)
 
 	// Get total count for pagination
-	totalItems, err := h.queries.CountJobs(ctx, status)
+	totalItems, err := h.queries.CountJobs(ctx, repository.CountJobsParams{
+		Status: status,
+		OrgID:  orgID,
+	})
 	if err != nil {
 		logger.Error("failed to count jobs", "error", err)
 		http.Error(w, "Failed to load jobs", http.StatusInternalServerError)
@@ -75,33 +79,36 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 
 	// Get jobs based on sort order
 	var jobs []repository.Job
-	params := repository.ListJobsPaginatedParams{
-		Status: status,
-		Offset: int32(offset),
-		Limit:  int32(pageSize),
-	}
 
 	switch sortBy {
 	case "oldest":
 		jobs, err = h.queries.ListJobsPaginatedOldest(ctx, repository.ListJobsPaginatedOldestParams{
 			Status: status,
+			OrgID:  orgID,
 			Offset: int32(offset),
 			Limit:  int32(pageSize),
 		})
 	case "name_asc":
 		jobs, err = h.queries.ListJobsPaginatedByName(ctx, repository.ListJobsPaginatedByNameParams{
 			Status: status,
+			OrgID:  orgID,
 			Offset: int32(offset),
 			Limit:  int32(pageSize),
 		})
 	case "name_desc":
 		jobs, err = h.queries.ListJobsPaginatedByNameDesc(ctx, repository.ListJobsPaginatedByNameDescParams{
 			Status: status,
+			OrgID:  orgID,
 			Offset: int32(offset),
 			Limit:  int32(pageSize),
 		})
 	default: // newest
-		jobs, err = h.queries.ListJobsPaginated(ctx, params)
+		jobs, err = h.queries.ListJobsPaginated(ctx, repository.ListJobsPaginatedParams{
+			Status: status,
+			OrgID:  orgID,
+			Offset: int32(offset),
+			Limit:  int32(pageSize),
+		})
 	}
 
 	if err != nil {
@@ -113,14 +120,26 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 	// Calculate totals for each job and get client names + estimate status
 	jobsWithTotals := make([]JobWithTotal, len(jobs))
 	for i, job := range jobs {
-		categories, _ := h.queries.ListCategoriesByJob(ctx, job.ID)
-		lineItems, _ := h.queries.ListLineItemsByJob(ctx, job.ID)
-		customTypes, _ := h.queries.ListJobItemTypes(ctx, job.ID)
+		categories, _ := h.queries.ListCategoriesByJob(ctx, repository.ListCategoriesByJobParams{
+			JobID: job.ID,
+			OrgID: orgID,
+		})
+		lineItems, _ := h.queries.ListLineItemsByJob(ctx, repository.ListLineItemsByJobParams{
+			JobID: job.ID,
+			OrgID: orgID,
+		})
+		customTypes, _ := h.queries.ListJobItemTypes(ctx, repository.ListJobItemTypesParams{
+			JobID: job.ID,
+			OrgID: orgID,
+		})
 		totals := h.calculateTotals(job, categories, lineItems, customTypes)
 
 		var clientName string
 		if job.ClientID.Valid {
-			if client, err := h.queries.GetClient(ctx, job.ClientID.String); err == nil {
+			if client, err := h.queries.GetClient(ctx, repository.GetClientParams{
+				ID:    job.ClientID.String,
+				OrgID: orgID,
+			}); err == nil {
 				clientName = client.Name
 			}
 		} else if job.CustomerName.Valid {
@@ -131,13 +150,19 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 		var estimateCount int64
 		var latestEstimateStatus, latestSignatureStatus string
 
-		estimates, _ := h.queries.ListEstimatesByJob(ctx, job.ID)
+		estimates, _ := h.queries.ListEstimatesByJob(ctx, repository.ListEstimatesByJobParams{
+			JobID: job.ID,
+			OrgID: orgID,
+		})
 		estimateCount = int64(len(estimates))
 		if len(estimates) > 0 {
 			latestEstimateStatus = estimates[0].Status // First is latest (ordered by version DESC)
 
 			// Get signature status for latest estimate
-			if sigReq, err := h.queries.GetSignatureRequestByEstimate(ctx, estimates[0].ID); err == nil {
+			if sigReq, err := h.queries.GetSignatureRequestByEstimate(ctx, repository.GetSignatureRequestByEstimateParams{
+				EstimateID: estimates[0].ID,
+				OrgID:      orgID,
+			}); err == nil {
 				latestSignatureStatus = sigReq.Status
 			}
 		}
@@ -177,9 +202,13 @@ func (h *Handler) ListJobs(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Job not found", http.StatusNotFound)
@@ -190,14 +219,20 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categories, err := h.queries.ListCategoriesByJob(ctx, jobID)
+	categories, err := h.queries.ListCategoriesByJob(ctx, repository.ListCategoriesByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list categories", "error", err)
 		http.Error(w, "Failed to load categories", http.StatusInternalServerError)
 		return
 	}
 
-	lineItems, err := h.queries.ListLineItemsByJob(ctx, jobID)
+	lineItems, err := h.queries.ListLineItemsByJob(ctx, repository.ListLineItemsByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list line items", "error", err)
 		http.Error(w, "Failed to load line items", http.StatusInternalServerError)
@@ -205,7 +240,10 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get custom item types for this job (needed for surcharge calculations)
-	customTypes, err := h.queries.ListJobItemTypes(ctx, jobID)
+	customTypes, err := h.queries.ListJobItemTypes(ctx, repository.ListJobItemTypesParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list job item types", "error", err)
 		customTypes = []repository.JobItemType{} // Continue with empty list
@@ -242,18 +280,27 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 	// Get client if associated
 	var client *repository.Client
 	if job.ClientID.Valid {
-		c, err := h.queries.GetClient(ctx, job.ClientID.String)
+		c, err := h.queries.GetClient(ctx, repository.GetClientParams{
+			ID:    job.ClientID.String,
+			OrgID: orgID,
+		})
 		if err == nil {
 			client = &c
 		}
 	}
 
 	// Get estimates with signature status
-	estimates, _ := h.queries.ListEstimatesByJob(ctx, jobID)
+	estimates, _ := h.queries.ListEstimatesByJob(ctx, repository.ListEstimatesByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	estimatesWithStatus := make([]EstimateWithStatus, len(estimates))
 	for i, est := range estimates {
 		var sigStatus string
-		if sigReq, err := h.queries.GetSignatureRequestByEstimate(ctx, est.ID); err == nil {
+		if sigReq, err := h.queries.GetSignatureRequestByEstimate(ctx, repository.GetSignatureRequestByEstimateParams{
+			EstimateID: est.ID,
+			OrgID:      orgID,
+		}); err == nil {
 			sigStatus = sigReq.Status
 		}
 		estimatesWithStatus[i] = EstimateWithStatus{
@@ -282,6 +329,7 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -295,7 +343,7 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	clientID := r.FormValue("client_id")
 
-	settings, err := h.queries.GetSettings(ctx)
+	settings, err := h.queries.GetSettings(ctx, orgID.UUID)
 	if err != nil {
 		logger.Error("failed to get settings", "error", err)
 		http.Error(w, "Failed to create job", http.StatusInternalServerError)
@@ -304,6 +352,7 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 
 	job, err := h.queries.CreateJob(ctx, repository.CreateJobParams{
 		ID:               uuid.New().String(),
+		OrgID:            orgID,
 		Name:             name,
 		CustomerName:     sql.NullString{},
 		SurchargePercent: settings.DefaultSurchargePercent,
@@ -330,6 +379,7 @@ func (h *Handler) CreateJob(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
 	if err := r.ParseForm(); err != nil {
@@ -345,7 +395,10 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get existing job to preserve status if not provided
-	existingJob, err := h.queries.GetJob(ctx, jobID)
+	existingJob, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -398,9 +451,13 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	if err := h.queries.DeleteJob(ctx, jobID); err != nil {
+	if err := h.queries.DeleteJob(ctx, repository.DeleteJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	}); err != nil {
 		logger.Error("failed to delete job", "error", err)
 		http.Error(w, "Failed to delete job", http.StatusInternalServerError)
 		return
@@ -418,9 +475,10 @@ func (h *Handler) DeleteJob(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetJobForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	// Get clients for dropdown
-	clients, err := h.queries.ListClients(ctx)
+	clients, err := h.queries.ListClients(ctx, orgID)
 	if err != nil {
 		logger.Error("failed to list clients", "error", err)
 		clients = nil
@@ -445,9 +503,13 @@ func (h *Handler) GetJobForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetMarkupForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -455,7 +517,10 @@ func (h *Handler) GetMarkupForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get custom item types for this job
-	customTypes, err := h.queries.ListJobItemTypes(ctx, jobID)
+	customTypes, err := h.queries.ListJobItemTypes(ctx, repository.ListJobItemTypesParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list job item types", "error", err)
 		customTypes = []repository.JobItemType{}
@@ -481,9 +546,13 @@ func (h *Handler) GetMarkupForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetJobRenameForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -509,9 +578,13 @@ func (h *Handler) GetJobRenameForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateJobName(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -556,9 +629,13 @@ func (h *Handler) UpdateJobName(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -634,16 +711,23 @@ type CategoryReport struct {
 func (h *Handler) GetOrderList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
 		return
 	}
 
-	lineItems, err := h.queries.ListLineItemsByJob(ctx, jobID)
+	lineItems, err := h.queries.ListLineItemsByJob(ctx, repository.ListLineItemsByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list line items", "error", err)
 		http.Error(w, "Failed to load items", http.StatusInternalServerError)
@@ -691,9 +775,13 @@ func (h *Handler) GetOrderList(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetJobClientForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -706,7 +794,7 @@ func (h *Handler) GetJobClientForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clients, err := h.queries.ListClients(ctx)
+	clients, err := h.queries.ListClients(ctx, orgID)
 	if err != nil {
 		logger.Error("failed to list clients", "error", err)
 		clients = nil
@@ -732,9 +820,13 @@ func (h *Handler) GetJobClientForm(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateJobClient(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
@@ -785,23 +877,33 @@ func (h *Handler) UpdateJobClient(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetSiteMaterials(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 	jobID := r.PathValue("id")
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Job not found", http.StatusNotFound)
 		return
 	}
 
-	categories, err := h.queries.ListCategoriesByJob(ctx, jobID)
+	categories, err := h.queries.ListCategoriesByJob(ctx, repository.ListCategoriesByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list categories", "error", err)
 		http.Error(w, "Failed to load categories", http.StatusInternalServerError)
 		return
 	}
 
-	lineItems, err := h.queries.ListLineItemsByJob(ctx, jobID)
+	lineItems, err := h.queries.ListLineItemsByJob(ctx, repository.ListLineItemsByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list line items", "error", err)
 		http.Error(w, "Failed to load items", http.StatusInternalServerError)

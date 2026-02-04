@@ -23,8 +23,12 @@ func (h *Handler) ListEstimates(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	jobID := r.PathValue("jobID")
+	orgID := GetOrgID(ctx)
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Job not found", http.StatusNotFound)
@@ -35,7 +39,10 @@ func (h *Handler) ListEstimates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	estimates, err := h.queries.ListEstimatesByJob(ctx, jobID)
+	estimates, err := h.queries.ListEstimatesByJob(ctx, repository.ListEstimatesByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list estimates", "error", err)
 		http.Error(w, "Failed to load estimates", http.StatusInternalServerError)
@@ -45,7 +52,10 @@ func (h *Handler) ListEstimates(w http.ResponseWriter, r *http.Request) {
 	// Get client if available
 	var client *repository.Client
 	if job.ClientID.Valid {
-		c, err := h.queries.GetClient(ctx, job.ClientID.String)
+		c, err := h.queries.GetClient(ctx, repository.GetClientParams{
+			ID:    job.ClientID.String,
+			OrgID: orgID,
+		})
 		if err == nil {
 			client = &c
 		}
@@ -68,8 +78,12 @@ func (h *Handler) GetNewEstimateForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	jobID := r.PathValue("jobID")
+	orgID := GetOrgID(ctx)
 
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Job not found", http.StatusNotFound)
@@ -81,7 +95,7 @@ func (h *Handler) GetNewEstimateForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Show client selection form
-	clients, err := h.queries.ListClients(ctx)
+	clients, err := h.queries.ListClients(ctx, orgID)
 	if err != nil {
 		logger.Error("failed to list clients", "error", err)
 		clients = nil
@@ -108,6 +122,7 @@ func (h *Handler) CreateEstimate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	jobID := r.PathValue("jobID")
+	orgID := GetOrgID(ctx)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -115,7 +130,10 @@ func (h *Handler) CreateEstimate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get job
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Job not found", http.StatusNotFound)
@@ -155,16 +173,19 @@ func (h *Handler) CreateEstimate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.doCreateEstimate(w, r, jobID)
+	h.doCreateEstimate(w, r, jobID, orgID)
 }
 
 // doCreateEstimate performs the actual estimate creation.
-func (h *Handler) doCreateEstimate(w http.ResponseWriter, r *http.Request, jobID string) {
+func (h *Handler) doCreateEstimate(w http.ResponseWriter, r *http.Request, jobID string, orgID uuid.NullUUID) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 
 	// Get job (refresh after potential update)
-	job, err := h.queries.GetJob(ctx, jobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Failed to load job", http.StatusInternalServerError)
@@ -178,21 +199,30 @@ func (h *Handler) doCreateEstimate(w http.ResponseWriter, r *http.Request, jobID
 	}
 
 	// Get all categories and line items for calculation
-	categories, err := h.queries.ListCategoriesByJob(ctx, jobID)
+	categories, err := h.queries.ListCategoriesByJob(ctx, repository.ListCategoriesByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list categories", "error", err)
 		http.Error(w, "Failed to load categories", http.StatusInternalServerError)
 		return
 	}
 
-	lineItems, err := h.queries.ListLineItemsByJob(ctx, jobID)
+	lineItems, err := h.queries.ListLineItemsByJob(ctx, repository.ListLineItemsByJobParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list line items", "error", err)
 		http.Error(w, "Failed to load line items", http.StatusInternalServerError)
 		return
 	}
 
-	customTypes, err := h.queries.ListJobItemTypes(ctx, jobID)
+	customTypes, err := h.queries.ListJobItemTypes(ctx, repository.ListJobItemTypesParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		customTypes = []repository.JobItemType{}
 	}
@@ -201,7 +231,10 @@ func (h *Handler) doCreateEstimate(w http.ResponseWriter, r *http.Request, jobID
 	totals := h.calculateTotals(job, categories, lineItems, customTypes)
 
 	// Get next version number
-	maxVersionResult, err := h.queries.GetLatestEstimateVersion(ctx, jobID)
+	maxVersionResult, err := h.queries.GetLatestEstimateVersion(ctx, repository.GetLatestEstimateVersionParams{
+		JobID: jobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get latest version", "error", err)
 		http.Error(w, "Failed to create estimate", http.StatusInternalServerError)
@@ -213,6 +246,7 @@ func (h *Handler) doCreateEstimate(w http.ResponseWriter, r *http.Request, jobID
 	estimateID := uuid.New().String()
 	estimate, err := h.queries.CreateEstimate(ctx, repository.CreateEstimateParams{
 		ID:         estimateID,
+		OrgID:      orgID,
 		JobID:      jobID,
 		Version:    nextVersion,
 		Status:     string(domain.EstimateStatusDraft),
@@ -244,6 +278,7 @@ func (h *Handler) doCreateEstimate(w http.ResponseWriter, r *http.Request, jobID
 
 		_, err := h.queries.CreateEstimateCategory(ctx, repository.CreateEstimateCategoryParams{
 			ID:               uuid.New().String(),
+			OrgID:            orgID,
 			EstimateID:       estimateID,
 			CategoryID:       cat.ID,
 			ParentCategoryID: parentCatID,
@@ -272,8 +307,12 @@ func (h *Handler) GetEstimate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	estimateID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
-	estimate, err := h.queries.GetEstimate(ctx, estimateID)
+	estimate, err := h.queries.GetEstimate(ctx, repository.GetEstimateParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Estimate not found", http.StatusNotFound)
@@ -284,14 +323,20 @@ func (h *Handler) GetEstimate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, err := h.queries.GetJob(ctx, estimate.JobID)
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    estimate.JobID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get job", "error", err)
 		http.Error(w, "Failed to load job", http.StatusInternalServerError)
 		return
 	}
 
-	categories, err := h.queries.ListEstimateCategoriesByEstimate(ctx, estimateID)
+	categories, err := h.queries.ListEstimateCategoriesByEstimate(ctx, repository.ListEstimateCategoriesByEstimateParams{
+		EstimateID: estimateID,
+		OrgID:      orgID,
+	})
 	if err != nil {
 		logger.Error("failed to list estimate categories", "error", err)
 		http.Error(w, "Failed to load categories", http.StatusInternalServerError)
@@ -304,7 +349,10 @@ func (h *Handler) GetEstimate(w http.ResponseWriter, r *http.Request) {
 	// Get client if available
 	var client *repository.Client
 	if job.ClientID.Valid {
-		c, err := h.queries.GetClient(ctx, job.ClientID.String)
+		c, err := h.queries.GetClient(ctx, repository.GetClientParams{
+			ID:    job.ClientID.String,
+			OrgID: orgID,
+		})
 		if err == nil {
 			client = &c
 		}
@@ -312,7 +360,10 @@ func (h *Handler) GetEstimate(w http.ResponseWriter, r *http.Request) {
 
 	// Get latest signature request if any
 	var signatureRequest *repository.SignatureRequest
-	req, err := h.queries.GetSignatureRequestByEstimate(ctx, estimateID)
+	req, err := h.queries.GetSignatureRequestByEstimate(ctx, repository.GetSignatureRequestByEstimateParams{
+		EstimateID: estimateID,
+		OrgID:      orgID,
+	})
 	if err == nil {
 		signatureRequest = &req
 	}
@@ -361,6 +412,7 @@ func (h *Handler) UpdateEstimateCategoryDescription(w http.ResponseWriter, r *ht
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	categoryID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
@@ -383,7 +435,10 @@ func (h *Handler) UpdateEstimateCategoryDescription(w http.ResponseWriter, r *ht
 	}
 
 	// Return to estimate page
-	estCat, err := h.queries.GetEstimateCategory(ctx, categoryID)
+	estCat, err := h.queries.GetEstimateCategory(ctx, repository.GetEstimateCategoryParams{
+		ID:    categoryID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		logger.Error("failed to get estimate category", "error", err)
 		http.Error(w, "Failed to get category", http.StatusInternalServerError)
@@ -413,8 +468,12 @@ func (h *Handler) SendEstimate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	estimateID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
-	estimate, err := h.queries.GetEstimate(ctx, estimateID)
+	estimate, err := h.queries.GetEstimate(ctx, repository.GetEstimateParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Estimate not found", http.StatusNotFound)
@@ -431,10 +490,16 @@ func (h *Handler) SendEstimate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get job and client for email stub
-	job, _ := h.queries.GetJob(ctx, estimate.JobID)
+	job, _ := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    estimate.JobID,
+		OrgID: orgID,
+	})
 	var clientEmail string
 	if job.ClientID.Valid {
-		client, err := h.queries.GetClient(ctx, job.ClientID.String)
+		client, err := h.queries.GetClient(ctx, repository.GetClientParams{
+			ID:    job.ClientID.String,
+			OrgID: orgID,
+		})
 		if err == nil && client.Email.Valid {
 			clientEmail = client.Email.String
 		}
@@ -477,13 +542,17 @@ func (h *Handler) UpdateEstimateStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	estimateID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
 		return
 	}
 
-	estimate, err := h.queries.GetEstimate(ctx, estimateID)
+	estimate, err := h.queries.GetEstimate(ctx, repository.GetEstimateParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Estimate not found", http.StatusNotFound)
@@ -533,8 +602,12 @@ func (h *Handler) GetEstimatePreview(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	estimateID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
-	estimate, err := h.queries.GetEstimate(ctx, estimateID)
+	estimate, err := h.queries.GetEstimate(ctx, repository.GetEstimateParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Estimate not found", http.StatusNotFound)
@@ -545,13 +618,22 @@ func (h *Handler) GetEstimatePreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, _ := h.queries.GetJob(ctx, estimate.JobID)
-	categories, _ := h.queries.ListEstimateCategoriesByEstimate(ctx, estimateID)
+	job, _ := h.queries.GetJob(ctx, repository.GetJobParams{
+		ID:    estimate.JobID,
+		OrgID: orgID,
+	})
+	categories, _ := h.queries.ListEstimateCategoriesByEstimate(ctx, repository.ListEstimateCategoriesByEstimateParams{
+		EstimateID: estimateID,
+		OrgID:      orgID,
+	})
 	categoryTree := buildEstimateCategoryTree(categories)
 
 	var client *repository.Client
 	if job.ClientID.Valid {
-		c, err := h.queries.GetClient(ctx, job.ClientID.String)
+		c, err := h.queries.GetClient(ctx, repository.GetClientParams{
+			ID:    job.ClientID.String,
+			OrgID: orgID,
+		})
 		if err == nil {
 			client = &c
 		}
@@ -575,14 +657,21 @@ func (h *Handler) DeleteEstimate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
 	estimateID := r.PathValue("id")
+	orgID := GetOrgID(ctx)
 
-	estimate, err := h.queries.GetEstimate(ctx, estimateID)
+	estimate, err := h.queries.GetEstimate(ctx, repository.GetEstimateParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	})
 	if err != nil {
 		http.Error(w, "Estimate not found", http.StatusNotFound)
 		return
 	}
 
-	if err := h.queries.DeleteEstimate(ctx, estimateID); err != nil {
+	if err := h.queries.DeleteEstimate(ctx, repository.DeleteEstimateParams{
+		ID:    estimateID,
+		OrgID: orgID,
+	}); err != nil {
 		logger.Error("failed to delete estimate", "error", err)
 		http.Error(w, "Failed to delete estimate", http.StatusInternalServerError)
 		return
