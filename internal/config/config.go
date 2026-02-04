@@ -8,7 +8,8 @@ import (
 // Config holds application configuration.
 type Config struct {
 	Addr                 string
-	DatabasePath         string
+	DatabaseURL          string // PostgreSQL connection string
+	DatabasePath         string // SQLite path (deprecated, for backward compatibility)
 	Environment          string
 	AnthropicAPIKey      string
 	AutoApproveThreshold float64
@@ -19,6 +20,7 @@ type Config struct {
 func Load() *Config {
 	return &Config{
 		Addr:                 getEnv("ADDR", ":8080"),
+		DatabaseURL:          getEnv("DATABASE_URL", ""),
 		DatabasePath:         getEnv("DATABASE_PATH", "quotes.db"),
 		Environment:          getEnv("ENVIRONMENT", "development"),
 		AnthropicAPIKey:      getEnv("ANTHROPIC_API_KEY", ""),

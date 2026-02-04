@@ -13,6 +13,7 @@ import (
 	"github.com/pressly/goose/v3"
 
 	"github.com/dukerupert/skalkaho/internal/config"
+	"github.com/dukerupert/skalkaho/internal/database"
 	"github.com/dukerupert/skalkaho/internal/handler/keyboard"
 	"github.com/dukerupert/skalkaho/internal/middleware"
 	"github.com/dukerupert/skalkaho/internal/repository"
@@ -38,15 +39,21 @@ func main() {
 
 	logger.Info("Skalkaho starting", "environment", cfg.Environment)
 
-	// Open database
-	db, err := sql.Open("sqlite3", cfg.DatabasePath+"?_foreign_keys=on")
+	// Open database (PostgreSQL or SQLite)
+	db, err := database.Open(cfg.DatabaseURL, cfg.DatabasePath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	defer func() { _ = db.Close() }()
 
+	// Determine dialect for migrations
+	dialect := "sqlite3"
+	if cfg.DatabaseURL != "" {
+		dialect = "postgres"
+	}
+
 	// Run migrations
-	if err := runMigrations(db); err != nil {
+	if err := runMigrations(db, dialect); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
@@ -80,10 +87,10 @@ func main() {
 	}
 }
 
-func runMigrations(db *sql.DB) error {
+func runMigrations(db *sql.DB, dialect string) error {
 	goose.SetBaseFS(migrations)
 
-	if err := goose.SetDialect("sqlite3"); err != nil {
+	if err := goose.SetDialect(dialect); err != nil {
 		return err
 	}
 
