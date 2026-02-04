@@ -158,6 +158,33 @@ func (q *Queries) GetUserByEmail(ctx context.Context, arg GetUserByEmailParams) 
 	return i, err
 }
 
+const getUserByEmailOnly = `-- name: GetUserByEmailOnly :one
+SELECT id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at FROM users
+WHERE email = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByEmailOnly(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmailOnly, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.OrgID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.Role,
+		&i.Name,
+		&i.EmailVerified,
+		&i.Status,
+		&i.ResetToken,
+		&i.ResetTokenExpiresAt,
+		&i.VerificationToken,
+		&i.LastLoginAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getUserByResetToken = `-- name: GetUserByResetToken :one
 SELECT id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at FROM users
 WHERE reset_token = $1

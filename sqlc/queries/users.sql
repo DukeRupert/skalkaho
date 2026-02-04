@@ -18,6 +18,10 @@ WHERE id = $1 LIMIT 1;
 SELECT * FROM users
 WHERE org_id = $1 AND email = $2 LIMIT 1;
 
+-- name: GetUserByEmailOnly :one
+SELECT * FROM users
+WHERE email = $1 LIMIT 1;
+
 -- name: GetUserByResetToken :one
 SELECT * FROM users
 WHERE reset_token = $1

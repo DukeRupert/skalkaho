@@ -171,6 +171,18 @@ type PriceImportMatch struct {
 	OrgID             uuid.NullUUID  `json:"org_id"`
 }
 
+type Session struct {
+	ID             uuid.UUID      `json:"id"`
+	UserID         uuid.UUID      `json:"user_id"`
+	OrgID          uuid.UUID      `json:"org_id"`
+	TokenHash      string         `json:"token_hash"`
+	UserAgent      sql.NullString `json:"user_agent"`
+	IpAddress      sql.NullString `json:"ip_address"`
+	ExpiresAt      time.Time      `json:"expires_at"`
+	LastActivityAt time.Time      `json:"last_activity_at"`
+	CreatedAt      time.Time      `json:"created_at"`
+}
+
 type Setting struct {
 	DefaultSurchargeMode    string    `json:"default_surcharge_mode"`
 	DefaultSurchargePercent float64   `json:"default_surcharge_percent"`

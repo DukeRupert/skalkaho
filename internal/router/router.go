@@ -3,112 +3,133 @@ package router
 import (
 	"net/http"
 
+	"github.com/dukerupert/skalkaho/internal/auth"
+	authhandler "github.com/dukerupert/skalkaho/internal/handler/auth"
 	"github.com/dukerupert/skalkaho/internal/handler/keyboard"
 )
 
 // Register sets up all routes.
-func Register(mux *http.ServeMux, h *keyboard.Handler) {
-	// Health check
+func Register(mux *http.ServeMux, h *keyboard.Handler, authH *authhandler.Handler, sm *auth.SessionManager) {
+	// Health check (public)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	// Static files
+	// Static files (public)
 	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	// Jobs
-	mux.HandleFunc("GET /", h.ListJobs)
-	mux.HandleFunc("GET /jobs/{id}", h.GetJob)
-	mux.HandleFunc("POST /jobs", h.CreateJob)
-	mux.HandleFunc("PUT /jobs/{id}", h.UpdateJob)
-	mux.HandleFunc("DELETE /jobs/{id}", h.DeleteJob)
-	mux.HandleFunc("GET /job-form", h.GetJobForm)
-	mux.HandleFunc("GET /jobs/{id}/markup", h.GetMarkupForm)
-	mux.HandleFunc("PUT /jobs/{id}/markup", h.UpdateMarkup)
-	mux.HandleFunc("GET /jobs/{id}/rename", h.GetJobRenameForm)
-	mux.HandleFunc("PUT /jobs/{id}/name", h.UpdateJobName)
-	mux.HandleFunc("GET /jobs/{id}/order-list", h.GetOrderList)
-	mux.HandleFunc("GET /jobs/{id}/site-materials", h.GetSiteMaterials)
-	mux.HandleFunc("GET /jobs/{id}/client", h.GetJobClientForm)
-	mux.HandleFunc("PUT /jobs/{id}/client", h.UpdateJobClient)
-
-	// Estimates
-	mux.HandleFunc("GET /jobs/{jobID}/estimates", h.ListEstimates)
-	mux.HandleFunc("GET /jobs/{jobID}/estimates/new", h.GetNewEstimateForm)
-	mux.HandleFunc("POST /jobs/{jobID}/estimates", h.CreateEstimate)
-	mux.HandleFunc("GET /estimates/{id}", h.GetEstimate)
-	mux.HandleFunc("DELETE /estimates/{id}", h.DeleteEstimate)
-	mux.HandleFunc("GET /estimates/{id}/preview", h.GetEstimatePreview)
-	mux.HandleFunc("POST /estimates/{id}/send", h.SendEstimate)
-	mux.HandleFunc("POST /estimates/{id}/status", h.UpdateEstimateStatus)
-	mux.HandleFunc("PUT /estimate-categories/{id}/description", h.UpdateEstimateCategoryDescription)
-
-	// E-Signatures
-	mux.HandleFunc("GET /estimates/{id}/send-for-signature", h.GetSendSignatureForm)
-	mux.HandleFunc("POST /estimates/{id}/send-for-signature", h.SendForSignature)
-	mux.HandleFunc("POST /estimates/{id}/cancel-signature", h.CancelSignatureRequest)
+	// ==================
+	// Auth Routes (public - no auth required)
+	// ==================
+	mux.HandleFunc("GET /login", authH.GetLogin)
+	mux.HandleFunc("POST /login", authH.PostLogin)
+	mux.HandleFunc("GET /register", authH.GetRegister)
+	mux.HandleFunc("POST /register", authH.PostRegister)
+	mux.HandleFunc("POST /logout", authH.PostLogout)
 
 	// Public Signature Pages (no auth)
 	mux.HandleFunc("GET /sign/{token}", h.GetSignaturePage)
 	mux.HandleFunc("POST /sign/{token}", h.SubmitSignature)
 	mux.HandleFunc("GET /sign/{token}/complete", h.GetSignatureComplete)
 
+	// ==================
+	// Protected Routes (require auth)
+	// ==================
+	// Wrap all protected handlers with session middleware and RequireAuth
+
+	// Jobs
+	mux.Handle("GET /", protect(sm, http.HandlerFunc(h.ListJobs)))
+	mux.Handle("GET /jobs/{id}", protect(sm, http.HandlerFunc(h.GetJob)))
+	mux.Handle("POST /jobs", protect(sm, http.HandlerFunc(h.CreateJob)))
+	mux.Handle("PUT /jobs/{id}", protect(sm, http.HandlerFunc(h.UpdateJob)))
+	mux.Handle("DELETE /jobs/{id}", protect(sm, http.HandlerFunc(h.DeleteJob)))
+	mux.Handle("GET /job-form", protect(sm, http.HandlerFunc(h.GetJobForm)))
+	mux.Handle("GET /jobs/{id}/markup", protect(sm, http.HandlerFunc(h.GetMarkupForm)))
+	mux.Handle("PUT /jobs/{id}/markup", protect(sm, http.HandlerFunc(h.UpdateMarkup)))
+	mux.Handle("GET /jobs/{id}/rename", protect(sm, http.HandlerFunc(h.GetJobRenameForm)))
+	mux.Handle("PUT /jobs/{id}/name", protect(sm, http.HandlerFunc(h.UpdateJobName)))
+	mux.Handle("GET /jobs/{id}/order-list", protect(sm, http.HandlerFunc(h.GetOrderList)))
+	mux.Handle("GET /jobs/{id}/site-materials", protect(sm, http.HandlerFunc(h.GetSiteMaterials)))
+	mux.Handle("GET /jobs/{id}/client", protect(sm, http.HandlerFunc(h.GetJobClientForm)))
+	mux.Handle("PUT /jobs/{id}/client", protect(sm, http.HandlerFunc(h.UpdateJobClient)))
+
+	// Estimates
+	mux.Handle("GET /jobs/{jobID}/estimates", protect(sm, http.HandlerFunc(h.ListEstimates)))
+	mux.Handle("GET /jobs/{jobID}/estimates/new", protect(sm, http.HandlerFunc(h.GetNewEstimateForm)))
+	mux.Handle("POST /jobs/{jobID}/estimates", protect(sm, http.HandlerFunc(h.CreateEstimate)))
+	mux.Handle("GET /estimates/{id}", protect(sm, http.HandlerFunc(h.GetEstimate)))
+	mux.Handle("DELETE /estimates/{id}", protect(sm, http.HandlerFunc(h.DeleteEstimate)))
+	mux.Handle("GET /estimates/{id}/preview", protect(sm, http.HandlerFunc(h.GetEstimatePreview)))
+	mux.Handle("POST /estimates/{id}/send", protect(sm, http.HandlerFunc(h.SendEstimate)))
+	mux.Handle("POST /estimates/{id}/status", protect(sm, http.HandlerFunc(h.UpdateEstimateStatus)))
+	mux.Handle("PUT /estimate-categories/{id}/description", protect(sm, http.HandlerFunc(h.UpdateEstimateCategoryDescription)))
+
+	// E-Signatures
+	mux.Handle("GET /estimates/{id}/send-for-signature", protect(sm, http.HandlerFunc(h.GetSendSignatureForm)))
+	mux.Handle("POST /estimates/{id}/send-for-signature", protect(sm, http.HandlerFunc(h.SendForSignature)))
+	mux.Handle("POST /estimates/{id}/cancel-signature", protect(sm, http.HandlerFunc(h.CancelSignatureRequest)))
+
 	// Categories
-	mux.HandleFunc("GET /categories/{id}", h.GetCategory)
-	mux.HandleFunc("POST /jobs/{jobID}/categories", h.CreateCategory)
-	mux.HandleFunc("POST /categories/{parentID}/subcategories", h.CreateSubcategory)
-	mux.HandleFunc("DELETE /categories/{id}", h.DeleteCategory)
-	mux.HandleFunc("GET /category-form", h.GetCategoryForm)
-	mux.HandleFunc("GET /categories/{id}/markup", h.GetCategoryMarkupForm)
-	mux.HandleFunc("PUT /categories/{id}/markup", h.UpdateCategoryMarkup)
-	mux.HandleFunc("GET /categories/{id}/rename", h.GetCategoryRenameForm)
-	mux.HandleFunc("PUT /categories/{id}/name", h.UpdateCategoryName)
+	mux.Handle("GET /categories/{id}", protect(sm, http.HandlerFunc(h.GetCategory)))
+	mux.Handle("POST /jobs/{jobID}/categories", protect(sm, http.HandlerFunc(h.CreateCategory)))
+	mux.Handle("POST /categories/{parentID}/subcategories", protect(sm, http.HandlerFunc(h.CreateSubcategory)))
+	mux.Handle("DELETE /categories/{id}", protect(sm, http.HandlerFunc(h.DeleteCategory)))
+	mux.Handle("GET /category-form", protect(sm, http.HandlerFunc(h.GetCategoryForm)))
+	mux.Handle("GET /categories/{id}/markup", protect(sm, http.HandlerFunc(h.GetCategoryMarkupForm)))
+	mux.Handle("PUT /categories/{id}/markup", protect(sm, http.HandlerFunc(h.UpdateCategoryMarkup)))
+	mux.Handle("GET /categories/{id}/rename", protect(sm, http.HandlerFunc(h.GetCategoryRenameForm)))
+	mux.Handle("PUT /categories/{id}/name", protect(sm, http.HandlerFunc(h.UpdateCategoryName)))
 
 	// Job Item Types (Custom Item Types)
-	mux.HandleFunc("GET /jobs/{jobID}/item-types", h.ListJobItemTypes)
-	mux.HandleFunc("POST /jobs/{jobID}/item-types", h.CreateJobItemType)
-	mux.HandleFunc("GET /jobs/{jobID}/item-types/new", h.GetJobItemTypeForm)
-	mux.HandleFunc("PUT /item-types/{id}", h.UpdateJobItemType)
-	mux.HandleFunc("DELETE /item-types/{id}", h.DeleteJobItemType)
+	mux.Handle("GET /jobs/{jobID}/item-types", protect(sm, http.HandlerFunc(h.ListJobItemTypes)))
+	mux.Handle("POST /jobs/{jobID}/item-types", protect(sm, http.HandlerFunc(h.CreateJobItemType)))
+	mux.Handle("GET /jobs/{jobID}/item-types/new", protect(sm, http.HandlerFunc(h.GetJobItemTypeForm)))
+	mux.Handle("PUT /item-types/{id}", protect(sm, http.HandlerFunc(h.UpdateJobItemType)))
+	mux.Handle("DELETE /item-types/{id}", protect(sm, http.HandlerFunc(h.DeleteJobItemType)))
 
 	// Line Items
-	mux.HandleFunc("POST /categories/{categoryID}/items", h.CreateLineItem)
-	mux.HandleFunc("GET /categories/{categoryID}/form", h.GetInlineForm)
-	mux.HandleFunc("GET /items/search", h.SearchItems)
-	mux.HandleFunc("GET /items/{id}/edit", h.GetEditForm)
-	mux.HandleFunc("PUT /items/{id}", h.UpdateLineItem)
-	mux.HandleFunc("DELETE /items/{id}", h.DeleteLineItem)
+	mux.Handle("POST /categories/{categoryID}/items", protect(sm, http.HandlerFunc(h.CreateLineItem)))
+	mux.Handle("GET /categories/{categoryID}/form", protect(sm, http.HandlerFunc(h.GetInlineForm)))
+	mux.Handle("GET /items/search", protect(sm, http.HandlerFunc(h.SearchItems)))
+	mux.Handle("GET /items/{id}/edit", protect(sm, http.HandlerFunc(h.GetEditForm)))
+	mux.Handle("PUT /items/{id}", protect(sm, http.HandlerFunc(h.UpdateLineItem)))
+	mux.Handle("DELETE /items/{id}", protect(sm, http.HandlerFunc(h.DeleteLineItem)))
 
 	// Item Templates
-	mux.HandleFunc("GET /items", h.ListItemTemplates)
-	mux.HandleFunc("POST /items", h.CreateItemTemplate)
-	mux.HandleFunc("GET /items/new", h.GetItemTemplateForm)
-	mux.HandleFunc("GET /item-templates/{id}/edit", h.GetItemTemplateEditForm)
-	mux.HandleFunc("PUT /item-templates/{id}", h.UpdateItemTemplate)
-	mux.HandleFunc("DELETE /item-templates/{id}", h.DeleteItemTemplate)
+	mux.Handle("GET /items", protect(sm, http.HandlerFunc(h.ListItemTemplates)))
+	mux.Handle("POST /items", protect(sm, http.HandlerFunc(h.CreateItemTemplate)))
+	mux.Handle("GET /items/new", protect(sm, http.HandlerFunc(h.GetItemTemplateForm)))
+	mux.Handle("GET /item-templates/{id}/edit", protect(sm, http.HandlerFunc(h.GetItemTemplateEditForm)))
+	mux.Handle("PUT /item-templates/{id}", protect(sm, http.HandlerFunc(h.UpdateItemTemplate)))
+	mux.Handle("DELETE /item-templates/{id}", protect(sm, http.HandlerFunc(h.DeleteItemTemplate)))
 
 	// Clients
-	mux.HandleFunc("GET /clients", h.ListClients)
-	mux.HandleFunc("GET /clients/{id}", h.GetClient)
-	mux.HandleFunc("POST /clients", h.CreateClient)
-	mux.HandleFunc("PUT /clients/{id}", h.UpdateClient)
-	mux.HandleFunc("DELETE /clients/{id}", h.DeleteClient)
-	mux.HandleFunc("GET /client-form", h.GetClientForm)
-	mux.HandleFunc("GET /clients/{id}/edit", h.GetClientEditForm)
+	mux.Handle("GET /clients", protect(sm, http.HandlerFunc(h.ListClients)))
+	mux.Handle("GET /clients/{id}", protect(sm, http.HandlerFunc(h.GetClient)))
+	mux.Handle("POST /clients", protect(sm, http.HandlerFunc(h.CreateClient)))
+	mux.Handle("PUT /clients/{id}", protect(sm, http.HandlerFunc(h.UpdateClient)))
+	mux.Handle("DELETE /clients/{id}", protect(sm, http.HandlerFunc(h.DeleteClient)))
+	mux.Handle("GET /client-form", protect(sm, http.HandlerFunc(h.GetClientForm)))
+	mux.Handle("GET /clients/{id}/edit", protect(sm, http.HandlerFunc(h.GetClientEditForm)))
 
 	// Settings
-	mux.HandleFunc("GET /settings", h.GetSettings)
-	mux.HandleFunc("PUT /settings", h.UpdateSettings)
+	mux.Handle("GET /settings", protect(sm, http.HandlerFunc(h.GetSettings)))
+	mux.Handle("PUT /settings", protect(sm, http.HandlerFunc(h.UpdateSettings)))
 
 	// Price Import
-	mux.HandleFunc("GET /price-import", h.GetPriceImportPage)
-	mux.HandleFunc("POST /price-import/auth", h.ValidatePriceImportToken)
-	mux.HandleFunc("POST /price-import/upload", h.UploadPriceFile)
-	mux.HandleFunc("GET /price-import/{id}/review", h.GetImportReview)
-	mux.HandleFunc("PUT /price-import/matches/{id}", h.UpdateMatchStatus)
-	mux.HandleFunc("POST /price-import/matches/{id}/create-template", h.CreateTemplateFromMatch)
-	mux.HandleFunc("POST /price-import/{id}/bulk-approve", h.BulkApproveMatches)
-	mux.HandleFunc("POST /price-import/{id}/bulk-create", h.BulkCreateTemplates)
-	mux.HandleFunc("POST /price-import/{id}/apply", h.ApplyPriceUpdates)
+	mux.Handle("GET /price-import", protect(sm, http.HandlerFunc(h.GetPriceImportPage)))
+	mux.Handle("POST /price-import/auth", protect(sm, http.HandlerFunc(h.ValidatePriceImportToken)))
+	mux.Handle("POST /price-import/upload", protect(sm, http.HandlerFunc(h.UploadPriceFile)))
+	mux.Handle("GET /price-import/{id}/review", protect(sm, http.HandlerFunc(h.GetImportReview)))
+	mux.Handle("PUT /price-import/matches/{id}", protect(sm, http.HandlerFunc(h.UpdateMatchStatus)))
+	mux.Handle("POST /price-import/matches/{id}/create-template", protect(sm, http.HandlerFunc(h.CreateTemplateFromMatch)))
+	mux.Handle("POST /price-import/{id}/bulk-approve", protect(sm, http.HandlerFunc(h.BulkApproveMatches)))
+	mux.Handle("POST /price-import/{id}/bulk-create", protect(sm, http.HandlerFunc(h.BulkCreateTemplates)))
+	mux.Handle("POST /price-import/{id}/apply", protect(sm, http.HandlerFunc(h.ApplyPriceUpdates)))
+}
+
+// protect wraps a handler with session loading and authentication requirement.
+func protect(sm *auth.SessionManager, handler http.Handler) http.Handler {
+	return sm.SessionMiddleware(auth.RequireAuth(handler))
 }
