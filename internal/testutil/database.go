@@ -9,48 +9,78 @@ import (
 	"testing"
 
 	"github.com/pressly/goose/v3"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-// TestDB creates an isolated SQLite test database with migrations applied.
+// TestDB creates an isolated PostgreSQL test database with migrations applied.
 // Returns the database connection and a cleanup function.
 func TestDB(t *testing.T) (*sql.DB, func()) {
 	t.Helper()
 
-	// Create temporary directory for test database
-	tmpDir := t.TempDir()
-	dbPath := filepath.Join(tmpDir, "test.db")
+	ctx := context.Background()
+
+	// Start PostgreSQL container
+	pgContainer, err := postgres.Run(ctx,
+		"postgres:17-alpine",
+		postgres.WithDatabase("testdb"),
+		postgres.WithUsername("testuser"),
+		postgres.WithPassword("testpass"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2),
+		),
+	)
+	if err != nil {
+		t.Fatalf("failed to start postgres container: %v", err)
+	}
+
+	// Get connection string
+	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		pgContainer.Terminate(ctx)
+		t.Fatalf("failed to get connection string: %v", err)
+	}
 
 	// Open database connection
-	db, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
+	db, err := sql.Open("pgx", connStr)
 	if err != nil {
+		pgContainer.Terminate(ctx)
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
 	// Test connection
 	if err := db.Ping(); err != nil {
 		db.Close()
+		pgContainer.Terminate(ctx)
 		t.Fatalf("failed to ping test database: %v", err)
 	}
 
 	// Run migrations
 	migrationsDir := findMigrationsDir(t)
 
-	// Set goose to use sqlite3 dialect
-	if err := goose.SetDialect("sqlite3"); err != nil {
+	// Set goose to use postgres dialect
+	if err := goose.SetDialect("postgres"); err != nil {
 		db.Close()
+		pgContainer.Terminate(ctx)
 		t.Fatalf("failed to set goose dialect: %v", err)
 	}
 
 	if err := goose.Up(db, migrationsDir); err != nil {
 		db.Close()
+		pgContainer.Terminate(ctx)
 		t.Fatalf("failed to run migrations: %v", err)
 	}
 
 	cleanup := func() {
 		if err := db.Close(); err != nil {
 			t.Errorf("error closing test database: %v", err)
+		}
+		if err := pgContainer.Terminate(ctx); err != nil {
+			t.Errorf("error terminating postgres container: %v", err)
 		}
 	}
 
@@ -59,7 +89,7 @@ func TestDB(t *testing.T) (*sql.DB, func()) {
 
 // findMigrationsDir locates the migrations directory relative to the test.
 // This works from any test location in the project.
-// It looks for cmd/server/migrations (embedded migrations) or migrations/ (source migrations).
+// It looks for migrations/ (source migrations) which contains PostgreSQL migrations.
 func findMigrationsDir(t *testing.T) string {
 	t.Helper()
 
@@ -72,14 +102,8 @@ func findMigrationsDir(t *testing.T) string {
 	// Walk up the directory tree looking for migrations directory
 	dir := cwd
 	for {
-		// Try cmd/server/migrations first (embedded migrations)
-		migrationsPath := filepath.Join(dir, "cmd", "server", "migrations")
-		if _, err := os.Stat(migrationsPath); err == nil {
-			return migrationsPath
-		}
-
-		// Try migrations/ directory (source migrations)
-		migrationsPath = filepath.Join(dir, "migrations")
+		// Try migrations/ directory (source PostgreSQL migrations)
+		migrationsPath := filepath.Join(dir, "migrations")
 		if _, err := os.Stat(migrationsPath); err == nil {
 			return migrationsPath
 		}
