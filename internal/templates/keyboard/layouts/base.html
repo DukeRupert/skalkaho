@@ -201,6 +201,8 @@ tailwind.config = {
                     <span>New labor</span>
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd></span>
                     <span>New equipment</span>
+                    <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">b</kbd></span>
+                    <span>Batch add</span>
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd></span>
                     <span>Delete selected</span>
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd></span>
@@ -332,6 +334,27 @@ function hideInlineForm() {
     // And the generic container if it exists
     const generic = document.getElementById('inline-form-container');
     if (generic) generic.innerHTML = '';
+    formActive = false;
+}
+
+function showBatchForm() {
+    const container = document.getElementById('batch-form-container');
+    if (!container) return;
+
+    const categoryID = container.dataset.categoryId;
+    htmx.ajax('GET', `/categories/${categoryID}/batch-form`, {target: '#batch-form-container', swap: 'innerHTML'}).then(() => {
+        htmx.process(container);
+        const select = container.querySelector('select[name="template_category"]');
+        if (select) select.focus();
+    });
+    formActive = true;
+}
+
+function hideBatchForm() {
+    const container = document.getElementById('batch-form-container');
+    if (container) {
+        container.innerHTML = '';
+    }
     formActive = false;
 }
 
@@ -527,6 +550,7 @@ document.addEventListener('keydown', function(e) {
             hideMarkupForm();
             hideRenameForm();
             hideClientEditForm();
+            hideBatchForm();
             e.target.blur();
         }
         return;
@@ -591,17 +615,20 @@ document.addEventListener('keydown', function(e) {
             const inlineForm = document.getElementById('inline-form-container');
             const markupForm = document.getElementById('markup-form-container');
             const clientForm = document.getElementById('client-edit-form-container');
+            const batchForm = document.getElementById('batch-form-container');
             const hasOpenForm = (jobForm && jobForm.innerHTML.trim()) ||
                                (catForm && catForm.innerHTML.trim()) ||
                                (inlineForm && inlineForm.innerHTML.trim()) ||
                                (markupForm && markupForm.innerHTML.trim()) ||
-                               (clientForm && clientForm.innerHTML.trim());
+                               (clientForm && clientForm.innerHTML.trim()) ||
+                               (batchForm && batchForm.innerHTML.trim());
             if (hasOpenForm) {
                 hideInlineForm();
                 hideCategoryForm();
                 hideJobForm();
                 hideMarkupForm();
                 hideClientEditForm();
+                hideBatchForm();
             } else {
                 goBack();
             }
@@ -638,6 +665,13 @@ document.addEventListener('keydown', function(e) {
                 window.location.href = '/jobs/' + document.body.dataset.jobId + '/estimates';
             } else {
                 showInlineForm('equipment');
+            }
+            break;
+        case 'b':
+            e.preventDefault();
+            // Batch add - only on category page
+            if (document.body.dataset.categoryId) {
+                showBatchForm();
             }
             break;
         case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':

@@ -1,6 +1,8 @@
 package keyboard
 
 import (
+	"context"
+	"database/sql"
 	"log/slog"
 
 	"github.com/dukerupert/skalkaho/internal/config"
@@ -10,8 +12,15 @@ import (
 	"github.com/dukerupert/skalkaho/internal/templates/keyboard"
 )
 
+// DB extends DBTX with transaction support.
+type DB interface {
+	repository.DBTX
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}
+
 // Handler handles keyboard-centric UI HTTP requests.
 type Handler struct {
+	db       DB
 	queries  *repository.Queries
 	renderer *keyboard.Renderer
 	logger   *slog.Logger
@@ -20,12 +29,13 @@ type Handler struct {
 }
 
 // NewHandler creates a new keyboard UI handler.
-func NewHandler(queries *repository.Queries, renderer *keyboard.Renderer, logger *slog.Logger, cfg *config.Config) *Handler {
+func NewHandler(db DB, queries *repository.Queries, renderer *keyboard.Renderer, logger *slog.Logger, cfg *config.Config) *Handler {
 	var matcher *claude.Matcher
 	if cfg.AnthropicAPIKey != "" {
 		matcher = claude.NewMatcher(cfg.AnthropicAPIKey)
 	}
 	return &Handler{
+		db:       db,
 		queries:  queries,
 		renderer: renderer,
 		logger:   logger,

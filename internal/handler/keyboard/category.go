@@ -876,6 +876,155 @@ func extractUniqueTagsForType(items []repository.LineItem, itemType string) []st
 	return tags
 }
 
+// GetBatchForm returns the batch entry form for adding multiple line items from templates.
+func (h *Handler) GetBatchForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	categoryID := r.PathValue("categoryID")
+	orgID := GetOrgID(ctx)
+
+	templateCategory := r.URL.Query().Get("template_category")
+
+	// Always fetch template categories for the picker
+	categories, err := h.queries.ListItemTemplateCategories(ctx, orgID)
+	if err != nil {
+		logger.Error("failed to list template categories", "error", err)
+		categories = []string{}
+	}
+
+	// Fetch existing tags for the datalist
+	items, err := h.queries.ListLineItemsByCategory(ctx, repository.ListLineItemsByCategoryParams{
+		CategoryID: categoryID,
+		OrgID:      orgID,
+	})
+	if err != nil {
+		logger.Error("failed to list items for tags", "error", err)
+		items = []repository.LineItem{}
+	}
+	existingTags := extractUniqueTagsForType(items, "material")
+
+	data := map[string]interface{}{
+		"CategoryID":         categoryID,
+		"TemplateCategories": categories,
+		"SelectedCategory":   templateCategory,
+		"ExistingTags":       existingTags,
+	}
+
+	// If a template category is selected, load the templates
+	if templateCategory != "" {
+		templates, err := h.queries.ListItemTemplatesByCategory(ctx, repository.ListItemTemplatesByCategoryParams{
+			OrgID:    orgID,
+			Category: templateCategory,
+		})
+		if err != nil {
+			logger.Error("failed to list templates by category", "error", err)
+			http.Error(w, "Failed to load templates", http.StatusInternalServerError)
+			return
+		}
+		data["Templates"] = templates
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "batch_form", data); err != nil {
+		logger.Error("failed to render batch form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(buf.Bytes())
+}
+
+// BatchCreateLineItems creates multiple line items from a batch form submission.
+func (h *Handler) BatchCreateLineItems(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	categoryID := r.PathValue("categoryID")
+	orgID := GetOrgID(ctx)
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	names := r.Form["name[]"]
+	units := r.Form["unit[]"]
+	unitPrices := r.Form["unit_price[]"]
+	quantities := r.Form["quantity[]"]
+	types := r.Form["type[]"]
+	tag := r.FormValue("tag")
+
+	var tagParam sql.NullString
+	if tag != "" {
+		tagParam = sql.NullString{String: tag, Valid: true}
+	}
+
+	// Start transaction
+	tx, err := h.db.BeginTx(ctx, nil)
+	if err != nil {
+		logger.Error("failed to begin transaction", "error", err)
+		http.Error(w, "Failed to create items", http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback()
+
+	qtx := h.queries.WithTx(tx)
+	created := 0
+
+	for i := range names {
+		if i >= len(quantities) || i >= len(unitPrices) || i >= len(units) {
+			break
+		}
+
+		qty, _ := strconv.ParseFloat(quantities[i], 64)
+		if qty <= 0 {
+			continue
+		}
+
+		unitPrice, _ := strconv.ParseFloat(unitPrices[i], 64)
+
+		itemType := "material"
+		if i < len(types) && types[i] != "" {
+			itemType = types[i]
+		}
+
+		_, err := qtx.CreateLineItem(ctx, repository.CreateLineItemParams{
+			ID:               uuid.New().String(),
+			OrgID:            orgID,
+			CategoryID:       categoryID,
+			Type:             itemType,
+			Name:             names[i],
+			Quantity:         qty,
+			Unit:             units[i],
+			UnitPrice:        unitPrice,
+			SurchargePercent: sql.NullFloat64{},
+			SortOrder:        0,
+			Tag:              tagParam,
+		})
+		if err != nil {
+			logger.Error("failed to create line item in batch", "error", err, "name", names[i])
+			http.Error(w, "Failed to create items", http.StatusInternalServerError)
+			return
+		}
+		created++
+	}
+
+	if err := tx.Commit(); err != nil {
+		logger.Error("failed to commit batch transaction", "error", err)
+		http.Error(w, "Failed to create items", http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("batch created line items", "count", created, "categoryID", categoryID)
+
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/categories/"+categoryID)
+		return
+	}
+
+	http.Redirect(w, r, "/categories/"+categoryID, http.StatusSeeOther)
+}
+
 // GetCategoryForm returns an inline form for creating categories.
 func (h *Handler) GetCategoryForm(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

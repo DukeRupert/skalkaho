@@ -89,6 +89,35 @@ func (q *Queries) GetItemTemplate(ctx context.Context, arg GetItemTemplateParams
 	return i, err
 }
 
+const listItemTemplateCategories = `-- name: ListItemTemplateCategories :many
+SELECT DISTINCT category FROM item_templates
+WHERE org_id = $1
+ORDER BY category
+`
+
+func (q *Queries) ListItemTemplateCategories(ctx context.Context, orgID uuid.NullUUID) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listItemTemplateCategories, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var category string
+		if err := rows.Scan(&category); err != nil {
+			return nil, err
+		}
+		items = append(items, category)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listItemTemplates = `-- name: ListItemTemplates :many
 SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
 WHERE org_id = $1

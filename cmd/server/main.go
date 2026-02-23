@@ -90,7 +90,7 @@ func main() {
 	)
 
 	// Initialize handlers
-	handler := keyboard.NewHandler(queries, renderer, logger, cfg)
+	handler := keyboard.NewHandler(db, queries, renderer, logger, cfg)
 	authHandler := authhandler.NewHandler(db, renderer, sessionManager)
 
 	// Setup router

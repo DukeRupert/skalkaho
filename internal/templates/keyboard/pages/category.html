@@ -210,6 +210,21 @@
             </div>
             {{end}}
 
+            <!-- Batch Add Button -->
+            <div class="mb-4 flex justify-end">
+                <button onclick="showBatchForm()"
+                        class="px-3 py-2 text-sm font-medium text-copper-700 border border-copper-300 hover:bg-copper-50 rounded-lg flex items-center gap-2 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                    </svg>
+                    Batch Add
+                    <kbd class="hidden sm:inline font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">b</kbd>
+                </button>
+            </div>
+
+            <!-- Batch Form Container -->
+            <div id="batch-form-container" data-category-id="{{.Category.ID}}" class="mb-4"></div>
+
             <!-- Item Type Sections -->
             {{$subcatCount := len .Subcategories}}
             {{$globalIndex := 0}}
@@ -405,6 +420,7 @@
 {{define "shortcuts"}}
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">↑↓</kbd> navigate</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">⏎</kbd> edit</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">b</kbd> batch</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd> material</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd> labor</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> equipment</span>

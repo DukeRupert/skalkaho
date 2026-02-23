@@ -44,3 +44,8 @@ UPDATE item_templates SET default_price = $1 WHERE id = $2 AND org_id = $3;
 
 -- name: UpdateItemTemplatePriceAndName :exec
 UPDATE item_templates SET default_price = $1, name = $2 WHERE id = $3 AND org_id = $4;
+
+-- name: ListItemTemplateCategories :many
+SELECT DISTINCT category FROM item_templates
+WHERE org_id = $1
+ORDER BY category;

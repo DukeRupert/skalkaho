@@ -89,6 +89,8 @@ func Register(mux *http.ServeMux, h *keyboard.Handler, authH *authhandler.Handle
 	mux.Handle("DELETE /item-types/{id}", protect(sm, http.HandlerFunc(h.DeleteJobItemType)))
 
 	// Line Items
+	mux.Handle("GET /categories/{categoryID}/batch-form", protect(sm, http.HandlerFunc(h.GetBatchForm)))
+	mux.Handle("POST /categories/{categoryID}/batch-items", protect(sm, http.HandlerFunc(h.BatchCreateLineItems)))
 	mux.Handle("POST /categories/{categoryID}/items", protect(sm, http.HandlerFunc(h.CreateLineItem)))
 	mux.Handle("GET /categories/{categoryID}/form", protect(sm, http.HandlerFunc(h.GetInlineForm)))
 	mux.Handle("GET /items/search", protect(sm, http.HandlerFunc(h.SearchItems)))
