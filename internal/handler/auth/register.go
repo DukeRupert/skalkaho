@@ -139,7 +139,7 @@ func (h *Handler) PostRegister(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	qtx := h.queries.WithTx(tx)
 

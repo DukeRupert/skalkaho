@@ -41,21 +41,21 @@ func TestDB(t *testing.T) (*sql.DB, func()) {
 	// Get connection string
 	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
-		pgContainer.Terminate(ctx)
+		_ = pgContainer.Terminate(ctx)
 		t.Fatalf("failed to get connection string: %v", err)
 	}
 
 	// Open database connection
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		pgContainer.Terminate(ctx)
+		_ = pgContainer.Terminate(ctx)
 		t.Fatalf("failed to open test database: %v", err)
 	}
 
 	// Test connection
 	if err := db.Ping(); err != nil {
-		db.Close()
-		pgContainer.Terminate(ctx)
+		_ = db.Close()
+		_ = pgContainer.Terminate(ctx)
 		t.Fatalf("failed to ping test database: %v", err)
 	}
 
@@ -64,14 +64,14 @@ func TestDB(t *testing.T) (*sql.DB, func()) {
 
 	// Set goose to use postgres dialect
 	if err := goose.SetDialect("postgres"); err != nil {
-		db.Close()
-		pgContainer.Terminate(ctx)
+		_ = db.Close()
+		_ = pgContainer.Terminate(ctx)
 		t.Fatalf("failed to set goose dialect: %v", err)
 	}
 
 	if err := goose.Up(db, migrationsDir); err != nil {
-		db.Close()
-		pgContainer.Terminate(ctx)
+		_ = db.Close()
+		_ = pgContainer.Terminate(ctx)
 		t.Fatalf("failed to run migrations: %v", err)
 	}
 

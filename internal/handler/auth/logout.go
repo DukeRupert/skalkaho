@@ -9,8 +9,8 @@ func (h *Handler) PostLogout(w http.ResponseWriter, r *http.Request) {
 	// Get session token from cookie
 	cookie, err := r.Cookie(h.sessionManager.CookieName())
 	if err == nil && cookie.Value != "" {
-		// Destroy session in database
-		h.sessionManager.DestroySession(r.Context(), cookie.Value)
+		// Destroy session in database (ignore error - we're logging out anyway)
+		_ = h.sessionManager.DestroySession(r.Context(), cookie.Value)
 	}
 
 	// Clear session cookie

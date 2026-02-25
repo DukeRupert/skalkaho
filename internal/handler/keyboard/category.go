@@ -966,7 +966,7 @@ func (h *Handler) BatchCreateLineItems(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to create items", http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	qtx := h.queries.WithTx(tx)
 	created := 0

@@ -215,7 +215,7 @@ func TestRequireAuthMiddleware(t *testing.T) {
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			handlerCalled = true
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("success"))
+			_, _ = w.Write([]byte("success"))
 		})
 
 		// Wrap with both middleware (session, then require auth)

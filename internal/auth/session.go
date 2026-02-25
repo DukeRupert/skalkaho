@@ -130,12 +130,9 @@ func (sm *SessionManager) ValidateSession(ctx context.Context, token string) (*S
 		return nil, fmt.Errorf("user is not active")
 	}
 
-	// Update last activity
+	// Update last activity (ignore error - session is still valid)
 	now := time.Now()
-	if err := sm.queries.UpdateSessionActivity(ctx, sessionRow.ID); err != nil {
-		// Log but don't fail - session is still valid
-		// In production, you'd use a proper logger here
-	}
+	_ = sm.queries.UpdateSessionActivity(ctx, sessionRow.ID)
 
 	session := &Session{
 		ID:             sessionRow.ID,

@@ -10,7 +10,7 @@ func TestOpen_SQLite(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open SQLite database: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := db.Ping(); err != nil {
 		t.Fatalf("Failed to ping SQLite database: %v", err)
