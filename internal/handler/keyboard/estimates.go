@@ -427,6 +427,7 @@ func (h *Handler) UpdateEstimateCategoryDescription(w http.ResponseWriter, r *ht
 
 	cat, err := h.queries.UpdateEstimateCategoryDescription(ctx, repository.UpdateEstimateCategoryDescriptionParams{
 		ID:          categoryID,
+		OrgID:       orgID,
 		Description: description,
 	})
 	if err != nil {

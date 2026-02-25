@@ -218,6 +218,7 @@ func (h *Handler) UpdateCategoryName(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.queries.UpdateCategory(ctx, repository.UpdateCategoryParams{
 		ID:               categoryID,
+		OrgID:            GetOrgID(ctx),
 		Name:             name,
 		SurchargePercent: category.SurchargePercent,
 		SortOrder:        category.SortOrder,
@@ -266,6 +267,7 @@ func (h *Handler) UpdateCategoryMarkup(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.queries.UpdateCategory(ctx, repository.UpdateCategoryParams{
 		ID:               categoryID,
+		OrgID:            GetOrgID(ctx),
 		Name:             category.Name,
 		SurchargePercent: surchargePercent,
 		SortOrder:        category.SortOrder,
@@ -381,6 +383,7 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.queries.UpdateLineItem(ctx, repository.UpdateLineItemParams{
 		ID:               itemID,
+		OrgID:            GetOrgID(ctx),
 		Type:             item.Type,
 		Name:             name,
 		Description:      descParam,
@@ -751,6 +754,7 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 
 	_, err := h.queries.CreateLineItem(ctx, repository.CreateLineItemParams{
 		ID:               uuid.New().String(),
+		OrgID:            GetOrgID(ctx),
 		CategoryID:       categoryID,
 		Type:             itemType,
 		Name:             name,
