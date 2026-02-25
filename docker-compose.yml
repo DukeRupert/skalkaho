@@ -57,6 +57,7 @@ services:
       - DATABASE_URL=postgres://skalkaho:${POSTGRES_PASSWORD}@postgres:5432/skalkaho?sslmode=disable
       - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET is required}
       - ENVIRONMENT=production
+      - SEED_DEMO_USER=${SEED_DEMO_USER}
     depends_on:
       postgres:
         condition: service_healthy
