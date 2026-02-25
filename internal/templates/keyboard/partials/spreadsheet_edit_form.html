@@ -1,0 +1,70 @@
+{{define "spreadsheet_edit_form"}}
+<div class="edit-form flex items-center border-b border-slate-200 {{if eq .Item.Type "material"}}bg-forest-100{{else if eq .Item.Type "labor"}}bg-copper-100{{else}}bg-slate-200{{end}}" data-item-id="{{.Item.ID}}" data-row-type="item">
+    <form hx-put="/items/{{.Item.ID}}"
+          hx-target="body"
+          class="flex-1 px-4 py-2"
+          id="ss-edit-form">
+        <input type="hidden" name="job_id" value="{{.JobID}}">
+
+        <div class="grid grid-cols-12 gap-2 items-center">
+            <div class="col-span-4">
+                <input type="text"
+                       name="name"
+                       id="ss-edit-name"
+                       value="{{.Item.Name}}"
+                       class="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+                       autofocus
+                       required>
+            </div>
+
+            <input type="number"
+                   name="quantity"
+                   id="ss-edit-quantity"
+                   value="{{printf "%.2f" .Item.Quantity}}"
+                   step="0.01"
+                   min="0.01"
+                   class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+            <input type="text"
+                   name="unit"
+                   id="ss-edit-unit"
+                   value="{{.Item.Unit}}"
+                   class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+            <div class="col-span-2 flex items-center border border-slate-300 rounded focus-within:ring-2 focus-within:ring-slate-400 overflow-hidden bg-white">
+                <span class="pl-2 text-slate-500 text-sm shrink-0">$</span>
+                <input type="number"
+                       name="unit_price"
+                       id="ss-edit-price"
+                       value="{{printf "%.2f" .Item.UnitPrice}}"
+                       step="0.01"
+                       min="0"
+                       class="min-w-0 flex-1 px-1 py-1 text-sm text-right focus:outline-none border-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+            </div>
+
+            <div class="col-span-2 flex gap-1">
+                <button type="submit"
+                        class="px-2 py-1 bg-slate-900 text-white rounded text-xs hover:bg-slate-700">
+                    Save
+                </button>
+                <button type="button"
+                        onclick="window.location.reload()"
+                        class="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs hover:bg-slate-300">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+(function() {
+    const form = document.getElementById('ss-edit-form');
+    htmx.process(form);
+    const nameInput = document.getElementById('ss-edit-name');
+    if (nameInput) {
+        nameInput.focus();
+        nameInput.select();
+    }
+})();
+</script>
+{{end}}

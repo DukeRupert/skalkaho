@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -551,6 +552,7 @@ document.addEventListener('keydown', function(e) {
             hideRenameForm();
             hideClientEditForm();
             hideBatchForm();
+            if (typeof hideSpreadsheetForm === 'function') hideSpreadsheetForm();
             e.target.blur();
         }
         return;
@@ -616,12 +618,16 @@ document.addEventListener('keydown', function(e) {
             const markupForm = document.getElementById('markup-form-container');
             const clientForm = document.getElementById('client-edit-form-container');
             const batchForm = document.getElementById('batch-form-container');
+            const spreadsheetForms = document.querySelectorAll('[id^="spreadsheet-form-"]');
+            let hasSpreadsheetForm = false;
+            spreadsheetForms.forEach(f => { if (f.innerHTML.trim()) hasSpreadsheetForm = true; });
             const hasOpenForm = (jobForm && jobForm.innerHTML.trim()) ||
                                (catForm && catForm.innerHTML.trim()) ||
                                (inlineForm && inlineForm.innerHTML.trim()) ||
                                (markupForm && markupForm.innerHTML.trim()) ||
                                (clientForm && clientForm.innerHTML.trim()) ||
-                               (batchForm && batchForm.innerHTML.trim());
+                               (batchForm && batchForm.innerHTML.trim()) ||
+                               hasSpreadsheetForm;
             if (hasOpenForm) {
                 hideInlineForm();
                 hideCategoryForm();
@@ -629,6 +635,7 @@ document.addEventListener('keydown', function(e) {
                 hideMarkupForm();
                 hideClientEditForm();
                 hideBatchForm();
+                if (typeof hideSpreadsheetForm === 'function') hideSpreadsheetForm();
             } else {
                 goBack();
             }
@@ -660,7 +667,7 @@ document.addEventListener('keydown', function(e) {
             break;
         case 'e':
             e.preventDefault();
-            // On job page, go to estimates; on category page, add equipment
+            // On job page, go to estimates
             if (document.body.dataset.jobId && !document.body.dataset.categoryId) {
                 window.location.href = '/jobs/' + document.body.dataset.jobId + '/estimates';
             } else {

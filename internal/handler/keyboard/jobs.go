@@ -15,6 +15,101 @@ import (
 
 const pageSize = 20
 
+// SpreadsheetSection represents a category section in the spreadsheet view.
+type SpreadsheetSection struct {
+	ID       string
+	Name     string
+	Depth    int
+	Total    float64
+	JobID    string
+	Items    []SpreadsheetItem
+	Children []SpreadsheetSection
+}
+
+// SpreadsheetItem wraps a LineItem with a color for the spreadsheet view.
+type SpreadsheetItem struct {
+	repository.LineItem
+	Color string // "forest", "copper", "slate", or custom type color
+}
+
+// getItemTypeColor maps a type slug to a Tailwind color string.
+func getItemTypeColor(slug string, customTypes []repository.JobItemType) string {
+	switch slug {
+	case "material":
+		return "forest"
+	case "labor":
+		return "copper"
+	case "equipment":
+		return "slate"
+	default:
+		for _, ct := range customTypes {
+			if ct.Slug == slug {
+				return ct.Color
+			}
+		}
+		return "slate"
+	}
+}
+
+// buildSpreadsheetSections builds a hierarchical list of spreadsheet sections from categories and items.
+func (h *Handler) buildSpreadsheetSections(job repository.Job, categories []repository.Category, lineItems []repository.LineItem, customTypes []repository.JobItemType) []SpreadsheetSection {
+	// Group items by category ID
+	itemsByCategory := make(map[string][]repository.LineItem)
+	for _, item := range lineItems {
+		itemsByCategory[item.CategoryID] = append(itemsByCategory[item.CategoryID], item)
+	}
+
+	// Group children by parent ID
+	childrenByParent := make(map[string][]repository.Category)
+	for _, cat := range categories {
+		if cat.ParentID.Valid {
+			childrenByParent[cat.ParentID.String] = append(childrenByParent[cat.ParentID.String], cat)
+		}
+	}
+
+	// Recursive builder
+	var buildSection func(cat repository.Category, depth int) SpreadsheetSection
+	buildSection = func(cat repository.Category, depth int) SpreadsheetSection {
+		catTotal := h.calculateCategoryTotal(cat.ID, job, categories, lineItems, customTypes)
+
+		// Convert items with colors
+		rawItems := itemsByCategory[cat.ID]
+		items := make([]SpreadsheetItem, len(rawItems))
+		for i, item := range rawItems {
+			items[i] = SpreadsheetItem{
+				LineItem: item,
+				Color:    getItemTypeColor(item.Type, customTypes),
+			}
+		}
+
+		// Build children recursively
+		children := make([]SpreadsheetSection, 0)
+		for _, child := range childrenByParent[cat.ID] {
+			children = append(children, buildSection(child, depth+1))
+		}
+
+		return SpreadsheetSection{
+			ID:       cat.ID,
+			Name:     cat.Name,
+			Depth:    depth,
+			Total:    catTotal.Total,
+			JobID:    cat.JobID,
+			Items:    items,
+			Children: children,
+		}
+	}
+
+	// Start from root categories (no parent)
+	var sections []SpreadsheetSection
+	for _, cat := range categories {
+		if !cat.ParentID.Valid {
+			sections = append(sections, buildSection(cat, 1))
+		}
+	}
+
+	return sections
+}
+
 // JobWithTotal wraps a Job with its calculated grand total and client info.
 type JobWithTotal struct {
 	repository.Job
@@ -249,30 +344,10 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 		customTypes = []repository.JobItemType{} // Continue with empty list
 	}
 
-	// Get only top-level categories
-	topLevelCategories := make([]repository.Category, 0)
-	for _, cat := range categories {
-		if !cat.ParentID.Valid {
-			topLevelCategories = append(topLevelCategories, cat)
-		}
-	}
-
-	// Calculate totals for each category
-	type CategoryWithTotal struct {
-		repository.Category
-		Total float64
-	}
-
-	categoriesWithTotals := make([]CategoryWithTotal, len(topLevelCategories))
-	for i, cat := range topLevelCategories {
-		catTotal := h.calculateCategoryTotal(cat.ID, job, categories, lineItems, customTypes)
-		categoriesWithTotals[i] = CategoryWithTotal{
-			Category: cat,
-			Total:    catTotal.Total,
-		}
-	}
-
 	totals := h.calculateTotals(job, categories, lineItems, customTypes)
+
+	// Build spreadsheet sections
+	sections := h.buildSpreadsheetSections(job, categories, lineItems, customTypes)
 
 	// Build category tree for sidebar navigation
 	categoryTree := buildCategoryTree(categories)
@@ -311,13 +386,14 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 
 	data := map[string]interface{}{
 		"Job":               job,
-		"Categories":        categoriesWithTotals,
+		"Sections":          sections,
 		"Totals":            totals,
 		"SelectedIndex":     0,
 		"CategoryTree":      categoryTree,
 		"CurrentCategoryID": "",
 		"Client":            client,
 		"Estimates":         estimatesWithStatus,
+		"CustomTypes":       customTypes,
 	}
 
 	if err := h.renderer.Render(w, "job", data); err != nil {

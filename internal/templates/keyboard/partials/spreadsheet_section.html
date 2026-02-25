@@ -1,0 +1,208 @@
+{{define "spreadsheet_section"}}
+{{$section := .Section}}
+{{$jobID := .JobID}}
+{{$depth := $section.Depth}}
+{{$indent := ""}}
+{{if eq $depth 2}}{{$indent = "pl-6"}}{{end}}
+{{if eq $depth 3}}{{$indent = "pl-12"}}{{end}}
+
+<div x-data="{ expanded: true }">
+
+<!-- Category Header Row -->
+<div class="row flex items-center border-b border-slate-100 cursor-pointer hover:bg-slate-50 {{$indent}}"
+     data-category-id="{{$section.ID}}"
+     data-delete-url="/categories/{{$section.ID}}"
+     data-row-type="category">
+    <!-- Mobile layout -->
+    <div class="sm:hidden flex-1 px-4 py-3" @click="expanded = !expanded">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <!-- Chevron toggle -->
+                <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="expanded ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+                <span class="font-bold text-slate-900">{{$section.Name}}</span>
+            </div>
+            <span class="text-sm tabular-nums font-semibold text-slate-700">{{formatMoney $section.Total}}</span>
+        </div>
+    </div>
+    <!-- Desktop layout -->
+    <div class="hidden sm:grid flex-1 px-4 {{if eq $depth 1}}py-3{{else}}py-2{{end}} grid-cols-12 gap-2 items-center" @click="expanded = !expanded">
+        <div class="col-span-4 flex items-center gap-2">
+            <!-- Chevron toggle -->
+            <svg class="w-4 h-4 text-slate-400 shrink-0 transition-transform" :class="expanded ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="font-bold {{if eq $depth 1}}text-base{{else}}text-sm{{end}} text-slate-900">{{$section.Name}}</span>
+        </div>
+        <span class="col-span-2"></span>
+        <span class="col-span-2"></span>
+        <span class="col-span-2"></span>
+        <span class="col-span-1 text-right tabular-nums font-semibold text-slate-700 text-sm">{{formatMoney $section.Total}}</span>
+        <span class="col-span-1"></span>
+    </div>
+    <!-- Action Menu -->
+    <div class="relative pr-2 shrink-0" x-data="{ open: false }">
+        <button
+            @click.stop.prevent="open = !open"
+            class="touch-action rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600"
+            aria-label="Category actions">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+            </svg>
+        </button>
+        <div
+            x-show="open"
+            x-cloak
+            x-transition:enter="transition ease-out duration-100"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-75"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            @click.away="open = false"
+            class="action-menu absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+            <a href="/categories/{{$section.ID}}"
+               class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+                Open Category
+            </a>
+            <button
+                @click="showSpreadsheetForm('{{$section.ID}}', '{{$jobID}}'); open = false"
+                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Item
+            </button>
+            {{if lt $depth 3}}
+            <button
+                @click="showSubcategoryForm('{{$section.ID}}'); open = false"
+                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Subcategory
+            </button>
+            {{end}}
+            <button
+                @click.stop="if(confirm('Delete this category and all its contents?')) { htmx.ajax('DELETE', '/categories/{{$section.ID}}?job_id={{$jobID}}', {target: 'body'}); open = false; }"
+                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Collapsible content: children, items, add-item -->
+<div x-show="expanded" x-collapse>
+
+<!-- Child sections (subcategories) -->
+{{range $child := $section.Children}}
+{{template "spreadsheet_section" dict "Section" $child "JobID" $jobID "RowIndex" 0}}
+{{end}}
+
+<!-- Items in this category -->
+{{$itemIndent := ""}}
+{{if eq $depth 1}}{{$itemIndent = "pl-6"}}{{end}}
+{{if eq $depth 2}}{{$itemIndent = "pl-12"}}{{end}}
+{{if eq $depth 3}}{{$itemIndent = "pl-16"}}{{end}}
+
+{{range $item := $section.Items}}
+<div class="row flex items-center border-b border-slate-100 cursor-pointer hover:bg-{{$item.Color}}-50 {{$itemIndent}}"
+     data-item-id="{{$item.ID}}"
+     data-category-id="{{$section.ID}}"
+     data-delete-url="/items/{{$item.ID}}"
+     data-row-type="item"
+     data-job-id="{{$jobID}}"
+     id="item-row-{{$item.ID}}">
+    <!-- Mobile layout -->
+    <div class="sm:hidden flex-1 px-4 py-3">
+        <div class="flex justify-between items-start">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-{{$item.Color}}-500 shrink-0"></span>
+                <span class="text-sm font-medium text-slate-900">{{$item.Name}}</span>
+            </div>
+            <span class="text-sm tabular-nums font-medium text-slate-900">{{formatMoney (mul $item.Quantity $item.UnitPrice)}}</span>
+        </div>
+        <div class="text-xs text-slate-500 mt-1 ml-4">
+            {{printf "%.2f" $item.Quantity}} {{$item.Unit}} @ {{formatMoney $item.UnitPrice}}
+        </div>
+    </div>
+    <!-- Desktop layout -->
+    <div class="hidden sm:grid flex-1 px-4 py-2 grid-cols-12 gap-2 items-center">
+        <div class="col-span-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-{{$item.Color}}-500 shrink-0"></span>
+            <span class="text-sm text-slate-900 truncate">{{$item.Name}}</span>
+        </div>
+        <span class="col-span-2 text-sm text-right tabular-nums text-slate-700">{{printf "%.2f" $item.Quantity}}</span>
+        <span class="col-span-2 text-sm text-slate-500">{{$item.Unit}}</span>
+        <span class="col-span-2 text-sm text-right tabular-nums text-slate-700">{{formatMoney $item.UnitPrice}}</span>
+        <span class="col-span-1 text-sm text-right tabular-nums font-medium text-slate-900">{{formatMoney (mul $item.Quantity $item.UnitPrice)}}</span>
+        <span class="col-span-1"></span>
+    </div>
+    <!-- Action Menu -->
+    <div class="relative pr-2 shrink-0" x-data="{ open: false }">
+        <button
+            @click.stop.prevent="open = !open"
+            class="touch-action rounded hover:bg-white/50 text-slate-400 hover:text-slate-600"
+            aria-label="Item actions">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+            </svg>
+        </button>
+        <div
+            x-show="open"
+            x-cloak
+            x-transition:enter="transition ease-out duration-100"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-75"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            @click.away="open = false"
+            class="action-menu absolute right-0 mt-1 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+            <button
+                @click="editSpreadsheetItem('{{$item.ID}}', '{{$jobID}}', document.getElementById('item-row-{{$item.ID}}')); open = false"
+                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+            </button>
+            <button
+                @click.stop="if(confirm('Delete this item?')) { htmx.ajax('DELETE', '/items/{{$item.ID}}?job_id={{$jobID}}', {target: 'body'}); open = false; }"
+                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+{{end}}
+
+<!-- Add Item button for this category -->
+<div class="{{$itemIndent}} border-b border-slate-100">
+    <div id="spreadsheet-form-{{$section.ID}}" data-category-id="{{$section.ID}}" data-job-id="{{$jobID}}"></div>
+    <div class="px-4 py-1">
+        <button onclick="showSpreadsheetForm('{{$section.ID}}', '{{$jobID}}')"
+                class="text-xs text-slate-400 hover:text-copper-600 flex items-center gap-1">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add Item
+        </button>
+    </div>
+</div>
+
+</div><!-- end collapsible -->
+
+</div><!-- end x-data -->
+{{end}}

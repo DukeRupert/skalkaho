@@ -400,12 +400,17 @@ func (h *Handler) UpdateLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	redirectURL := "/categories/" + item.CategoryID
+	if jobID := r.FormValue("job_id"); jobID != "" {
+		redirectURL = "/jobs/" + jobID
+	}
+
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/categories/"+item.CategoryID)
+		w.Header().Set("HX-Redirect", redirectURL)
 		return
 	}
 
-	http.Redirect(w, r, "/categories/"+item.CategoryID, http.StatusSeeOther)
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
 // SearchItems searches for item templates by type and name.
@@ -584,7 +589,7 @@ func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 		name = "New Category"
 	}
 
-	category, err := h.queries.CreateCategory(ctx, repository.CreateCategoryParams{
+	_, err := h.queries.CreateCategory(ctx, repository.CreateCategoryParams{
 		ID:               uuid.New().String(),
 		OrgID:            GetOrgID(ctx),
 		JobID:            jobID,
@@ -599,12 +604,14 @@ func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	redirectURL := "/jobs/" + jobID
+
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/categories/"+category.ID)
+		w.Header().Set("HX-Redirect", redirectURL)
 		return
 	}
 
-	http.Redirect(w, r, "/categories/"+category.ID, http.StatusSeeOther)
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
 // CreateSubcategory creates a subcategory under a parent.
@@ -645,7 +652,7 @@ func (h *Handler) CreateSubcategory(w http.ResponseWriter, r *http.Request) {
 		name = "New Subcategory"
 	}
 
-	category, err := h.queries.CreateCategory(ctx, repository.CreateCategoryParams{
+	_, err = h.queries.CreateCategory(ctx, repository.CreateCategoryParams{
 		ID:               uuid.New().String(),
 		OrgID:            GetOrgID(ctx),
 		JobID:            parent.JobID,
@@ -660,12 +667,14 @@ func (h *Handler) CreateSubcategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	redirectURL := "/jobs/" + parent.JobID
+
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/categories/"+category.ID)
+		w.Header().Set("HX-Redirect", redirectURL)
 		return
 	}
 
-	http.Redirect(w, r, "/categories/"+category.ID, http.StatusSeeOther)
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
 // DeleteCategory deletes a category.
@@ -688,6 +697,10 @@ func (h *Handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	redirectURL := "/jobs/" + category.JobID
 	if category.ParentID.Valid {
 		redirectURL = "/categories/" + category.ParentID.String
+	}
+	// If job_id is provided (from spreadsheet view), always redirect to job page
+	if jobID := r.URL.Query().Get("job_id"); jobID != "" {
+		redirectURL = "/jobs/" + jobID
 	}
 
 	if err := h.queries.DeleteCategory(ctx, repository.DeleteCategoryParams{
@@ -772,12 +785,17 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	redirectURL := "/categories/" + categoryID
+	if jobID := r.FormValue("job_id"); jobID != "" {
+		redirectURL = "/jobs/" + jobID
+	}
+
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/categories/"+categoryID)
+		w.Header().Set("HX-Redirect", redirectURL)
 		return
 	}
 
-	http.Redirect(w, r, "/categories/"+categoryID, http.StatusSeeOther)
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
 // DeleteLineItem deletes a line item.
@@ -806,12 +824,17 @@ func (h *Handler) DeleteLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	redirectURL := "/categories/" + item.CategoryID
+	if jobID := r.URL.Query().Get("job_id"); jobID != "" {
+		redirectURL = "/jobs/" + jobID
+	}
+
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/categories/"+item.CategoryID)
+		w.Header().Set("HX-Redirect", redirectURL)
 		return
 	}
 
-	http.Redirect(w, r, "/categories/"+item.CategoryID, http.StatusSeeOther)
+	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
 // GetInlineForm returns an inline form for creating items.
@@ -1029,6 +1052,78 @@ func (h *Handler) BatchCreateLineItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/categories/"+categoryID, http.StatusSeeOther)
+}
+
+// GetSpreadsheetInlineForm returns the inline form for adding items in spreadsheet context.
+func (h *Handler) GetSpreadsheetInlineForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	categoryID := r.PathValue("categoryID")
+	jobID := r.URL.Query().Get("job_id")
+	orgID := GetOrgID(ctx)
+
+	// Get custom types for the job
+	var customTypes []repository.JobItemType
+	if jobID != "" {
+		ct, err := h.queries.ListJobItemTypes(ctx, repository.ListJobItemTypesParams{
+			JobID: jobID,
+			OrgID: orgID,
+		})
+		if err != nil {
+			logger.Error("failed to list job item types", "error", err)
+		} else {
+			customTypes = ct
+		}
+	}
+
+	data := map[string]interface{}{
+		"CategoryID":  categoryID,
+		"JobID":       jobID,
+		"CustomTypes": customTypes,
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "spreadsheet_inline_form", data); err != nil {
+		logger.Error("failed to render spreadsheet inline form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(buf.Bytes())
+}
+
+// GetSpreadsheetEditForm returns the edit form for editing items in spreadsheet context.
+func (h *Handler) GetSpreadsheetEditForm(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	itemID := r.PathValue("id")
+	jobID := r.URL.Query().Get("job_id")
+
+	item, err := h.queries.GetLineItem(ctx, repository.GetLineItemParams{
+		ID:    itemID,
+		OrgID: GetOrgID(ctx),
+	})
+	if err != nil {
+		logger.Error("failed to get line item", "error", err)
+		http.Error(w, "Item not found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Item":  item,
+		"JobID": jobID,
+	}
+
+	var buf bytes.Buffer
+	if err := h.renderer.RenderPartial(&buf, "spreadsheet_edit_form", data); err != nil {
+		logger.Error("failed to render spreadsheet edit form", "error", err)
+		http.Error(w, "Failed to render form", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(buf.Bytes())
 }
 
 // GetCategoryForm returns an inline form for creating categories.
