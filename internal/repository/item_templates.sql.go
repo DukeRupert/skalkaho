@@ -91,7 +91,7 @@ func (q *Queries) GetItemTemplate(ctx context.Context, arg GetItemTemplateParams
 
 const listItemTemplateCategories = `-- name: ListItemTemplateCategories :many
 SELECT DISTINCT category FROM item_templates
-WHERE org_id = $1
+WHERE (org_id = $1 OR org_id IS NULL)
 ORDER BY category
 `
 
@@ -120,7 +120,7 @@ func (q *Queries) ListItemTemplateCategories(ctx context.Context, orgID uuid.Nul
 
 const listItemTemplates = `-- name: ListItemTemplates :many
 SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
-WHERE org_id = $1
+WHERE (org_id = $1 OR org_id IS NULL)
 ORDER BY category, name
 `
 
@@ -157,7 +157,7 @@ func (q *Queries) ListItemTemplates(ctx context.Context, orgID uuid.NullUUID) ([
 
 const listItemTemplatesByCategory = `-- name: ListItemTemplatesByCategory :many
 SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
-WHERE org_id = $1 AND category = $2
+WHERE (org_id = $1 OR org_id IS NULL) AND category = $2
 ORDER BY name
 `
 
@@ -199,7 +199,7 @@ func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, arg ListItemT
 
 const searchItemTemplates = `-- name: SearchItemTemplates :many
 SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
-WHERE org_id = $1 AND name LIKE '%' || $2 || '%'
+WHERE (org_id = $1 OR org_id IS NULL) AND name LIKE '%' || $2 || '%'
 ORDER BY name
 LIMIT 10
 `
@@ -242,7 +242,7 @@ func (q *Queries) SearchItemTemplates(ctx context.Context, arg SearchItemTemplat
 
 const searchItemTemplatesByType = `-- name: SearchItemTemplatesByType :many
 SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
-WHERE org_id = $1 AND type = $2 AND name LIKE '%' || $3 || '%'
+WHERE (org_id = $1 OR org_id IS NULL) AND type = $2 AND name LIKE '%' || $3 || '%'
 ORDER BY name
 LIMIT 10
 `

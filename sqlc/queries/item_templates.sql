@@ -1,23 +1,23 @@
 -- name: SearchItemTemplates :many
 SELECT * FROM item_templates
-WHERE org_id = $1 AND name LIKE '%' || $2 || '%'
+WHERE (org_id = $1 OR org_id IS NULL) AND name LIKE '%' || $2 || '%'
 ORDER BY name
 LIMIT 10;
 
 -- name: SearchItemTemplatesByType :many
 SELECT * FROM item_templates
-WHERE org_id = $1 AND type = $2 AND name LIKE '%' || $3 || '%'
+WHERE (org_id = $1 OR org_id IS NULL) AND type = $2 AND name LIKE '%' || $3 || '%'
 ORDER BY name
 LIMIT 10;
 
 -- name: ListItemTemplates :many
 SELECT * FROM item_templates
-WHERE org_id = $1
+WHERE (org_id = $1 OR org_id IS NULL)
 ORDER BY category, name;
 
 -- name: ListItemTemplatesByCategory :many
 SELECT * FROM item_templates
-WHERE org_id = $1 AND category = $2
+WHERE (org_id = $1 OR org_id IS NULL) AND category = $2
 ORDER BY name;
 
 -- name: GetItemTemplate :one
@@ -47,5 +47,5 @@ UPDATE item_templates SET default_price = $1, name = $2 WHERE id = $3 AND org_id
 
 -- name: ListItemTemplateCategories :many
 SELECT DISTINCT category FROM item_templates
-WHERE org_id = $1
+WHERE (org_id = $1 OR org_id IS NULL)
 ORDER BY category;
