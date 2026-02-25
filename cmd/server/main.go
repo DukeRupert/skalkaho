@@ -195,6 +195,17 @@ func seedDemoUser(db *sql.DB, queries *repository.Queries, cfg *config.Config, l
 		return fmt.Errorf("creating demo user: %w", err)
 	}
 
+	// Copy orphaned item_templates (NULL org_id from seed migration) into demo org
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO item_templates (org_id, type, category, name, default_unit, default_price)
+		SELECT $1, type, category, name, default_unit, default_price
+		FROM item_templates
+		WHERE org_id IS NULL
+	`, org.ID)
+	if err != nil {
+		return fmt.Errorf("copying item templates to demo org: %w", err)
+	}
+
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("committing transaction: %w", err)
 	}
