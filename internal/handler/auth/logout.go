@@ -4,8 +4,8 @@ import (
 	"net/http"
 )
 
-// PostLogout handles logout requests.
-func (h *Handler) PostLogout(w http.ResponseWriter, r *http.Request) {
+// Logout handles logout requests (GET or POST).
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	// Get session token from cookie
 	cookie, err := r.Cookie(h.sessionManager.CookieName())
 	if err == nil && cookie.Value != "" {

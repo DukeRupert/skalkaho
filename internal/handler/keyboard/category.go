@@ -583,6 +583,7 @@ func (h *Handler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 
 	category, err := h.queries.CreateCategory(ctx, repository.CreateCategoryParams{
 		ID:               uuid.New().String(),
+		OrgID:            GetOrgID(ctx),
 		JobID:            jobID,
 		ParentID:         sql.NullString{},
 		Name:             name,
@@ -643,6 +644,7 @@ func (h *Handler) CreateSubcategory(w http.ResponseWriter, r *http.Request) {
 
 	category, err := h.queries.CreateCategory(ctx, repository.CreateCategoryParams{
 		ID:               uuid.New().String(),
+		OrgID:            GetOrgID(ctx),
 		JobID:            parent.JobID,
 		ParentID:         sql.NullString{String: parentID, Valid: true},
 		Name:             name,

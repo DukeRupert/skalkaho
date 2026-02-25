@@ -26,7 +26,8 @@ func Register(mux *http.ServeMux, h *keyboard.Handler, authH *authhandler.Handle
 	mux.HandleFunc("POST /login", authH.PostLogin)
 	mux.HandleFunc("GET /register", authH.GetRegister)
 	mux.HandleFunc("POST /register", authH.PostRegister)
-	mux.HandleFunc("POST /logout", authH.PostLogout)
+	mux.HandleFunc("GET /logout", authH.Logout)
+	mux.HandleFunc("POST /logout", authH.Logout)
 
 	// Public Signature Pages (no auth)
 	mux.HandleFunc("GET /sign/{token}", h.GetSignaturePage)

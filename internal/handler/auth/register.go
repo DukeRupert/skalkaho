@@ -162,6 +162,18 @@ func (h *Handler) PostRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create default settings for organization
+	_, err = qtx.CreateSettings(r.Context(), repository.CreateSettingsParams{
+		OrgID:                   org.ID,
+		DefaultSurchargeMode:    "stacking",
+		DefaultSurchargePercent: 0,
+	})
+	if err != nil {
+		slog.Error("failed to create settings", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	// Create user (first user is admin)
 	user, err := qtx.CreateUser(r.Context(), repository.CreateUserParams{
 		OrgID:        org.ID,

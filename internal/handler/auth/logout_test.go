@@ -53,7 +53,7 @@ func TestPostLogout(t *testing.T) {
 
 		rec := httptest.NewRecorder()
 
-		h.PostLogout(rec, req)
+		h.Logout(rec, req)
 
 		// Should redirect to login
 		assert.Equal(t, http.StatusFound, rec.Code, "should redirect after logout")
@@ -83,7 +83,7 @@ func TestPostLogout(t *testing.T) {
 		req := httptest.NewRequest("POST", "/logout", nil)
 		rec := httptest.NewRecorder()
 
-		h.PostLogout(rec, req)
+		h.Logout(rec, req)
 
 		// Should still redirect to login (idempotent)
 		assert.Equal(t, http.StatusFound, rec.Code, "should redirect even without session")
@@ -99,7 +99,7 @@ func TestPostLogout(t *testing.T) {
 		})
 		rec := httptest.NewRecorder()
 
-		h.PostLogout(rec, req)
+		h.Logout(rec, req)
 
 		// Should still redirect (idempotent)
 		assert.Equal(t, http.StatusFound, rec.Code, "should redirect even with invalid session")
@@ -132,7 +132,7 @@ func TestPostLogout(t *testing.T) {
 		})
 		rec := httptest.NewRecorder()
 
-		h.PostLogout(rec, req)
+		h.Logout(rec, req)
 
 		// Should still clear cookie and redirect
 		assert.Equal(t, http.StatusFound, rec.Code)
@@ -174,7 +174,7 @@ func TestPostLogout(t *testing.T) {
 		req = req.WithContext(auth.WithSession(req.Context(), session1))
 		rec := httptest.NewRecorder()
 
-		h.PostLogout(rec, req)
+		h.Logout(rec, req)
 
 		assert.Equal(t, http.StatusFound, rec.Code)
 
@@ -216,8 +216,8 @@ func TestPostLogout(t *testing.T) {
 		rec2 := httptest.NewRecorder()
 
 		// Both requests should succeed (idempotent)
-		h.PostLogout(rec1, req1)
-		h.PostLogout(rec2, req2)
+		h.Logout(rec1, req1)
+		h.Logout(rec2, req2)
 
 		assert.Equal(t, http.StatusFound, rec1.Code, "first logout should succeed")
 		assert.Equal(t, http.StatusFound, rec2.Code, "second logout should succeed (idempotent)")
@@ -243,7 +243,7 @@ func TestPostLogout(t *testing.T) {
 		req = req.WithContext(auth.WithSession(req.Context(), session))
 		rec := httptest.NewRecorder()
 
-		h.PostLogout(rec, req)
+		h.Logout(rec, req)
 
 		// Should redirect to custom location if implementation supports it
 		assert.Equal(t, http.StatusFound, rec.Code)
@@ -266,7 +266,7 @@ func TestPostLogout_OnlyPOST(t *testing.T) {
 
 		// Assuming router enforces POST-only, this test verifies handler doesn't accept GET
 		// If handler is called with GET, it should handle gracefully
-		h.PostLogout(rec, req)
+		h.Logout(rec, req)
 
 		// Implementation should either:
 		// 1. Return method not allowed (if checked in handler)
