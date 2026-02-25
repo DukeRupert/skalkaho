@@ -1,7 +1,7 @@
 # =============================================================================
 # Database Backup Workflow
 # =============================================================================
-# Runs daily at 2 AM UTC to backup the SQLite production database.
+# Runs daily at 2 AM UTC to backup the PostgreSQL production database.
 # Can also be triggered manually.
 #
 # Required Secrets:
@@ -46,34 +46,33 @@ jobs:
             TIMESTAMP=$(date +%Y%m%d_%H%M%S)
             SUFFIX="${{ inputs.backup_name }}"
             if [ -n "$SUFFIX" ]; then
-              BACKUP_FILE="backups/skalkaho_${TIMESTAMP}_${SUFFIX}.db"
+              BACKUP_FILE="backups/skalkaho_${TIMESTAMP}_${SUFFIX}.sql.gz"
             else
-              BACKUP_FILE="backups/skalkaho_${TIMESTAMP}.db"
+              BACKUP_FILE="backups/skalkaho_${TIMESTAMP}.sql.gz"
             fi
 
-            # Get the SQLite database path from the Docker volume
-            # Copy database using docker cp for a consistent backup
-            docker cp skalkaho-app:/app/data/quotes.db "$BACKUP_FILE"
+            # Dump PostgreSQL database from the container
+            docker exec skalkaho-postgres pg_dump -U skalkaho -d skalkaho | gzip > "$BACKUP_FILE"
 
-            # Verify backup was created
-            if [ ! -f "$BACKUP_FILE" ]; then
-              echo "Backup failed - no backup file created"
+            # Verify backup was created and is non-empty
+            if [ ! -s "$BACKUP_FILE" ]; then
+              echo "Backup failed - backup file is empty or missing"
               exit 1
             fi
 
-            # Run integrity check on the backup
-            sqlite3 "$BACKUP_FILE" "PRAGMA integrity_check;"
+            # Verify backup is a valid gzip containing SQL
+            gunzip -t "$BACKUP_FILE"
 
             BACKUP_SIZE=$(stat -c %s "$BACKUP_FILE")
             echo "Backup created: $BACKUP_FILE (${BACKUP_SIZE} bytes)"
 
             # Clean up old backups (keep last 7 days)
-            find backups -name "*.db" -mtime +7 -delete
+            find backups -name "*.sql.gz" -mtime +7 -delete
             echo "Cleaned up backups older than 7 days"
 
             # List remaining backups
             echo "Current backups:"
-            ls -lh backups/*.db 2>/dev/null || echo "No backups found"
+            ls -lh backups/*.sql.gz 2>/dev/null || echo "No backups found"
 
       - name: Notify on failure
         if: failure()

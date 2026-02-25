@@ -35,7 +35,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
 # -----------------------------------------------------------------------------
 FROM alpine:3.20
 
-# Install runtime dependencies for SQLite
+# Install runtime dependencies
 RUN apk add --no-cache \
     ca-certificates \
     sqlite-libs \
@@ -51,15 +51,13 @@ WORKDIR /app
 COPY --from=builder /app/server /app/server
 COPY --from=builder /app/static /app/static
 
-# Create data directory for SQLite database
-RUN mkdir -p /app/data && chown -R skalkaho:skalkaho /app
+RUN chown -R skalkaho:skalkaho /app
 
 # Switch to non-root user
 USER skalkaho
 
 # Environment defaults
 ENV ADDR=:8080
-ENV DATABASE_PATH=/app/data/quotes.db
 ENV ENVIRONMENT=production
 
 EXPOSE 8080
