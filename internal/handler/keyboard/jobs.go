@@ -424,14 +424,18 @@ func (h *Handler) UpdateJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
-		ID:               jobID,
-		Name:             r.FormValue("name"),
-		CustomerName:     customerName,
-		SurchargePercent: surchargePercent,
-		SurchargeMode:    r.FormValue("surcharge_mode"),
-		Status:           status,
-		ExpiresAt:        expiresAt,
-		ClientID:         clientID,
+		ID:                        jobID,
+		OrgID:                     orgID,
+		Name:                      r.FormValue("name"),
+		CustomerName:              customerName,
+		SurchargePercent:          surchargePercent,
+		MaterialSurchargePercent:  existingJob.MaterialSurchargePercent,
+		LaborSurchargePercent:     existingJob.LaborSurchargePercent,
+		EquipmentSurchargePercent: existingJob.EquipmentSurchargePercent,
+		SurchargeMode:             r.FormValue("surcharge_mode"),
+		Status:                    status,
+		ExpiresAt:                 expiresAt,
+		ClientID:                  clientID,
 	})
 	if err != nil {
 		logger.Error("failed to update job", "error", err)
@@ -602,14 +606,18 @@ func (h *Handler) UpdateJobName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
-		ID:               jobID,
-		Name:             name,
-		CustomerName:     job.CustomerName,
-		SurchargePercent: job.SurchargePercent,
-		SurchargeMode:    job.SurchargeMode,
-		Status:           job.Status,
-		ExpiresAt:        job.ExpiresAt,
-		ClientID:         job.ClientID,
+		ID:                        jobID,
+		OrgID:                     orgID,
+		Name:                      name,
+		CustomerName:              job.CustomerName,
+		SurchargePercent:          job.SurchargePercent,
+		MaterialSurchargePercent:  job.MaterialSurchargePercent,
+		LaborSurchargePercent:     job.LaborSurchargePercent,
+		EquipmentSurchargePercent: job.EquipmentSurchargePercent,
+		SurchargeMode:             job.SurchargeMode,
+		Status:                    job.Status,
+		ExpiresAt:                 job.ExpiresAt,
+		ClientID:                  job.ClientID,
 	})
 	if err != nil {
 		logger.Error("failed to update job name", "error", err)
@@ -669,6 +677,7 @@ func (h *Handler) UpdateMarkup(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
 		ID:                        jobID,
+		OrgID:                     orgID,
 		Name:                      job.Name,
 		CustomerName:              job.CustomerName,
 		SurchargePercent:          surchargePercent,
@@ -850,14 +859,18 @@ func (h *Handler) UpdateJobClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
-		ID:               jobID,
-		Name:             job.Name,
-		CustomerName:     job.CustomerName,
-		SurchargePercent: job.SurchargePercent,
-		SurchargeMode:    job.SurchargeMode,
-		Status:           job.Status,
-		ExpiresAt:        job.ExpiresAt,
-		ClientID:         clientID,
+		ID:                        jobID,
+		OrgID:                     orgID,
+		Name:                      job.Name,
+		CustomerName:              job.CustomerName,
+		SurchargePercent:          job.SurchargePercent,
+		MaterialSurchargePercent:  job.MaterialSurchargePercent,
+		LaborSurchargePercent:     job.LaborSurchargePercent,
+		EquipmentSurchargePercent: job.EquipmentSurchargePercent,
+		SurchargeMode:             job.SurchargeMode,
+		Status:                    job.Status,
+		ExpiresAt:                 job.ExpiresAt,
+		ClientID:                  clientID,
 	})
 	if err != nil {
 		logger.Error("failed to update job client", "error", err)

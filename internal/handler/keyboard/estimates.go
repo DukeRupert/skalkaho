@@ -155,6 +155,7 @@ func (h *Handler) CreateEstimate(w http.ResponseWriter, r *http.Request) {
 		// Update job with client
 		_, err = h.queries.UpdateJob(ctx, repository.UpdateJobParams{
 			ID:                        jobID,
+			OrgID:                     orgID,
 			Name:                      job.Name,
 			CustomerName:              job.CustomerName,
 			SurchargePercent:          job.SurchargePercent,
