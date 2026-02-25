@@ -19,6 +19,7 @@ type Config struct {
 	SessionDuration      time.Duration // Session duration (default: 720h = 30 days)
 	SessionCookieName    string        // Session cookie name (default: skalkaho_session)
 	SecureCookies        bool          // true if ENVIRONMENT=production
+	SeedDemoUser         bool          // Seed demo user on startup (SEED_DEMO_USER=true)
 }
 
 // Load reads configuration from environment variables.
@@ -38,6 +39,7 @@ func Load() *Config {
 		SessionDuration:      sessionDuration,
 		SessionCookieName:    getEnv("SESSION_COOKIE_NAME", "skalkaho_session"),
 		SecureCookies:        env == "production",
+		SeedDemoUser:         getEnvBool("SEED_DEMO_USER", false),
 	}
 }
 
@@ -52,6 +54,15 @@ func getEnvFloat(key string, defaultValue float64) float64 {
 	if value := os.Getenv(key); value != "" {
 		if f, err := strconv.ParseFloat(value, 64); err == nil {
 			return f
+		}
+	}
+	return defaultValue
+}
+
+func getEnvBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if b, err := strconv.ParseBool(value); err == nil {
+			return b
 		}
 	}
 	return defaultValue

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"embed"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -74,6 +76,11 @@ func main() {
 	// Initialize repository
 	queries := repository.New(db)
 
+	// Seed demo user if enabled
+	if err := seedDemoUser(db, queries, cfg, logger); err != nil {
+		log.Fatalf("Failed to seed demo user: %v", err)
+	}
+
 	// Initialize template renderer
 	renderer, err := keyboardtemplates.NewRenderer()
 	if err != nil {
@@ -122,5 +129,76 @@ func runMigrations(db *sql.DB, dialect string) error {
 		return err
 	}
 
+	return nil
+}
+
+func seedDemoUser(db *sql.DB, queries *repository.Queries, cfg *config.Config, logger *slog.Logger) error {
+	if !cfg.SeedDemoUser {
+		return nil
+	}
+
+	ctx := context.Background()
+
+	// Idempotent: check if demo org already exists
+	_, err := queries.GetOrganizationBySubdomain(ctx, "demo")
+	if err == nil {
+		logger.Info("Demo user already exists, skipping seed")
+		return nil
+	}
+	if err != sql.ErrNoRows {
+		return fmt.Errorf("checking for demo org: %w", err)
+	}
+
+	// Hash demo password
+	passwordHash, err := auth.HashPassword("demo1234")
+	if err != nil {
+		return fmt.Errorf("hashing demo password: %w", err)
+	}
+
+	// Create org, settings, and user in a transaction
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("beginning transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := queries.WithTx(tx)
+
+	org, err := qtx.CreateOrganization(ctx, repository.CreateOrganizationParams{
+		Name:      "Demo Construction Co",
+		Subdomain: "demo",
+		Plan:      "free",
+		Status:    "active",
+	})
+	if err != nil {
+		return fmt.Errorf("creating demo org: %w", err)
+	}
+
+	_, err = qtx.CreateSettings(ctx, repository.CreateSettingsParams{
+		OrgID:                   org.ID,
+		DefaultSurchargeMode:    "stacking",
+		DefaultSurchargePercent: 0,
+	})
+	if err != nil {
+		return fmt.Errorf("creating demo settings: %w", err)
+	}
+
+	_, err = qtx.CreateUser(ctx, repository.CreateUserParams{
+		OrgID:        org.ID,
+		Email:        "demo@skalkaho.com",
+		PasswordHash: passwordHash,
+		Name:         "Demo User",
+		Role:         "owner",
+		Status:       "active",
+	})
+	if err != nil {
+		return fmt.Errorf("creating demo user: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("committing transaction: %w", err)
+	}
+
+	logger.Info("Demo user seeded", "email", "demo@skalkaho.com", "password", "demo1234")
 	return nil
 }
