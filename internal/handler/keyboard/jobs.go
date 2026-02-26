@@ -382,13 +382,13 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"Job":               job,
-		"Sections":          sections,
-		"Totals":            totals,
+		"Job":           job,
+		"Sections":      sections,
+		"Totals":        totals,
 		"SelectedIndex": 0,
 		"Client":        client,
-		"Estimates":         estimatesWithStatus,
-		"CustomTypes":       customTypes,
+		"Estimates":     estimatesWithStatus,
+		"CustomTypes":   customTypes,
 	}
 
 	if err := h.renderer.Render(w, "job", data); err != nil {
