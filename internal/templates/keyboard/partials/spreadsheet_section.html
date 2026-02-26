@@ -38,7 +38,7 @@
             <span class="font-bold {{if eq $depth 1}}text-base{{else}}text-sm{{end}} text-slate-900">{{$section.Name}}</span>
         </div>
         <span class="col-span-2"></span>
-        <span class="col-span-2"></span>
+        <span class="col-span-2">{{if lt $depth 3}}<kbd class="font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-400">s</kbd> <span class="text-xs text-slate-400">subcategory</span>{{end}}</span>
         <span class="col-span-2"></span>
         <span class="col-span-1 text-right tabular-nums font-semibold text-slate-700 text-sm">{{formatMoney $section.Total}}</span>
         <span class="col-span-1"></span>
