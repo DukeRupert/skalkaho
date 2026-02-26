@@ -461,13 +461,6 @@
         });
     }
 
-    // Re-initialize autocomplete tracking after HTMX swaps (forms get recreated)
-    document.addEventListener('htmx:afterSwap', function(e) {
-        if (e.detail.target && e.detail.target.id === 'spreadsheet-body') {
-            _autocompleteInitialized = {};
-        }
-    });
-
     function showSubcategoryForm(parentID) {
         const container = document.getElementById('category-form-container');
         if (!container) return;

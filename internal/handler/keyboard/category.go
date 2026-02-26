@@ -785,16 +785,8 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobID := r.FormValue("job_id")
-
-	// If from spreadsheet context, return partial HTML instead of full redirect
-	if jobID != "" && r.Header.Get("HX-Request") == "true" {
-		h.renderSpreadsheetBody(w, r, jobID)
-		return
-	}
-
 	redirectURL := "/categories/" + categoryID
-	if jobID != "" {
+	if jobID := r.FormValue("job_id"); jobID != "" {
 		redirectURL = "/jobs/" + jobID
 	}
 
@@ -804,72 +796,6 @@ func (h *Handler) CreateLineItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
-}
-
-// renderSpreadsheetBody fetches job data and renders the spreadsheet body partial with OOB totals.
-func (h *Handler) renderSpreadsheetBody(w http.ResponseWriter, r *http.Request, jobID string) {
-	ctx := r.Context()
-	logger := middleware.LoggerFromContext(ctx)
-	orgID := GetOrgID(ctx)
-
-	job, err := h.queries.GetJob(ctx, repository.GetJobParams{
-		ID:    jobID,
-		OrgID: orgID,
-	})
-	if err != nil {
-		logger.Error("failed to get job for spreadsheet body", "error", err)
-		http.Error(w, "Failed to load job", http.StatusInternalServerError)
-		return
-	}
-
-	categories, err := h.queries.ListCategoriesByJob(ctx, repository.ListCategoriesByJobParams{
-		JobID: jobID,
-		OrgID: orgID,
-	})
-	if err != nil {
-		logger.Error("failed to list categories", "error", err)
-		http.Error(w, "Failed to load categories", http.StatusInternalServerError)
-		return
-	}
-
-	lineItems, err := h.queries.ListLineItemsByJob(ctx, repository.ListLineItemsByJobParams{
-		JobID: jobID,
-		OrgID: orgID,
-	})
-	if err != nil {
-		logger.Error("failed to list line items", "error", err)
-		http.Error(w, "Failed to load items", http.StatusInternalServerError)
-		return
-	}
-
-	customTypes, err := h.queries.ListJobItemTypes(ctx, repository.ListJobItemTypesParams{
-		JobID: jobID,
-		OrgID: orgID,
-	})
-	if err != nil {
-		logger.Error("failed to list job item types", "error", err)
-		customTypes = []repository.JobItemType{}
-	}
-
-	sections := h.buildSpreadsheetSections(job, categories, lineItems, customTypes)
-	totals := h.calculateTotals(job, categories, lineItems, customTypes)
-
-	data := map[string]interface{}{
-		"Job":         job,
-		"Sections":    sections,
-		"Totals":      totals,
-		"CustomTypes": customTypes,
-	}
-
-	var buf bytes.Buffer
-	if err := h.renderer.RenderPartial(&buf, "spreadsheet_body", data); err != nil {
-		logger.Error("failed to render spreadsheet body", "error", err)
-		http.Error(w, "Failed to render spreadsheet", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write(buf.Bytes())
 }
 
 // DeleteLineItem deletes a line item.

@@ -195,8 +195,7 @@
     <div x-show="showForm" x-cloak id="spreadsheet-form-{{$section.ID}}" data-category-id="{{$section.ID}}" data-job-id="{{$jobID}}">
         <div class="inline-form px-4 py-3 bg-slate-50 border-t border-slate-200" x-data="{ selectedType: 'material', unit: 'ea' }">
             <form hx-post="/categories/{{$section.ID}}/items"
-                  hx-target="#spreadsheet-body"
-                  hx-swap="outerHTML"
+                  hx-target="body"
                   class="space-y-2"
                   id="spreadsheet-item-form-{{$section.ID}}">
                 <input type="hidden" name="job_id" value="{{$jobID}}">
