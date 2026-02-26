@@ -6,7 +6,7 @@
          data-index="{{$i}}"
          data-name="{{$item.Name}}"
          data-unit="{{$item.DefaultUnit}}"
-         data-price="{{$item.DefaultPrice}}">
+         data-price="{{printf "%.2f" $item.DefaultPrice}}">
         <span class="text-slate-900">{{$item.Name}}</span>
         <span class="text-slate-500 text-sm">{{$item.DefaultUnit}} @ ${{printf "%.2f" $item.DefaultPrice}}</span>
     </div>
