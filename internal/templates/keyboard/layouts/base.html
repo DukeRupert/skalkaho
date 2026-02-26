@@ -685,12 +685,7 @@ document.addEventListener('keydown', function(e) {
             break;
         case 'e':
             e.preventDefault();
-            // On job page, go to estimates
-            if (document.body.dataset.jobId && !document.body.dataset.categoryId) {
-                window.location.href = '/jobs/' + document.body.dataset.jobId + '/estimates';
-            } else {
-                showInlineForm('equipment');
-            }
+            showInlineForm('equipment');
             break;
         case 'b':
             e.preventDefault();
@@ -721,19 +716,28 @@ document.addEventListener('keydown', function(e) {
             e.preventDefault();
             showRenameForm();
             break;
+    }
+});
+
+// Alt+key shortcuts for reports (job page only)
+document.addEventListener('keydown', function(e) {
+    if (!e.altKey) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+    var jobId = document.body.dataset.jobId;
+    if (!jobId) return;
+
+    switch (e.key) {
+        case 'e':
+            e.preventDefault();
+            window.location.href = '/jobs/' + jobId + '/estimates';
+            break;
         case 'o':
-            // Order list - only on job page
-            if (document.body.dataset.jobId) {
-                e.preventDefault();
-                window.location.href = '/jobs/' + document.body.dataset.jobId + '/order-list';
-            }
+            e.preventDefault();
+            window.location.href = '/jobs/' + jobId + '/order-list';
             break;
         case 's':
-            // Site materials - only on job page
-            if (document.body.dataset.jobId) {
-                e.preventDefault();
-                window.location.href = '/jobs/' + document.body.dataset.jobId + '/site-materials';
-            }
+            e.preventDefault();
+            window.location.href = '/jobs/' + jobId + '/site-materials';
             break;
     }
 });
