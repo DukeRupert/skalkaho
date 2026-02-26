@@ -331,7 +331,9 @@
 
     <script>
     // Spreadsheet-specific functions
-    function showSpreadsheetForm(categoryID, jobID) {
+    var _typeDefaults = { material: 'ea', labor: 'hr', equipment: 'day' };
+
+    function showSpreadsheetForm(categoryID, jobID, itemType) {
         // Hide all other forms first
         hideSpreadsheetForm();
         // Show this form, hide the "Add Item" button
@@ -346,13 +348,15 @@
             if (wrapper && wrapper._x_dataStack) wrapper._x_dataStack[0].expanded = true;
         }
         formActive = true;
+        var type = itemType || 'material';
+        var unit = _typeDefaults[type] || 'ea';
         setTimeout(function() {
             var input = document.getElementById('ss-name-input-' + categoryID);
             if (input) { input.focus(); initSpreadsheetAutocomplete(categoryID); }
             var formEl = document.getElementById('spreadsheet-item-form-' + categoryID);
             if (formEl) formEl.reset();
-            // Reset type buttons to default (material)
-            selectItemType(document.querySelector('#spreadsheet-form-' + categoryID + ' [data-type="material"]'), categoryID, 'material', 'ea');
+            // Set type buttons to requested type
+            selectItemType(document.querySelector('#spreadsheet-form-' + categoryID + ' [data-type="' + type + '"]'), categoryID, type, unit);
         }, 50);
     }
 
@@ -572,15 +576,15 @@
             return;
         }
 
-        if (e.key === 'a' || e.key === '+') {
+        var typeByKey = { m: 'material', l: 'labor', e: 'equipment' };
+        if (typeByKey[e.key]) {
             e.preventDefault();
-            // Find the category for the currently selected row
             if (rows[selectedIndex]) {
                 const row = rows[selectedIndex];
                 const catId = row.dataset.categoryId;
                 const jobId = document.body.dataset.jobId;
                 if (catId && jobId) {
-                    showSpreadsheetForm(catId, jobId);
+                    showSpreadsheetForm(catId, jobId, typeByKey[e.key]);
                 }
             }
         }
@@ -606,7 +610,7 @@
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">↑↓</kbd> navigate</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">␣</kbd> expand</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">⏎</kbd> edit</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">a</kbd> add item</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> add item</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> category</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">?</kbd> help</span>
