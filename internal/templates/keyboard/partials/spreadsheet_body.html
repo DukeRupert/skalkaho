@@ -1,0 +1,30 @@
+{{define "spreadsheet_body"}}
+<div id="spreadsheet-body">
+    {{range $i, $section := .Sections}}
+    {{template "spreadsheet_section" dict "Section" $section "JobID" $.JobID "RowIndex" 0 "CustomTypes" $.CustomTypes}}
+    {{end}}
+</div>
+<!-- OOB: Update totals summary -->
+<div id="totals-summary" hx-swap-oob="true" class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
+    <div class="grid grid-cols-3 gap-4 text-sm">
+        <div>
+            <span class="text-slate-500">Materials</span>
+            <p class="tabular-nums font-medium text-forest-700">{{formatMoney .Totals.MaterialSubtotal}}</p>
+        </div>
+        <div>
+            <span class="text-slate-500">Labor</span>
+            <p class="tabular-nums font-medium text-copper-700">{{formatMoney .Totals.LaborSubtotal}}</p>
+        </div>
+        <div>
+            <span class="text-slate-500">Equipment</span>
+            <p class="tabular-nums font-medium text-slate-700">{{formatMoney .Totals.EquipmentSubtotal}}</p>
+        </div>
+    </div>
+    <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+        <span class="text-sm font-medium text-slate-700">Grand Total</span>
+        <span class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .Totals.GrandTotal}}</span>
+    </div>
+</div>
+<!-- OOB: Update header grand total -->
+<p id="header-grand-total" hx-swap-oob="true" class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
+{{end}}

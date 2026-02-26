@@ -7,7 +7,7 @@
 {{if eq $depth 2}}{{$indent = "pl-6"}}{{end}}
 {{if eq $depth 3}}{{$indent = "pl-12"}}{{end}}
 
-<div x-data="{ expanded: true, showForm: false }">
+<div x-data="{ expanded: true }">
 
 <!-- Category Header Row -->
 <div class="row flex items-center border-b border-slate-100 cursor-pointer hover:bg-slate-50 {{$indent}}"
@@ -192,10 +192,11 @@
 <!-- Add Item area for this category -->
 <div class="{{$itemIndent}} border-b border-slate-100">
     <!-- Embedded inline form (hidden by default) -->
-    <div x-show="showForm" x-cloak id="spreadsheet-form-{{$section.ID}}" data-category-id="{{$section.ID}}" data-job-id="{{$jobID}}">
-        <div class="inline-form px-4 py-3 bg-slate-50 border-t border-slate-200" x-data="{ selectedType: 'material', unit: 'ea' }">
+    <div class="hidden" id="spreadsheet-form-{{$section.ID}}" data-category-id="{{$section.ID}}" data-job-id="{{$jobID}}">
+        <div class="inline-form px-4 py-3 bg-slate-50 border-t border-slate-200">
             <form hx-post="/categories/{{$section.ID}}/items"
-                  hx-target="body"
+                  hx-target="#spreadsheet-body"
+                  hx-swap="outerHTML"
                   class="space-y-2"
                   id="spreadsheet-item-form-{{$section.ID}}">
                 <input type="hidden" name="job_id" value="{{$jobID}}">
@@ -204,36 +205,32 @@
                 <div class="flex items-center gap-2 mb-2">
                     <label class="text-xs font-medium text-slate-500 uppercase tracking-wider">Type:</label>
                     <div class="flex gap-1">
-                        <button type="button"
-                                @click="selectedType = 'material'; unit = 'ea'"
-                                :class="selectedType === 'material' ? 'bg-forest-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'"
-                                class="px-2 py-1 rounded text-xs font-medium transition-colors">
+                        <button type="button" data-type="material" data-active-class="bg-forest-600"
+                                onclick="selectItemType(this, '{{$section.ID}}', 'material', 'ea')"
+                                class="bg-forest-600 text-white px-2 py-1 rounded text-xs font-medium transition-colors">
                             Material
                         </button>
-                        <button type="button"
-                                @click="selectedType = 'labor'; unit = 'hr'"
-                                :class="selectedType === 'labor' ? 'bg-copper-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'"
-                                class="px-2 py-1 rounded text-xs font-medium transition-colors">
+                        <button type="button" data-type="labor" data-active-class="bg-copper-600"
+                                onclick="selectItemType(this, '{{$section.ID}}', 'labor', 'hr')"
+                                class="bg-slate-200 text-slate-600 px-2 py-1 rounded text-xs font-medium transition-colors">
                             Labor
                         </button>
-                        <button type="button"
-                                @click="selectedType = 'equipment'; unit = 'day'"
-                                :class="selectedType === 'equipment' ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'"
-                                class="px-2 py-1 rounded text-xs font-medium transition-colors">
+                        <button type="button" data-type="equipment" data-active-class="bg-slate-700"
+                                onclick="selectItemType(this, '{{$section.ID}}', 'equipment', 'day')"
+                                class="bg-slate-200 text-slate-600 px-2 py-1 rounded text-xs font-medium transition-colors">
                             Equipment
                         </button>
                         {{range $ct := $customTypes}}
-                        <button type="button"
-                                @click="selectedType = '{{$ct.Slug}}'; unit = 'ea'"
-                                :class="selectedType === '{{$ct.Slug}}' ? 'bg-{{$ct.Color}}-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'"
-                                class="px-2 py-1 rounded text-xs font-medium transition-colors">
+                        <button type="button" data-type="{{$ct.Slug}}" data-active-class="bg-{{$ct.Color}}-600"
+                                onclick="selectItemType(this, '{{$section.ID}}', '{{$ct.Slug}}', 'ea')"
+                                class="bg-slate-200 text-slate-600 px-2 py-1 rounded text-xs font-medium transition-colors">
                             {{$ct.Name}}
                         </button>
                         {{end}}
                     </div>
                 </div>
 
-                <input type="hidden" name="type" id="ss-type-input-{{$section.ID}}" :value="selectedType">
+                <input type="hidden" name="type" id="ss-type-input-{{$section.ID}}" value="material">
 
                 <!-- Fields row (grid matching spreadsheet columns) -->
                 <div class="grid grid-cols-12 gap-2 items-center">
@@ -259,7 +256,7 @@
                     <input type="text"
                            name="unit"
                            id="ss-unit-input-{{$section.ID}}"
-                           x-model="unit"
+                           value="ea"
                            placeholder="unit"
                            class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
 
@@ -281,7 +278,7 @@
                             Save
                         </button>
                         <button type="button"
-                                @click="showForm = false; formActive = false"
+                                onclick="hideSpreadsheetForm()"
                                 class="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs hover:bg-slate-300">
                             Cancel
                         </button>
@@ -296,8 +293,8 @@
         </div>
     </div>
     <!-- Add Item button (only visible when form is hidden) -->
-    <div x-show="!showForm" class="px-4 py-1">
-        <button @click="showSpreadsheetForm('{{$section.ID}}', '{{$jobID}}')"
+    <div id="add-item-btn-{{$section.ID}}" class="px-4 py-1">
+        <button onclick="showSpreadsheetForm('{{$section.ID}}', '{{$jobID}}')"
                 class="text-xs text-slate-400 hover:text-copper-600 flex items-center gap-1">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>

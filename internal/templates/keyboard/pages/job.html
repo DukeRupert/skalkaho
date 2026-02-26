@@ -332,37 +332,60 @@
     <script>
     // Spreadsheet-specific functions
     function showSpreadsheetForm(categoryID, jobID) {
-        // Find the category header row and its parent Alpine scope
-        const headerRow = document.querySelector('[data-category-id="' + categoryID + '"][data-row-type="category"]');
-        if (!headerRow) return;
-        const sectionWrapper = headerRow.closest('[x-data]');
-        if (sectionWrapper && sectionWrapper._x_dataStack) {
-            const data = sectionWrapper._x_dataStack[0];
-            data.expanded = true;
-            data.showForm = true;
+        // Hide all other forms first
+        hideSpreadsheetForm();
+        // Show this form, hide the "Add Item" button
+        var form = document.getElementById('spreadsheet-form-' + categoryID);
+        var btn = document.getElementById('add-item-btn-' + categoryID);
+        if (form) form.classList.remove('hidden');
+        if (btn) btn.classList.add('hidden');
+        // Also expand the section via Alpine (keep Alpine for expand/collapse)
+        var headerRow = document.querySelector('[data-category-id="' + categoryID + '"][data-row-type="category"]');
+        if (headerRow) {
+            var wrapper = headerRow.closest('[x-data]');
+            if (wrapper && wrapper._x_dataStack) wrapper._x_dataStack[0].expanded = true;
         }
         formActive = true;
-        // Focus the name input and init autocomplete after Alpine renders
         setTimeout(function() {
             var input = document.getElementById('ss-name-input-' + categoryID);
-            if (input) {
-                input.focus();
-                initSpreadsheetAutocomplete(categoryID);
-            }
-            // Reset form fields
-            var form = document.getElementById('spreadsheet-item-form-' + categoryID);
-            if (form) form.reset();
+            if (input) { input.focus(); initSpreadsheetAutocomplete(categoryID); }
+            var formEl = document.getElementById('spreadsheet-item-form-' + categoryID);
+            if (formEl) formEl.reset();
+            // Reset type buttons to default (material)
+            selectItemType(document.querySelector('#spreadsheet-form-' + categoryID + ' [data-type="material"]'), categoryID, 'material', 'ea');
         }, 50);
     }
 
     function hideSpreadsheetForm() {
-        document.querySelectorAll('.row[data-row-type="category"]').forEach(function(row) {
-            var wrapper = row.closest('[x-data]');
-            if (wrapper && wrapper._x_dataStack) {
-                wrapper._x_dataStack[0].showForm = false;
-            }
+        document.querySelectorAll('[id^="spreadsheet-form-"]').forEach(function(form) {
+            form.classList.add('hidden');
+        });
+        document.querySelectorAll('[id^="add-item-btn-"]').forEach(function(btn) {
+            btn.classList.remove('hidden');
         });
         formActive = false;
+    }
+
+    function selectItemType(btn, categoryID, type, unit) {
+        if (!btn) return;
+        // Update hidden type input
+        var typeInput = document.getElementById('ss-type-input-' + categoryID);
+        if (typeInput) typeInput.value = type;
+        // Update unit input
+        var unitInput = document.getElementById('ss-unit-input-' + categoryID);
+        if (unitInput) unitInput.value = unit;
+        // Toggle active state on buttons
+        var container = btn.closest('.flex.gap-1');
+        if (container) {
+            container.querySelectorAll('button[data-type]').forEach(function(b) {
+                b.classList.remove('text-white');
+                b.classList.add('bg-slate-200', 'text-slate-600');
+                b.dataset.activeClass.split(' ').forEach(function(c) { b.classList.remove(c); });
+            });
+            btn.classList.remove('bg-slate-200', 'text-slate-600');
+            btn.dataset.activeClass.split(' ').forEach(function(c) { btn.classList.add(c); });
+            btn.classList.add('text-white');
+        }
     }
 
     // Autocomplete initialization per category form
@@ -564,6 +587,14 @@
 
         if (e.key === 'Escape') {
             hideSpreadsheetForm();
+        }
+    });
+
+    // Reinitialize keyboard navigation after HTMX partial swap
+    document.addEventListener('htmx:afterSettle', function(e) {
+        if (e.detail.target && e.detail.target.id === 'spreadsheet-body') {
+            if (typeof initKeyboard === 'function') initKeyboard();
+            _autocompleteInitialized = {};
         }
     });
     </script>
