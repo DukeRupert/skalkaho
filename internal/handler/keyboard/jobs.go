@@ -349,9 +349,6 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 	// Build spreadsheet sections
 	sections := h.buildSpreadsheetSections(job, categories, lineItems, customTypes)
 
-	// Build category tree for sidebar navigation
-	categoryTree := buildCategoryTree(categories)
-
 	// Get client if associated
 	var client *repository.Client
 	if job.ClientID.Valid {
@@ -388,10 +385,8 @@ func (h *Handler) GetJob(w http.ResponseWriter, r *http.Request) {
 		"Job":               job,
 		"Sections":          sections,
 		"Totals":            totals,
-		"SelectedIndex":     0,
-		"CategoryTree":      categoryTree,
-		"CurrentCategoryID": "",
-		"Client":            client,
+		"SelectedIndex": 0,
+		"Client":        client,
 		"Estimates":         estimatesWithStatus,
 		"CustomTypes":       customTypes,
 	}

@@ -14,20 +14,7 @@
         {{template "nav_sidebar" .}}
 
         <div class="flex-1 p-4 overflow-x-hidden">
-            <div class="max-w-6xl mx-auto flex gap-4">
-                <!-- Sidebar: Category Tree -->
-                <aside class="w-56 shrink-0 hidden xl:block">
-            <div class="sticky top-4">
-                <a href="/" class="flex items-center gap-2 text-sm text-copper-700 hover:text-copper-500 mb-3">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    All Quotes
-                </a>
-                {{template "category_tree" .}}
-            </div>
-        </aside>
-
+            <div class="max-w-6xl mx-auto">
         <!-- Main Content -->
         <main class="flex-1 min-w-0">
             <!-- Breadcrumb -->
