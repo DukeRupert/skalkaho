@@ -13,7 +13,8 @@
 <div class="row flex items-center border-b border-slate-100 cursor-pointer hover:bg-slate-50 {{$indent}}"
      data-category-id="{{$section.ID}}"
      data-delete-url="/categories/{{$section.ID}}"
-     data-row-type="category">
+     data-row-type="category"
+     data-depth="{{$depth}}">
     <!-- Mobile layout -->
     <div class="sm:hidden flex-1 px-4 py-3" @click="expanded = !expanded">
         <div class="flex justify-between items-center">

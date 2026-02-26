@@ -563,6 +563,22 @@
             return;
         }
 
+        if (e.key === 's') {
+            e.preventDefault();
+            if (rows[selectedIndex]) {
+                const row = rows[selectedIndex];
+                // Find the category row (current row if category, or parent category for items)
+                var catRow = row;
+                if (row.dataset.rowType === 'item') {
+                    catRow = document.querySelector('[data-category-id="' + row.dataset.categoryId + '"][data-row-type="category"]');
+                }
+                if (catRow && catRow.dataset.depth && parseInt(catRow.dataset.depth) < 3) {
+                    showSubcategoryForm(catRow.dataset.categoryId);
+                }
+            }
+            return;
+        }
+
         var typeByKey = { m: 'material', l: 'labor', e: 'equipment' };
         if (typeByKey[e.key]) {
             e.preventDefault();
@@ -599,6 +615,7 @@
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">⏎</kbd> edit</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> add item</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> category</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">s</kbd> subcategory</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">?</kbd> help</span>
 {{end}}
