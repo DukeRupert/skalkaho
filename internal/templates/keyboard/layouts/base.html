@@ -589,6 +589,24 @@ document.addEventListener('keydown', function(e) {
         return;
     }
 
+    // Top-level navigation shortcuts (Shift + key)
+    if (e.shiftKey) {
+        switch (e.key) {
+            case 'Q':
+                e.preventDefault();
+                window.location.href = '/';
+                return;
+            case 'C':
+                e.preventDefault();
+                window.location.href = '/clients';
+                return;
+            case 'I':
+                e.preventDefault();
+                window.location.href = '/items';
+                return;
+        }
+    }
+
     // Navigation
     switch (e.key) {
         case 'j':
