@@ -155,7 +155,7 @@
                             Markup: {{formatPercent .Job.SurchargePercent}}
                             <kbd class="hidden sm:inline font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">%</kbd>
                         </p>
-                        <p class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
+                        <p id="header-grand-total" class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .Totals.GrandTotal}}</p>
                     </div>
 
                     <!-- Row 3: Report Links -->
@@ -192,7 +192,7 @@
                 {{if .Sections}}
                 <div id="spreadsheet-body">
                     {{range $i, $section := .Sections}}
-                    {{template "spreadsheet_section" dict "Section" $section "JobID" $.Job.ID "RowIndex" 0}}
+                    {{template "spreadsheet_section" dict "Section" $section "JobID" $.Job.ID "RowIndex" 0 "CustomTypes" $.CustomTypes}}
                     {{end}}
                 </div>
                 {{else}}
@@ -224,7 +224,7 @@
             </div>
 
             <!-- Totals Summary -->
-            <div class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
+            <div id="totals-summary" class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
                 <div class="grid grid-cols-3 gap-4 text-sm">
                     <div>
                         <span class="text-slate-500">Materials</span>
@@ -332,24 +332,141 @@
     <script>
     // Spreadsheet-specific functions
     function showSpreadsheetForm(categoryID, jobID) {
-        const container = document.getElementById('spreadsheet-form-' + categoryID);
-        if (!container) return;
-
-        htmx.ajax('GET', '/categories/' + categoryID + '/spreadsheet-form?job_id=' + jobID, {
-            target: '#spreadsheet-form-' + categoryID,
-            swap: 'innerHTML'
-        }).then(() => {
-            htmx.process(container);
-            const input = container.querySelector('input[name="name"]');
-            if (input) input.focus();
-        });
+        // Find the category header row and its parent Alpine scope
+        const headerRow = document.querySelector('[data-category-id="' + categoryID + '"][data-row-type="category"]');
+        if (!headerRow) return;
+        const sectionWrapper = headerRow.closest('[x-data]');
+        if (sectionWrapper && sectionWrapper._x_dataStack) {
+            const data = sectionWrapper._x_dataStack[0];
+            data.expanded = true;
+            data.showForm = true;
+        }
         formActive = true;
+        // Focus the name input and init autocomplete after Alpine renders
+        setTimeout(function() {
+            var input = document.getElementById('ss-name-input-' + categoryID);
+            if (input) {
+                input.focus();
+                initSpreadsheetAutocomplete(categoryID);
+            }
+            // Reset form fields
+            var form = document.getElementById('spreadsheet-item-form-' + categoryID);
+            if (form) form.reset();
+        }, 50);
     }
 
     function hideSpreadsheetForm() {
-        document.querySelectorAll('[id^="spreadsheet-form-"]').forEach(c => c.innerHTML = '');
+        document.querySelectorAll('.row[data-row-type="category"]').forEach(function(row) {
+            var wrapper = row.closest('[x-data]');
+            if (wrapper && wrapper._x_dataStack) {
+                wrapper._x_dataStack[0].showForm = false;
+            }
+        });
         formActive = false;
     }
+
+    // Autocomplete initialization per category form
+    var _autocompleteInitialized = {};
+    function initSpreadsheetAutocomplete(categoryId) {
+        if (_autocompleteInitialized[categoryId]) return;
+        _autocompleteInitialized[categoryId] = true;
+
+        var input = document.getElementById('ss-name-input-' + categoryId);
+        var container = document.getElementById('ss-autocomplete-' + categoryId);
+        var typeInput = document.getElementById('ss-type-input-' + categoryId);
+        if (!input || !container || !typeInput) return;
+
+        var debounceTimer;
+        var acSelectedIndex = -1;
+
+        function getItems() {
+            return container.querySelectorAll('.autocomplete-item');
+        }
+
+        function updateAcSelection() {
+            var items = getItems();
+            items.forEach(function(item, i) {
+                item.classList.toggle('bg-slate-100', i === acSelectedIndex);
+            });
+        }
+
+        function selectAcItem(item) {
+            input.value = item.dataset.name;
+            document.getElementById('ss-unit-input-' + categoryId).value = item.dataset.unit;
+            document.getElementById('ss-price-input-' + categoryId).value = item.dataset.price;
+            container.innerHTML = '';
+            acSelectedIndex = -1;
+            var qtyInput = document.getElementById('ss-quantity-input-' + categoryId);
+            if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
+        }
+
+        function positionDropdown() {
+            var rect = input.getBoundingClientRect();
+            var dropdown = container.querySelector('.autocomplete-results');
+            if (dropdown) {
+                dropdown.style.position = 'fixed';
+                dropdown.style.top = rect.bottom + 'px';
+                dropdown.style.left = rect.left + 'px';
+                dropdown.style.width = rect.width + 'px';
+            }
+        }
+
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            var query = this.value.trim();
+            if (query.length < 2) {
+                container.innerHTML = '';
+                return;
+            }
+            debounceTimer = setTimeout(function() {
+                var itemType = typeInput.value;
+                htmx.ajax('GET', '/items/search?type=' + encodeURIComponent(itemType) + '&q=' + encodeURIComponent(query), {
+                    target: '#ss-autocomplete-' + categoryId,
+                    swap: 'innerHTML'
+                }).then(function() {
+                    acSelectedIndex = -1;
+                    positionDropdown();
+                    getItems().forEach(function(item) {
+                        item.addEventListener('click', function() { selectAcItem(item); });
+                    });
+                });
+            }, 150);
+        });
+
+        input.addEventListener('keydown', function(e) {
+            var items = getItems();
+            if (items.length === 0) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                acSelectedIndex = Math.min(acSelectedIndex + 1, items.length - 1);
+                updateAcSelection();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                acSelectedIndex = Math.max(acSelectedIndex - 1, -1);
+                updateAcSelection();
+            } else if (e.key === 'Enter' && acSelectedIndex >= 0) {
+                e.preventDefault();
+                selectAcItem(items[acSelectedIndex]);
+            } else if (e.key === 'Escape') {
+                container.innerHTML = '';
+                acSelectedIndex = -1;
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!container.contains(e.target) && e.target !== input) {
+                container.innerHTML = '';
+                acSelectedIndex = -1;
+            }
+        });
+    }
+
+    // Re-initialize autocomplete tracking after HTMX swaps (forms get recreated)
+    document.addEventListener('htmx:afterSwap', function(e) {
+        if (e.detail.target && e.detail.target.id === 'spreadsheet-body') {
+            _autocompleteInitialized = {};
+        }
+    });
 
     function showSubcategoryForm(parentID) {
         const container = document.getElementById('category-form-container');

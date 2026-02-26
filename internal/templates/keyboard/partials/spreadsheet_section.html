@@ -1,12 +1,13 @@
 {{define "spreadsheet_section"}}
 {{$section := .Section}}
 {{$jobID := .JobID}}
+{{$customTypes := .CustomTypes}}
 {{$depth := $section.Depth}}
 {{$indent := ""}}
 {{if eq $depth 2}}{{$indent = "pl-6"}}{{end}}
 {{if eq $depth 3}}{{$indent = "pl-12"}}{{end}}
 
-<div x-data="{ expanded: true }">
+<div x-data="{ expanded: true, showForm: false }">
 
 <!-- Category Header Row -->
 <div class="row flex items-center border-b border-slate-100 cursor-pointer hover:bg-slate-50 {{$indent}}"
@@ -104,7 +105,7 @@
 
 <!-- Child sections (subcategories) -->
 {{range $child := $section.Children}}
-{{template "spreadsheet_section" dict "Section" $child "JobID" $jobID "RowIndex" 0}}
+{{template "spreadsheet_section" dict "Section" $child "JobID" $jobID "RowIndex" 0 "CustomTypes" $customTypes}}
 {{end}}
 
 <!-- Items in this category -->
@@ -188,11 +189,116 @@
 </div>
 {{end}}
 
-<!-- Add Item button for this category -->
+<!-- Add Item area for this category -->
 <div class="{{$itemIndent}} border-b border-slate-100">
-    <div id="spreadsheet-form-{{$section.ID}}" data-category-id="{{$section.ID}}" data-job-id="{{$jobID}}"></div>
-    <div class="px-4 py-1">
-        <button onclick="showSpreadsheetForm('{{$section.ID}}', '{{$jobID}}')"
+    <!-- Embedded inline form (hidden by default) -->
+    <div x-show="showForm" x-cloak id="spreadsheet-form-{{$section.ID}}" data-category-id="{{$section.ID}}" data-job-id="{{$jobID}}">
+        <div class="inline-form px-4 py-3 bg-slate-50 border-t border-slate-200" x-data="{ selectedType: 'material', unit: 'ea' }">
+            <form hx-post="/categories/{{$section.ID}}/items"
+                  hx-target="#spreadsheet-body"
+                  hx-swap="outerHTML"
+                  class="space-y-2"
+                  id="spreadsheet-item-form-{{$section.ID}}">
+                <input type="hidden" name="job_id" value="{{$jobID}}">
+
+                <!-- Type selector row -->
+                <div class="flex items-center gap-2 mb-2">
+                    <label class="text-xs font-medium text-slate-500 uppercase tracking-wider">Type:</label>
+                    <div class="flex gap-1">
+                        <button type="button"
+                                @click="selectedType = 'material'; unit = 'ea'"
+                                :class="selectedType === 'material' ? 'bg-forest-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'"
+                                class="px-2 py-1 rounded text-xs font-medium transition-colors">
+                            Material
+                        </button>
+                        <button type="button"
+                                @click="selectedType = 'labor'; unit = 'hr'"
+                                :class="selectedType === 'labor' ? 'bg-copper-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'"
+                                class="px-2 py-1 rounded text-xs font-medium transition-colors">
+                            Labor
+                        </button>
+                        <button type="button"
+                                @click="selectedType = 'equipment'; unit = 'day'"
+                                :class="selectedType === 'equipment' ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'"
+                                class="px-2 py-1 rounded text-xs font-medium transition-colors">
+                            Equipment
+                        </button>
+                        {{range $ct := $customTypes}}
+                        <button type="button"
+                                @click="selectedType = '{{$ct.Slug}}'; unit = 'ea'"
+                                :class="selectedType === '{{$ct.Slug}}' ? 'bg-{{$ct.Color}}-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'"
+                                class="px-2 py-1 rounded text-xs font-medium transition-colors">
+                            {{$ct.Name}}
+                        </button>
+                        {{end}}
+                    </div>
+                </div>
+
+                <input type="hidden" name="type" id="ss-type-input-{{$section.ID}}" :value="selectedType">
+
+                <!-- Fields row (grid matching spreadsheet columns) -->
+                <div class="grid grid-cols-12 gap-2 items-center">
+                    <div class="col-span-4 relative">
+                        <input type="text"
+                               name="name"
+                               id="ss-name-input-{{$section.ID}}"
+                               placeholder="Item name..."
+                               class="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+                               autocomplete="off"
+                               required>
+                        <div id="ss-autocomplete-{{$section.ID}}"></div>
+                    </div>
+
+                    <input type="number"
+                           name="quantity"
+                           id="ss-quantity-input-{{$section.ID}}"
+                           value="1"
+                           step="0.01"
+                           min="0.01"
+                           class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+                    <input type="text"
+                           name="unit"
+                           id="ss-unit-input-{{$section.ID}}"
+                           x-model="unit"
+                           placeholder="unit"
+                           class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+
+                    <div class="col-span-2 flex items-center border border-slate-300 rounded focus-within:ring-2 focus-within:ring-slate-400 overflow-hidden bg-white">
+                        <span class="pl-2 text-slate-500 text-sm shrink-0">$</span>
+                        <input type="number"
+                               name="unit_price"
+                               id="ss-price-input-{{$section.ID}}"
+                               value="0.00"
+                               step="0.01"
+                               min="0"
+                               placeholder="0.00"
+                               class="min-w-0 flex-1 px-1 py-1 text-sm text-right focus:outline-none border-0 bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                    </div>
+
+                    <div class="col-span-2 flex gap-1">
+                        <button type="submit"
+                                class="px-2 py-1 bg-slate-900 text-white rounded text-xs hover:bg-slate-700">
+                            Save
+                        </button>
+                        <button type="button"
+                                @click="showForm = false; formActive = false"
+                                class="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs hover:bg-slate-300">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <p class="text-xs text-slate-400 mt-1">
+                <kbd class="font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">Tab</kbd> next field
+                <kbd class="font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">Enter</kbd> save
+                <kbd class="font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">Esc</kbd> cancel
+            </p>
+        </div>
+    </div>
+    <!-- Add Item button (only visible when form is hidden) -->
+    <div x-show="!showForm" class="px-4 py-1">
+        <button @click="showSpreadsheetForm('{{$section.ID}}', '{{$jobID}}')"
                 class="text-xs text-slate-400 hover:text-copper-600 flex items-center gap-1">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
