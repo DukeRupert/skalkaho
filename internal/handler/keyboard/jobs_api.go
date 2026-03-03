@@ -120,7 +120,7 @@ func convertLineItem(item repository.LineItem) QuoteLineItem {
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(v)
 }
 
 // writeJSONError writes a JSON error response.
@@ -569,7 +569,7 @@ func (h *Handler) ReorderItemsJSON(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to reorder")
 		return
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	qtx := h.queries.WithTx(tx)
 	for _, item := range input.Items {

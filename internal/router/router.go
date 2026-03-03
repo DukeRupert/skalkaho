@@ -116,6 +116,7 @@ func Register(mux *http.ServeMux, h *keyboard.Handler, authH *authhandler.Handle
 	mux.Handle("GET /item-templates/{id}/edit", protect(sm, http.HandlerFunc(h.GetItemTemplateEditForm)))
 	mux.Handle("PUT /item-templates/{id}", protect(sm, http.HandlerFunc(h.UpdateItemTemplate)))
 	mux.Handle("DELETE /item-templates/{id}", protect(sm, http.HandlerFunc(h.DeleteItemTemplate)))
+	mux.Handle("POST /item-templates/bulk-family", protect(sm, http.HandlerFunc(h.BulkUpdateFamily)))
 
 	// Clients
 	mux.Handle("GET /clients", protect(sm, http.HandlerFunc(h.ListClients)))

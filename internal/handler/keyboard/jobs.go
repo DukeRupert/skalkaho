@@ -17,13 +17,21 @@ const pageSize = 20
 
 // SpreadsheetSection represents a category section in the spreadsheet view.
 type SpreadsheetSection struct {
-	ID       string
-	Name     string
-	Depth    int
-	Total    float64
-	JobID    string
+	ID        string
+	Name      string
+	Depth     int
+	Total     float64
+	JobID     string
+	Items     []SpreadsheetItem
+	TagGroups []SpreadsheetTagGroup
+	Children  []SpreadsheetSection
+}
+
+// SpreadsheetTagGroup groups items by tag within a spreadsheet section.
+type SpreadsheetTagGroup struct {
+	Tag      string
 	Items    []SpreadsheetItem
-	Children []SpreadsheetSection
+	Subtotal float64
 }
 
 // SpreadsheetItem wraps a LineItem with a color for the spreadsheet view.
@@ -89,13 +97,14 @@ func (h *Handler) buildSpreadsheetSections(job repository.Job, categories []repo
 		}
 
 		return SpreadsheetSection{
-			ID:       cat.ID,
-			Name:     cat.Name,
-			Depth:    depth,
-			Total:    catTotal.Total,
-			JobID:    cat.JobID,
-			Items:    items,
-			Children: children,
+			ID:        cat.ID,
+			Name:      cat.Name,
+			Depth:     depth,
+			Total:     catTotal.Total,
+			JobID:     cat.JobID,
+			Items:     items,
+			TagGroups: organizeSpreadsheetByTag(items),
+			Children:  children,
 		}
 	}
 
@@ -108,6 +117,55 @@ func (h *Handler) buildSpreadsheetSections(job repository.Job, categories []repo
 	}
 
 	return sections
+}
+
+// organizeSpreadsheetByTag groups items by their tag field for display in the spreadsheet view.
+// Untagged items appear first, then tagged groups sorted alphabetically.
+func organizeSpreadsheetByTag(items []SpreadsheetItem) []SpreadsheetTagGroup {
+	if len(items) == 0 {
+		return nil
+	}
+
+	tagMap := make(map[string][]SpreadsheetItem)
+	var tags []string
+
+	for _, item := range items {
+		tag := ""
+		if item.Tag.Valid {
+			tag = item.Tag.String
+		}
+		if _, exists := tagMap[tag]; !exists {
+			tags = append(tags, tag)
+		}
+		tagMap[tag] = append(tagMap[tag], item)
+	}
+
+	// Sort: untagged first, then alphabetical
+	sort.Slice(tags, func(i, j int) bool {
+		if tags[i] == "" {
+			return true
+		}
+		if tags[j] == "" {
+			return false
+		}
+		return tags[i] < tags[j]
+	})
+
+	groups := make([]SpreadsheetTagGroup, 0, len(tags))
+	for _, tag := range tags {
+		tagItems := tagMap[tag]
+		subtotal := 0.0
+		for _, item := range tagItems {
+			subtotal += item.Quantity * item.UnitPrice
+		}
+		groups = append(groups, SpreadsheetTagGroup{
+			Tag:      tag,
+			Items:    tagItems,
+			Subtotal: subtotal,
+		})
+	}
+
+	return groups
 }
 
 // JobWithTotal wraps a Job with its calculated grand total and client info.

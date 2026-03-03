@@ -1,7 +1,7 @@
 {{define "batch_form"}}
 <div class="inline-form p-4 rounded-lg" x-data="{
     itemCount: 0,
-    tag: '{{.SelectedCategory}}',
+    tag: '{{or .SelectedSubcategory .SelectedCategory}}',
     updateCount() {
         const qtys = this.$root.querySelectorAll('input[name=\'quantity[]\']');
         let count = 0;
@@ -18,29 +18,59 @@
         </button>
     </div>
 
-    <!-- Category Picker + Tag -->
-    <div class="flex gap-3 mb-3">
-        <div class="flex-1">
-            <label class="block text-xs font-medium text-slate-600 mb-1">Template Category</label>
-            <select
-                class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-copper-500 focus:border-copper-500"
-                hx-get="/categories/{{.CategoryID}}/batch-form"
+    <!-- Step 1: Category Picker -->
+    <div class="mb-3">
+        <label class="block text-xs font-medium text-slate-600 mb-1">Category</label>
+        <select
+            class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-copper-500 focus:border-copper-500"
+            hx-get="/categories/{{.CategoryID}}/batch-form{{if .JobID}}?job_id={{.JobID}}{{end}}"
+            hx-target="#batch-form-container"
+            hx-swap="innerHTML"
+            hx-include="[name='tag']"
+            name="template_category">
+            <option value="">Select a category...</option>
+            {{range .TemplateCategories}}
+            <option value="{{.}}" {{if eq . $.SelectedCategory}}selected{{end}}>{{.}}</option>
+            {{end}}
+        </select>
+    </div>
+
+    {{if .Subcategories}}
+    {{if not .SelectedSubcategory}}
+    <!-- Step 2: Product Family Grid (shown when category selected, no subcategory yet) -->
+    <div class="mb-3">
+        <label class="block text-xs font-medium text-slate-600 mb-2">Select a product family</label>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+            {{range .Subcategories}}
+            <button type="button"
+                    hx-get="/categories/{{$.CategoryID}}/batch-form{{if $.JobID}}?job_id={{$.JobID}}&{{else}}?{{end}}template_category={{$.SelectedCategory}}&template_subcategory={{.Name}}"
+                    hx-target="#batch-form-container"
+                    hx-swap="innerHTML"
+                    class="text-left px-3 py-2 text-sm border border-slate-200 rounded-lg hover:border-copper-400 hover:bg-copper-50 transition-colors">
+                <span class="font-medium text-slate-900">{{.Name}}</span>
+                <span class="text-xs text-slate-400 ml-1">({{.Count}})</span>
+            </button>
+            {{end}}
+        </div>
+    </div>
+    {{else}}
+    <!-- Step 2b: Selected subcategory with back button -->
+    <div class="flex items-center gap-2 mb-3">
+        <button type="button"
+                hx-get="/categories/{{.CategoryID}}/batch-form{{if .JobID}}?job_id={{.JobID}}&{{else}}?{{end}}template_category={{.SelectedCategory}}"
                 hx-target="#batch-form-container"
                 hx-swap="innerHTML"
-                hx-include="[name='tag']"
-                name="template_category">
-                <option value="">Select a category...</option>
-                {{range .TemplateCategories}}
-                <option value="{{.}}" {{if eq . $.SelectedCategory}}selected{{end}}>{{.}}</option>
-                {{end}}
-            </select>
-        </div>
+                class="text-slate-400 hover:text-slate-600">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <span class="text-sm font-semibold text-slate-700">{{.SelectedSubcategory}}</span>
         <div class="flex-1">
-            <label class="block text-xs font-medium text-slate-600 mb-1">Tag</label>
             <input type="text" name="tag" list="batch-tags"
                    x-model="tag"
-                   class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-copper-500 focus:border-copper-500"
-                   placeholder="e.g. Lumber">
+                   class="w-full px-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-copper-500 focus:border-copper-500"
+                   placeholder="Tag (auto: {{.SelectedSubcategory}})">
             <datalist id="batch-tags">
                 {{range .ExistingTags}}
                 <option value="{{.}}">
@@ -50,9 +80,12 @@
     </div>
 
     {{if .Templates}}
-    <!-- Spreadsheet Grid -->
-    <form method="POST" action="/categories/{{.CategoryID}}/batch-items" hx-post="/categories/{{.CategoryID}}/batch-items" hx-swap="none">
+    <!-- Step 3: Items Grid -->
+    <form method="POST" action="/categories/{{.CategoryID}}/batch-items"
+          hx-post="/categories/{{.CategoryID}}/batch-items"
+          {{if .JobID}}hx-target="#spreadsheet-body" hx-swap="outerHTML"{{else}}hx-swap="none"{{end}}>
         <input type="hidden" name="tag" x-bind:value="tag">
+        {{if .JobID}}<input type="hidden" name="job_id" value="{{.JobID}}">{{end}}
 
         <div class="border border-slate-200 rounded-lg overflow-hidden">
             <!-- Header -->
@@ -88,22 +121,30 @@
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center justify-end gap-3 mt-3">
-            <button type="button" onclick="hideBatchForm()"
-                    class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 border border-slate-300 rounded-lg hover:bg-slate-50">
-                Cancel
-            </button>
-            <button type="submit"
-                    class="px-4 py-2 text-sm font-medium text-white bg-copper-600 hover:bg-copper-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    x-bind:disabled="itemCount === 0">
-                <span x-text="itemCount > 0 ? 'Add ' + itemCount + ' Item' + (itemCount !== 1 ? 's' : '') : 'Enter quantities'"></span>
-            </button>
+        <div class="flex items-center justify-between mt-3">
+            <p class="text-xs text-slate-400">
+                <kbd class="font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">Tab</kbd> next
+                <kbd class="font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">Enter</kbd> submit
+            </p>
+            <div class="flex gap-3">
+                <button type="button" onclick="hideBatchForm()"
+                        class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 border border-slate-300 rounded-lg hover:bg-slate-50">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-copper-600 hover:bg-copper-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        x-bind:disabled="itemCount === 0">
+                    <span x-text="itemCount > 0 ? 'Add ' + itemCount + ' Item' + (itemCount !== 1 ? 's' : '') : 'Enter quantities'"></span>
+                </button>
+            </div>
         </div>
     </form>
-    {{else if .SelectedCategory}}
-    <p class="text-sm text-slate-400 text-center py-4">No templates found in "{{.SelectedCategory}}".</p>
     {{else}}
-    <p class="text-sm text-slate-400 text-center py-4">Select a template category to load items.</p>
+    <p class="text-sm text-slate-400 text-center py-4">No templates found.</p>
+    {{end}}
+    {{end}}
+    {{else if not .SelectedCategory}}
+    <p class="text-sm text-slate-400 text-center py-4">Select a template category to get started.</p>
     {{end}}
 </div>
 {{end}}

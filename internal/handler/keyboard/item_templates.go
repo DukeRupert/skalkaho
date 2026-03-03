@@ -2,6 +2,7 @@ package keyboard
 
 import (
 	"bytes"
+	"database/sql"
 	"net/http"
 	"strconv"
 
@@ -30,14 +31,22 @@ func (h *Handler) ListItemTemplates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract unique categories
+	// Extract unique categories and subcategories
 	categorySet := make(map[string]bool)
+	subcategorySet := make(map[string]bool)
 	for _, item := range allItems {
 		categorySet[item.Category] = true
+		if item.Subcategory.Valid && item.Subcategory.String != "" {
+			subcategorySet[item.Subcategory.String] = true
+		}
 	}
 	categories := make([]string, 0, len(categorySet))
 	for cat := range categorySet {
 		categories = append(categories, cat)
+	}
+	subcategories := make([]string, 0, len(subcategorySet))
+	for sub := range subcategorySet {
+		subcategories = append(subcategories, sub)
 	}
 
 	// Apply filters
@@ -50,6 +59,7 @@ func (h *Handler) ListItemTemplates(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"Items":          items,
 		"Categories":     categories,
+		"Subcategories":  subcategories,
 		"Query":          query,
 		"TypeFilter":     typeFilter,
 		"CategoryFilter": categoryFilter,
@@ -141,16 +151,25 @@ func (h *Handler) GetItemTemplateForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	categorySet := make(map[string]bool)
+	subcategorySet := make(map[string]bool)
 	for _, item := range items {
 		categorySet[item.Category] = true
+		if item.Subcategory.Valid && item.Subcategory.String != "" {
+			subcategorySet[item.Subcategory.String] = true
+		}
 	}
 	categories := make([]string, 0, len(categorySet))
 	for cat := range categorySet {
 		categories = append(categories, cat)
 	}
+	subcategories := make([]string, 0, len(subcategorySet))
+	for sub := range subcategorySet {
+		subcategories = append(subcategories, sub)
+	}
 
 	data := map[string]interface{}{
-		"Categories": categories,
+		"Categories":    categories,
+		"Subcategories": subcategories,
 	}
 
 	var buf bytes.Buffer
@@ -198,6 +217,11 @@ func (h *Handler) CreateItemTemplate(w http.ResponseWriter, r *http.Request) {
 
 	defaultPrice, _ := strconv.ParseFloat(r.FormValue("default_price"), 64)
 
+	subcategory := r.FormValue("subcategory")
+	if subcategory == "" {
+		subcategory = name
+	}
+
 	_, err := h.queries.CreateItemTemplate(ctx, repository.CreateItemTemplateParams{
 		OrgID:        orgID,
 		Type:         itemType,
@@ -205,6 +229,7 @@ func (h *Handler) CreateItemTemplate(w http.ResponseWriter, r *http.Request) {
 		Name:         name,
 		DefaultUnit:  defaultUnit,
 		DefaultPrice: defaultPrice,
+		Subcategory:  sql.NullString{String: subcategory, Valid: true},
 	})
 	if err != nil {
 		logger.Error("failed to create item template", "error", err)
@@ -252,17 +277,26 @@ func (h *Handler) GetItemTemplateEditForm(w http.ResponseWriter, r *http.Request
 	}
 
 	categorySet := make(map[string]bool)
+	subcategorySet := make(map[string]bool)
 	for _, it := range items {
 		categorySet[it.Category] = true
+		if it.Subcategory.Valid && it.Subcategory.String != "" {
+			subcategorySet[it.Subcategory.String] = true
+		}
 	}
 	categories := make([]string, 0, len(categorySet))
 	for cat := range categorySet {
 		categories = append(categories, cat)
 	}
+	subcategories := make([]string, 0, len(subcategorySet))
+	for sub := range subcategorySet {
+		subcategories = append(subcategories, sub)
+	}
 
 	data := map[string]interface{}{
-		"Item":       item,
-		"Categories": categories,
+		"Item":          item,
+		"Categories":    categories,
+		"Subcategories": subcategories,
 	}
 
 	var buf bytes.Buffer
@@ -280,6 +314,7 @@ func (h *Handler) GetItemTemplateEditForm(w http.ResponseWriter, r *http.Request
 func (h *Handler) UpdateItemTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
 
 	idStr := r.PathValue("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -316,13 +351,20 @@ func (h *Handler) UpdateItemTemplate(w http.ResponseWriter, r *http.Request) {
 
 	defaultPrice, _ := strconv.ParseFloat(r.FormValue("default_price"), 64)
 
+	subcategory := r.FormValue("subcategory")
+	if subcategory == "" {
+		subcategory = name
+	}
+
 	_, err = h.queries.UpdateItemTemplate(ctx, repository.UpdateItemTemplateParams{
 		ID:           id,
+		OrgID:        orgID,
 		Type:         itemType,
 		Category:     category,
 		Name:         name,
 		DefaultUnit:  defaultUnit,
 		DefaultPrice: defaultPrice,
+		Subcategory:  sql.NullString{String: subcategory, Valid: true},
 	})
 	if err != nil {
 		logger.Error("failed to update item template", "error", err)
@@ -331,6 +373,59 @@ func (h *Handler) UpdateItemTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect back to the items page
+	if r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/items")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	http.Redirect(w, r, "/items", http.StatusSeeOther)
+}
+
+// BulkUpdateFamily assigns a product family (subcategory) to multiple item templates.
+func (h *Handler) BulkUpdateFamily(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	subcategory := r.FormValue("subcategory")
+	if subcategory == "" {
+		http.Error(w, "Product family is required", http.StatusBadRequest)
+		return
+	}
+
+	idStrs := r.Form["ids[]"]
+	if len(idStrs) == 0 {
+		http.Error(w, "No items selected", http.StatusBadRequest)
+		return
+	}
+
+	ids := make([]int64, 0, len(idStrs))
+	for _, s := range idStrs {
+		id, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			http.Error(w, "Invalid item ID", http.StatusBadRequest)
+			return
+		}
+		ids = append(ids, id)
+	}
+
+	err := h.queries.BulkUpdateItemTemplateSubcategory(ctx, repository.BulkUpdateItemTemplateSubcategoryParams{
+		Subcategory: sql.NullString{String: subcategory, Valid: true},
+		OrgID:       orgID,
+		Ids:         ids,
+	})
+	if err != nil {
+		logger.Error("failed to bulk update item template families", "error", err)
+		http.Error(w, "Failed to update families", http.StatusInternalServerError)
+		return
+	}
+
 	if r.Header.Get("HX-Request") == "true" {
 		w.Header().Set("HX-Redirect", "/items")
 		w.WriteHeader(http.StatusOK)

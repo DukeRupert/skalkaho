@@ -77,6 +77,14 @@
                 </svg>
                 Add Item
             </button>
+            <button
+                @click="showSpreadsheetBatchForm('{{$section.ID}}', '{{$jobID}}'); open = false"
+                class="flex items-center gap-2 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+                Batch Add
+            </button>
             {{if lt $depth 3}}
             <button
                 @click="showSubcategoryForm('{{$section.ID}}'); open = false"
@@ -113,7 +121,21 @@
 {{if eq $depth 2}}{{$itemIndent = "pl-12"}}{{end}}
 {{if eq $depth 3}}{{$itemIndent = "pl-16"}}{{end}}
 
-{{range $item := $section.Items}}
+{{range $tg := $section.TagGroups}}
+{{if $tg.Tag}}
+<!-- Tag Group Header -->
+<div class="{{$itemIndent}} hidden sm:flex items-center justify-between px-4 py-1 bg-slate-50/50 border-b border-slate-100">
+    <div class="flex items-center gap-1.5">
+        <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+        </svg>
+        <span class="text-xs font-medium text-slate-500 tracking-wider">{{$tg.Tag}}</span>
+    </div>
+    <span class="text-xs tabular-nums text-slate-400">{{formatMoney $tg.Subtotal}}</span>
+</div>
+{{end}}
+
+{{range $item := $tg.Items}}
 <div class="row flex items-center border-b border-slate-100 cursor-pointer hover:bg-{{$item.Color}}-50 {{$itemIndent}}"
      data-item-id="{{$item.ID}}"
      data-category-id="{{$section.ID}}"
@@ -187,6 +209,10 @@
     </div>
 </div>
 {{end}}
+{{end}}
+
+<!-- Batch Form Container (loaded via HTMX) -->
+<div class="{{$itemIndent}}" id="batch-form-area-{{$section.ID}}"></div>
 
 <!-- Add Item button for this category -->
 <div class="{{$itemIndent}} border-b border-slate-100">

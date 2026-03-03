@@ -913,6 +913,7 @@ func (h *Handler) GetBatchForm(w http.ResponseWriter, r *http.Request) {
 	orgID := GetOrgID(ctx)
 
 	templateCategory := r.URL.Query().Get("template_category")
+	templateSubcategory := r.URL.Query().Get("template_subcategory")
 
 	// Always fetch template categories for the picker
 	categories, err := h.queries.ListItemTemplateCategories(ctx, orgID)
@@ -933,24 +934,57 @@ func (h *Handler) GetBatchForm(w http.ResponseWriter, r *http.Request) {
 	existingTags := extractUniqueTagsForType(items, "material")
 
 	data := map[string]interface{}{
-		"CategoryID":         categoryID,
-		"TemplateCategories": categories,
-		"SelectedCategory":   templateCategory,
-		"ExistingTags":       existingTags,
+		"CategoryID":          categoryID,
+		"TemplateCategories":  categories,
+		"SelectedCategory":    templateCategory,
+		"SelectedSubcategory": templateSubcategory,
+		"ExistingTags":        existingTags,
 	}
 
-	// If a template category is selected, load the templates
+	// Pass through job_id for spreadsheet context
+	if jobID := r.URL.Query().Get("job_id"); jobID != "" {
+		data["JobID"] = jobID
+	}
+
+	// If a template category is selected, load subcategories and optionally templates
 	if templateCategory != "" {
-		templates, err := h.queries.ListItemTemplatesByCategory(ctx, repository.ListItemTemplatesByCategoryParams{
+		rawSubcategories, err := h.queries.ListItemTemplateSubcategories(ctx, repository.ListItemTemplateSubcategoriesParams{
 			OrgID:    orgID,
 			Category: templateCategory,
 		})
 		if err != nil {
-			logger.Error("failed to list templates by category", "error", err)
-			http.Error(w, "Failed to load templates", http.StatusInternalServerError)
-			return
+			logger.Error("failed to list template subcategories", "error", err)
 		}
-		data["Templates"] = templates
+		type subcategoryInfo struct {
+			Name  string
+			Count int64
+		}
+		subcategories := make([]subcategoryInfo, 0, len(rawSubcategories))
+		for _, s := range rawSubcategories {
+			if s.Subcategory.Valid {
+				subcategories = append(subcategories, subcategoryInfo{
+					Name:  s.Subcategory.String,
+					Count: s.ItemCount,
+				})
+			}
+		}
+		data["Subcategories"] = subcategories
+
+		if templateSubcategory != "" {
+			// Load templates for the selected subcategory
+			templates, err := h.queries.ListItemTemplatesBySubcategory(ctx, repository.ListItemTemplatesBySubcategoryParams{
+				OrgID:       orgID,
+				Category:    templateCategory,
+				Subcategory: sql.NullString{String: templateSubcategory, Valid: true},
+			})
+			if err != nil {
+				logger.Error("failed to list templates by subcategory", "error", err)
+				http.Error(w, "Failed to load templates", http.StatusInternalServerError)
+				return
+			}
+			data["Templates"] = templates
+		}
+		// No subcategory selected: show only the subcategory picker, no items
 	}
 
 	var buf bytes.Buffer
@@ -1045,6 +1079,11 @@ func (h *Handler) BatchCreateLineItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Info("batch created line items", "count", created, "categoryID", categoryID)
+
+	if jobID := r.FormValue("job_id"); jobID != "" && r.Header.Get("HX-Request") == "true" {
+		w.Header().Set("HX-Redirect", "/jobs/"+jobID)
+		return
+	}
 
 	if r.Header.Get("HX-Request") == "true" {
 		w.Header().Set("HX-Redirect", "/categories/"+categoryID)

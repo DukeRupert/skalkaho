@@ -356,6 +356,10 @@ function hideBatchForm() {
     if (container) {
         container.innerHTML = '';
     }
+    // Also clear spreadsheet batch form areas
+    document.querySelectorAll('[id^="batch-form-area-"]').forEach(function(el) {
+        el.innerHTML = '';
+    });
     formActive = false;
 }
 

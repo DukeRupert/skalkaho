@@ -78,13 +78,14 @@ type EstimateCategory struct {
 }
 
 type ItemTemplate struct {
-	ID           int64         `json:"id"`
-	Type         string        `json:"type"`
-	Category     string        `json:"category"`
-	Name         string        `json:"name"`
-	DefaultUnit  string        `json:"default_unit"`
-	DefaultPrice float64       `json:"default_price"`
-	OrgID        uuid.NullUUID `json:"org_id"`
+	ID           int64          `json:"id"`
+	Type         string         `json:"type"`
+	Category     string         `json:"category"`
+	Name         string         `json:"name"`
+	DefaultUnit  string         `json:"default_unit"`
+	DefaultPrice float64        `json:"default_price"`
+	OrgID        uuid.NullUUID  `json:"org_id"`
+	Subcategory  sql.NullString `json:"subcategory"`
 }
 
 type Job struct {

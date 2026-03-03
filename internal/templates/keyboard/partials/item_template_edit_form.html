@@ -27,12 +27,25 @@
             {{end}}
         </datalist>
 
+        <!-- Product Family Input -->
+        <input type="text"
+               name="subcategory"
+               value="{{if .Item.Subcategory.Valid}}{{.Item.Subcategory.String}}{{end}}"
+               list="subcategory-list"
+               placeholder="Product family"
+               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+        <datalist id="subcategory-list">
+            {{range .Subcategories}}
+            <option value="{{.}}">
+            {{end}}
+        </datalist>
+
         <!-- Name Input -->
         <input type="text"
                name="name"
                id="edit-template-name-input"
                value="{{.Item.Name}}"
-               class="col-span-4 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+               class="col-span-3 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
                autofocus
                required>
 
@@ -40,7 +53,7 @@
         <input type="text"
                name="default_unit"
                value="{{.Item.DefaultUnit}}"
-               class="col-span-2 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
+               class="col-span-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white">
 
         <!-- Default Price -->
         <div class="col-span-2 flex items-center border border-slate-300 rounded focus-within:ring-2 focus-within:ring-slate-400 overflow-hidden bg-white">

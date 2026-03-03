@@ -516,6 +516,7 @@ func (h *Handler) CreateTemplateFromMatch(w http.ResponseWriter, r *http.Request
 		Name:         name,
 		DefaultUnit:  unit,
 		DefaultPrice: price,
+		Subcategory:  sql.NullString{String: name, Valid: true},
 	})
 	if err != nil {
 		logger.Error("failed to create template", "error", err)
@@ -630,6 +631,7 @@ func (h *Handler) BulkCreateTemplates(w http.ResponseWriter, r *http.Request) {
 			Name:         item.SourceName,
 			DefaultUnit:  item.SourceUnit.String,
 			DefaultPrice: item.SourcePrice,
+			Subcategory:  sql.NullString{String: item.SourceName, Valid: true},
 		})
 		if err != nil {
 			logger.Error("failed to create template", "error", err, "name", item.SourceName)

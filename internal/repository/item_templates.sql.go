@@ -10,21 +10,39 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
+const bulkUpdateItemTemplateSubcategory = `-- name: BulkUpdateItemTemplateSubcategory :exec
+UPDATE item_templates SET subcategory = $1
+WHERE id = ANY($3::bigint[]) AND org_id = $2
+`
+
+type BulkUpdateItemTemplateSubcategoryParams struct {
+	Subcategory sql.NullString `json:"subcategory"`
+	OrgID       uuid.NullUUID  `json:"org_id"`
+	Ids         []int64        `json:"ids"`
+}
+
+func (q *Queries) BulkUpdateItemTemplateSubcategory(ctx context.Context, arg BulkUpdateItemTemplateSubcategoryParams) error {
+	_, err := q.db.ExecContext(ctx, bulkUpdateItemTemplateSubcategory, arg.Subcategory, arg.OrgID, pq.Array(arg.Ids))
+	return err
+}
+
 const createItemTemplate = `-- name: CreateItemTemplate :one
-INSERT INTO item_templates (org_id, type, category, name, default_unit, default_price)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, type, category, name, default_unit, default_price, org_id
+INSERT INTO item_templates (org_id, type, category, name, default_unit, default_price, subcategory)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, type, category, name, default_unit, default_price, org_id, subcategory
 `
 
 type CreateItemTemplateParams struct {
-	OrgID        uuid.NullUUID `json:"org_id"`
-	Type         string        `json:"type"`
-	Category     string        `json:"category"`
-	Name         string        `json:"name"`
-	DefaultUnit  string        `json:"default_unit"`
-	DefaultPrice float64       `json:"default_price"`
+	OrgID        uuid.NullUUID  `json:"org_id"`
+	Type         string         `json:"type"`
+	Category     string         `json:"category"`
+	Name         string         `json:"name"`
+	DefaultUnit  string         `json:"default_unit"`
+	DefaultPrice float64        `json:"default_price"`
+	Subcategory  sql.NullString `json:"subcategory"`
 }
 
 func (q *Queries) CreateItemTemplate(ctx context.Context, arg CreateItemTemplateParams) (ItemTemplate, error) {
@@ -35,6 +53,7 @@ func (q *Queries) CreateItemTemplate(ctx context.Context, arg CreateItemTemplate
 		arg.Name,
 		arg.DefaultUnit,
 		arg.DefaultPrice,
+		arg.Subcategory,
 	)
 	var i ItemTemplate
 	err := row.Scan(
@@ -45,6 +64,7 @@ func (q *Queries) CreateItemTemplate(ctx context.Context, arg CreateItemTemplate
 		&i.DefaultUnit,
 		&i.DefaultPrice,
 		&i.OrgID,
+		&i.Subcategory,
 	)
 	return i, err
 }
@@ -65,7 +85,7 @@ func (q *Queries) DeleteItemTemplate(ctx context.Context, arg DeleteItemTemplate
 }
 
 const getItemTemplate = `-- name: GetItemTemplate :one
-SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+SELECT id, type, category, name, default_unit, default_price, org_id, subcategory FROM item_templates
 WHERE id = $1 AND org_id = $2
 `
 
@@ -85,6 +105,7 @@ func (q *Queries) GetItemTemplate(ctx context.Context, arg GetItemTemplateParams
 		&i.DefaultUnit,
 		&i.DefaultPrice,
 		&i.OrgID,
+		&i.Subcategory,
 	)
 	return i, err
 }
@@ -118,8 +139,48 @@ func (q *Queries) ListItemTemplateCategories(ctx context.Context, orgID uuid.Nul
 	return items, nil
 }
 
+const listItemTemplateSubcategories = `-- name: ListItemTemplateSubcategories :many
+SELECT subcategory, COUNT(*)::bigint as item_count FROM item_templates
+WHERE (org_id = $1 OR org_id IS NULL) AND category = $2
+GROUP BY subcategory
+ORDER BY subcategory
+`
+
+type ListItemTemplateSubcategoriesParams struct {
+	OrgID    uuid.NullUUID `json:"org_id"`
+	Category string        `json:"category"`
+}
+
+type ListItemTemplateSubcategoriesRow struct {
+	Subcategory sql.NullString `json:"subcategory"`
+	ItemCount   int64          `json:"item_count"`
+}
+
+func (q *Queries) ListItemTemplateSubcategories(ctx context.Context, arg ListItemTemplateSubcategoriesParams) ([]ListItemTemplateSubcategoriesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listItemTemplateSubcategories, arg.OrgID, arg.Category)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListItemTemplateSubcategoriesRow{}
+	for rows.Next() {
+		var i ListItemTemplateSubcategoriesRow
+		if err := rows.Scan(&i.Subcategory, &i.ItemCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listItemTemplates = `-- name: ListItemTemplates :many
-SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+SELECT id, type, category, name, default_unit, default_price, org_id, subcategory FROM item_templates
 WHERE (org_id = $1 OR org_id IS NULL)
 ORDER BY category, name
 `
@@ -141,6 +202,7 @@ func (q *Queries) ListItemTemplates(ctx context.Context, orgID uuid.NullUUID) ([
 			&i.DefaultUnit,
 			&i.DefaultPrice,
 			&i.OrgID,
+			&i.Subcategory,
 		); err != nil {
 			return nil, err
 		}
@@ -156,7 +218,7 @@ func (q *Queries) ListItemTemplates(ctx context.Context, orgID uuid.NullUUID) ([
 }
 
 const listItemTemplatesByCategory = `-- name: ListItemTemplatesByCategory :many
-SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+SELECT id, type, category, name, default_unit, default_price, org_id, subcategory FROM item_templates
 WHERE (org_id = $1 OR org_id IS NULL) AND category = $2
 ORDER BY name
 `
@@ -183,6 +245,51 @@ func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, arg ListItemT
 			&i.DefaultUnit,
 			&i.DefaultPrice,
 			&i.OrgID,
+			&i.Subcategory,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listItemTemplatesBySubcategory = `-- name: ListItemTemplatesBySubcategory :many
+SELECT id, type, category, name, default_unit, default_price, org_id, subcategory FROM item_templates
+WHERE (org_id = $1 OR org_id IS NULL) AND category = $2 AND subcategory = $3
+ORDER BY name
+`
+
+type ListItemTemplatesBySubcategoryParams struct {
+	OrgID       uuid.NullUUID  `json:"org_id"`
+	Category    string         `json:"category"`
+	Subcategory sql.NullString `json:"subcategory"`
+}
+
+func (q *Queries) ListItemTemplatesBySubcategory(ctx context.Context, arg ListItemTemplatesBySubcategoryParams) ([]ItemTemplate, error) {
+	rows, err := q.db.QueryContext(ctx, listItemTemplatesBySubcategory, arg.OrgID, arg.Category, arg.Subcategory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ItemTemplate{}
+	for rows.Next() {
+		var i ItemTemplate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Category,
+			&i.Name,
+			&i.DefaultUnit,
+			&i.DefaultPrice,
+			&i.OrgID,
+			&i.Subcategory,
 		); err != nil {
 			return nil, err
 		}
@@ -198,7 +305,7 @@ func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, arg ListItemT
 }
 
 const searchItemTemplates = `-- name: SearchItemTemplates :many
-SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+SELECT id, type, category, name, default_unit, default_price, org_id, subcategory FROM item_templates
 WHERE (org_id = $1 OR org_id IS NULL) AND (name ILIKE '%' || $2 || '%' OR category ILIKE '%' || $2 || '%')
 ORDER BY name
 LIMIT 20
@@ -226,6 +333,7 @@ func (q *Queries) SearchItemTemplates(ctx context.Context, arg SearchItemTemplat
 			&i.DefaultUnit,
 			&i.DefaultPrice,
 			&i.OrgID,
+			&i.Subcategory,
 		); err != nil {
 			return nil, err
 		}
@@ -241,7 +349,7 @@ func (q *Queries) SearchItemTemplates(ctx context.Context, arg SearchItemTemplat
 }
 
 const searchItemTemplatesByType = `-- name: SearchItemTemplatesByType :many
-SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
+SELECT id, type, category, name, default_unit, default_price, org_id, subcategory FROM item_templates
 WHERE (org_id = $1 OR org_id IS NULL) AND type = $2 AND (name ILIKE '%' || $3 || '%' OR category ILIKE '%' || $3 || '%')
 ORDER BY name
 LIMIT 20
@@ -270,6 +378,7 @@ func (q *Queries) SearchItemTemplatesByType(ctx context.Context, arg SearchItemT
 			&i.DefaultUnit,
 			&i.DefaultPrice,
 			&i.OrgID,
+			&i.Subcategory,
 		); err != nil {
 			return nil, err
 		}
@@ -286,19 +395,20 @@ func (q *Queries) SearchItemTemplatesByType(ctx context.Context, arg SearchItemT
 
 const updateItemTemplate = `-- name: UpdateItemTemplate :one
 UPDATE item_templates
-SET type = $1, category = $2, name = $3, default_unit = $4, default_price = $5
-WHERE id = $6 AND org_id = $7
-RETURNING id, type, category, name, default_unit, default_price, org_id
+SET type = $1, category = $2, name = $3, default_unit = $4, default_price = $5, subcategory = $6
+WHERE id = $7 AND org_id = $8
+RETURNING id, type, category, name, default_unit, default_price, org_id, subcategory
 `
 
 type UpdateItemTemplateParams struct {
-	Type         string        `json:"type"`
-	Category     string        `json:"category"`
-	Name         string        `json:"name"`
-	DefaultUnit  string        `json:"default_unit"`
-	DefaultPrice float64       `json:"default_price"`
-	ID           int64         `json:"id"`
-	OrgID        uuid.NullUUID `json:"org_id"`
+	Type         string         `json:"type"`
+	Category     string         `json:"category"`
+	Name         string         `json:"name"`
+	DefaultUnit  string         `json:"default_unit"`
+	DefaultPrice float64        `json:"default_price"`
+	Subcategory  sql.NullString `json:"subcategory"`
+	ID           int64          `json:"id"`
+	OrgID        uuid.NullUUID  `json:"org_id"`
 }
 
 func (q *Queries) UpdateItemTemplate(ctx context.Context, arg UpdateItemTemplateParams) (ItemTemplate, error) {
@@ -308,6 +418,7 @@ func (q *Queries) UpdateItemTemplate(ctx context.Context, arg UpdateItemTemplate
 		arg.Name,
 		arg.DefaultUnit,
 		arg.DefaultPrice,
+		arg.Subcategory,
 		arg.ID,
 		arg.OrgID,
 	)
@@ -320,6 +431,7 @@ func (q *Queries) UpdateItemTemplate(ctx context.Context, arg UpdateItemTemplate
 		&i.DefaultUnit,
 		&i.DefaultPrice,
 		&i.OrgID,
+		&i.Subcategory,
 	)
 	return i, err
 }
