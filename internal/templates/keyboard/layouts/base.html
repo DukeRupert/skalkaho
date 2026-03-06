@@ -202,8 +202,8 @@ tailwind.config = {
                     <span>New labor</span>
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd></span>
                     <span>New equipment</span>
-                    <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">b</kbd></span>
-                    <span>Batch add</span>
+                    <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">C</kbd></span>
+                    <span>New subcategory</span>
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd></span>
                     <span>Delete selected</span>
                     <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">r</kbd></span>
@@ -589,11 +589,18 @@ document.addEventListener('keydown', function(e) {
         return;
     }
 
-    // If a Svelte quote editor is on the page, delegate arrow/nav keys to it
+    // If a Svelte quote editor is on the page, delegate keys to it
     const quoteEditor = document.querySelector('.quote-editor');
-    if (quoteEditor && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'j' || e.key === 'k' || e.key === 'Tab' || e.key === 'Enter')) {
-        quoteEditor.focus();
-        return;
+    if (quoteEditor) {
+        // Navigation keys: focus the grid and let it handle them
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'j' || e.key === 'k' || e.key === 'Tab' || e.key === 'Enter') {
+            quoteEditor.focus();
+            return;
+        }
+        // Action keys handled by the Svelte grid: skip base handler if grid has focus
+        if (document.activeElement === quoteEditor || quoteEditor.contains(document.activeElement)) {
+            return;
+        }
     }
 
     // Navigation

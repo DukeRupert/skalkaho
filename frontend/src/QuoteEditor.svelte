@@ -521,6 +521,30 @@
         if (row?.item) removeItem(row.item.id);
         break;
       }
+      case 'c': {
+        e.preventDefault();
+        // Top-level category
+        const container = document.getElementById('category-form-container');
+        if (container) {
+          container.removeAttribute('data-parent-id');
+          (window as any).showCategoryForm?.();
+        }
+        break;
+      }
+      case 'C': {
+        // Subcategory under selected category
+        e.preventDefault();
+        const row = gridRows[selectedRow];
+        const parentId = row?.categoryId;
+        if (parentId) {
+          const container = document.getElementById('category-form-container');
+          if (container) {
+            container.setAttribute('data-parent-id', parentId);
+            (window as any).showCategoryForm?.();
+          }
+        }
+        break;
+      }
       default:
         // If a printable character is pressed and we're on an item, start editing
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
