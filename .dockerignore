@@ -44,6 +44,9 @@ server
 # Catalyst UI kit (not needed in production)
 catalyst-ui-kit/
 
+# Frontend build artifacts (built in Docker)
+frontend/node_modules/
+
 # Temporary files
 *.log
 *.tmp

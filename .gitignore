@@ -29,6 +29,8 @@ go.work.sum
 
 # Frontend
 frontend/node_modules/
+static/js/quote-editor.iife.js
+static/js/quote-editor.iife.js.map
 
 # Editor/IDE
 # .idea/

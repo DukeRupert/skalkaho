@@ -1,12 +1,28 @@
 # =============================================================================
 # Multi-stage Dockerfile for Skalkaho
 # =============================================================================
-# Stage 1: Build the Go binary
-# Stage 2: Create minimal production image
+# Stage 1: Build the Svelte frontend
+# Stage 2: Build the Go binary
+# Stage 3: Create minimal production image
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Build Stage
+# Frontend Build Stage
+# -----------------------------------------------------------------------------
+FROM node:22-alpine AS frontend
+
+WORKDIR /app/frontend
+
+# Copy package files first for better layer caching
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+# Copy frontend source and build
+COPY frontend/ ./
+RUN npm run build
+
+# -----------------------------------------------------------------------------
+# Go Build Stage
 # -----------------------------------------------------------------------------
 FROM golang:1.24-alpine AS builder
 
@@ -21,6 +37,9 @@ RUN go mod download
 
 # Copy source code
 COPY . .
+
+# Copy frontend build output into static/js
+COPY --from=frontend /app/static/js/quote-editor.iife.js ./static/js/quote-editor.iife.js
 
 # Build with CGO enabled for SQLite
 ARG VERSION=dev
