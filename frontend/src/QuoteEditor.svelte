@@ -447,9 +447,9 @@
         commitEdit().then(() => {
           // Tab = next row, same column
           if (e.shiftKey) {
-            moveToNextItemRow(-1);
+            moveToNextRow(-1);
           } else {
-            moveToNextItemRow(1);
+            moveToNextRow(1);
           }
           startEditing();
         });
@@ -462,34 +462,27 @@
       case 'ArrowDown':
       case 'j':
         e.preventDefault();
-        moveToNextItemRow(1);
+        moveToNextRow(1);
         break;
       case 'ArrowUp':
       case 'k':
         e.preventDefault();
-        moveToNextItemRow(-1);
+        moveToNextRow(-1);
         break;
       case 'ArrowRight':
-      case 'l':
-        // 'l' adds labor item when not in edit mode; only ArrowRight navigates columns
-        if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          selectedCol = Math.min(selectedCol + 1, COLUMNS.length - 1);
-        }
+        e.preventDefault();
+        selectedCol = Math.min(selectedCol + 1, COLUMNS.length - 1);
         break;
       case 'ArrowLeft':
-      case 'h':
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          selectedCol = Math.max(selectedCol - 1, 0);
-        }
+        e.preventDefault();
+        selectedCol = Math.max(selectedCol - 1, 0);
         break;
       case 'Tab':
         e.preventDefault();
         if (e.shiftKey) {
-          moveToNextItemRow(-1);
+          moveToNextRow(-1);
         } else {
-          moveToNextItemRow(1);
+          moveToNextRow(1);
         }
         break;
       case 'Enter':
@@ -558,27 +551,16 @@
     }
   }
 
-  function moveToNextItemRow(direction: 1 | -1) {
+  function moveToNextRow(direction: 1 | -1) {
     if (gridRows.length === 0) return;
 
-    // If current row is a category or out of bounds, jump to first/last item
-    if (selectedRow < 0 || selectedRow >= gridRows.length || gridRows[selectedRow].kind === 'category') {
-      if (direction === 1) {
-        const first = gridRows.findIndex(r => r.kind === 'item');
-        if (first >= 0) selectedRow = first;
-      } else {
-        for (let i = gridRows.length - 1; i >= 0; i--) {
-          if (gridRows[i].kind === 'item') { selectedRow = i; break; }
-        }
-      }
+    // If no row selected, jump to first or last row
+    if (selectedRow < 0 || selectedRow >= gridRows.length) {
+      selectedRow = direction === 1 ? 0 : gridRows.length - 1;
       return;
     }
 
-    let next = selectedRow + direction;
-    // Skip category header rows
-    while (next >= 0 && next < gridRows.length && gridRows[next].kind === 'category') {
-      next += direction;
-    }
+    const next = selectedRow + direction;
     if (next >= 0 && next < gridRows.length) {
       selectedRow = next;
     }
@@ -627,8 +609,9 @@
         {#if row.kind === 'category'}
           <!-- Category Header Row -->
           <div
-            class="flex items-center px-3 py-2 bg-slate-50/80 border-l-4 border-slate-300"
+            class="flex items-center px-3 py-2 bg-slate-50/80 border-l-4 {rowIdx === selectedRow ? 'border-copper-400 bg-copper-50/50' : 'border-slate-300'}"
             style="padding-left: {0.75 + row.depth * 1}rem"
+            onclick={() => selectedRow = rowIdx}
           >
             <span class="font-semibold text-sm text-slate-700">{row.categoryName}</span>
           </div>
