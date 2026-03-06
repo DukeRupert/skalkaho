@@ -177,39 +177,11 @@
                 <div id="markup-form-container" data-job-id="{{.Job.ID}}"></div>
             </div>
 
-            <!-- Spreadsheet Section -->
+            <!-- Svelte Quote Editor -->
             <div class="bg-white rounded-lg border border-slate-200">
-                <!-- Spreadsheet Header -->
-                <div class="hidden sm:grid px-4 py-2 bg-slate-50 border-b border-slate-200 text-xs font-medium tracking-wider uppercase text-slate-500 grid-cols-12 gap-2">
-                    <span class="col-span-4">Name</span>
-                    <span class="col-span-2 text-right">Qty</span>
-                    <span class="col-span-2">Unit</span>
-                    <span class="col-span-2 text-right">Price</span>
-                    <span class="col-span-1 text-right">Total</span>
-                    <span class="col-span-1"></span>
-                </div>
+                <div id="quote-editor" data-job-id="{{.Job.ID}}"></div>
 
-                {{if .Sections}}
-                <div id="spreadsheet-body">
-                    {{range $i, $section := .Sections}}
-                    {{template "spreadsheet_section" dict "Section" $section "JobID" $.Job.ID "RowIndex" 0}}
-                    {{end}}
-                </div>
-                {{else}}
-                <div id="empty-state" class="px-4 py-8 text-center text-slate-500">
-                    <p>No categories yet.</p>
-                    <p class="text-sm mt-3 hidden sm:block">Press <kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> to create a category.</p>
-                    <button onclick="showCategoryForm()"
-                            class="mt-4 sm:hidden px-4 py-2 bg-copper-600 hover:bg-copper-700 text-white text-sm font-medium rounded-lg inline-flex items-center gap-2 transition-colors">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Create First Category
-                    </button>
-                </div>
-                {{end}}
-
-                <!-- Add Category row -->
+                <!-- Add Category row (still HTMX-driven) -->
                 <div id="category-form-container" data-job-id="{{.Job.ID}}"></div>
                 <div class="px-4 py-2 border-t border-slate-100">
                     <button onclick="showCategoryForm()"
@@ -220,28 +192,6 @@
                         Add Category
                         <kbd class="hidden sm:inline font-mono text-xs px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700 ml-1">c</kbd>
                     </button>
-                </div>
-            </div>
-
-            <!-- Totals Summary -->
-            <div class="mt-4 bg-white rounded-lg border border-slate-200 p-4">
-                <div class="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                        <span class="text-slate-500">Materials</span>
-                        <p class="tabular-nums font-medium text-forest-700">{{formatMoney .Totals.MaterialSubtotal}}</p>
-                    </div>
-                    <div>
-                        <span class="text-slate-500">Labor</span>
-                        <p class="tabular-nums font-medium text-copper-700">{{formatMoney .Totals.LaborSubtotal}}</p>
-                    </div>
-                    <div>
-                        <span class="text-slate-500">Equipment</span>
-                        <p class="tabular-nums font-medium text-slate-700">{{formatMoney .Totals.EquipmentSubtotal}}</p>
-                    </div>
-                </div>
-                <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
-                    <span class="text-sm font-medium text-slate-700">Grand Total</span>
-                    <span class="text-xl font-semibold tabular-nums text-slate-900">{{formatMoney .Totals.GrandTotal}}</span>
                 </div>
             </div>
 
@@ -329,144 +279,20 @@
     </script>
     {{end}}
 
-    <script>
-    // Spreadsheet-specific functions
-    function showSpreadsheetForm(categoryID, jobID) {
-        const container = document.getElementById('spreadsheet-form-' + categoryID);
-        if (!container) return;
-
-        htmx.ajax('GET', '/categories/' + categoryID + '/spreadsheet-form?job_id=' + jobID, {
-            target: '#spreadsheet-form-' + categoryID,
-            swap: 'innerHTML'
-        }).then(() => {
-            htmx.process(container);
-            const input = container.querySelector('input[name="name"]');
-            if (input) input.focus();
-        });
-        formActive = true;
-    }
-
-    function hideSpreadsheetForm() {
-        document.querySelectorAll('[id^="spreadsheet-form-"]').forEach(c => c.innerHTML = '');
-        formActive = false;
-    }
-
-    function showSubcategoryForm(parentID) {
-        const container = document.getElementById('category-form-container');
-        if (!container) return;
-
-        // Save original jobId and temporarily set parent_id
-        const originalJobId = container.dataset.jobId;
-        container.dataset.parentId = parentID;
-        delete container.dataset.jobId;
-
-        htmx.ajax('GET', '/category-form?parent_id=' + parentID, {
-            target: '#category-form-container',
-            swap: 'innerHTML'
-        }).then(() => {
-            htmx.process(container);
-            const input = container.querySelector('input[name="name"]');
-            if (input) input.focus();
-        });
-        formActive = true;
-
-        // Restore jobId after form is dismissed
-        const origHideCategoryForm = hideCategoryForm;
-        hideCategoryForm = function() {
-            origHideCategoryForm();
-            container.dataset.jobId = originalJobId;
-            delete container.dataset.parentId;
-            hideCategoryForm = origHideCategoryForm;
-        };
-    }
-
-    function editSpreadsheetItem(itemId, jobID, row) {
-        htmx.ajax('GET', '/items/' + itemId + '/spreadsheet-edit?job_id=' + jobID, {
-            target: row,
-            swap: 'outerHTML'
-        });
-    }
-
-    // Override selectCurrent for spreadsheet context
-    const origSelectCurrent = selectCurrent;
-    selectCurrent = function() {
-        if (rows[selectedIndex]) {
-            const row = rows[selectedIndex];
-            const rowType = row.dataset.rowType;
-            const itemId = row.dataset.itemId;
-            const categoryId = row.dataset.categoryId;
-            const jobId = row.dataset.jobId || document.body.dataset.jobId;
-
-            if (rowType === 'item' && itemId) {
-                editSpreadsheetItem(itemId, jobId, row);
-            } else if (rowType === 'category' && categoryId) {
-                // No-op for category headers on Enter; user can use action menu
-            } else {
-                origSelectCurrent();
-            }
-        }
-    };
-
-    // Override deleteCurrent to append job_id for spreadsheet redirects
-    const origDeleteCurrent = deleteCurrent;
-    deleteCurrent = function() {
-        if (rows[selectedIndex]) {
-            const row = rows[selectedIndex];
-            const deleteUrl = row.dataset.deleteUrl;
-            const jobId = document.body.dataset.jobId;
-            if (deleteUrl && confirm('Delete this item?')) {
-                const url = deleteUrl + (deleteUrl.includes('?') ? '&' : '?') + 'job_id=' + jobId;
-                htmx.ajax('DELETE', url, {target: 'body'});
-            }
-        }
-    };
-
-    // Add 'a' key handler for adding items to focused category
-    document.addEventListener('keydown', function(e) {
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') return;
-
-        if (e.key === ' ') {
-            // Spacebar toggles expand/collapse on category rows
-            if (rows[selectedIndex] && rows[selectedIndex].dataset.rowType === 'category') {
-                e.preventDefault();
-                const row = rows[selectedIndex];
-                // Find the parent x-data scope (the wrapping div with expanded)
-                const wrapper = row.closest('[x-data]');
-                if (wrapper && wrapper._x_dataStack) {
-                    wrapper._x_dataStack[0].expanded = !wrapper._x_dataStack[0].expanded;
-                }
-            }
-            return;
-        }
-
-        if (e.key === 'a' || e.key === '+') {
-            e.preventDefault();
-            // Find the category for the currently selected row
-            if (rows[selectedIndex]) {
-                const row = rows[selectedIndex];
-                const catId = row.dataset.categoryId;
-                const jobId = document.body.dataset.jobId;
-                if (catId && jobId) {
-                    showSpreadsheetForm(catId, jobId);
-                }
-            }
-        }
-
-        if (e.key === 'Escape') {
-            hideSpreadsheetForm();
-        }
-    });
-    </script>
+    <!-- Svelte Quote Editor -->
+    <script src="/static/js/quote-editor.iife.js"></script>
 </body>
 </html>
 {{end}}
 
 {{define "shortcuts"}}
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">↑↓</kbd> navigate</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">␣</kbd> expand</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">Tab</kbd> next row</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">⏎</kbd> edit</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">a</kbd> add item</span>
-<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> category</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">m</kbd> material</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">l</kbd> labor</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">e</kbd> equipment</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">d</kbd> delete</span>
+<span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">c</kbd> category</span>
 <span><kbd class="font-mono text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-slate-700">?</kbd> help</span>
 {{end}}

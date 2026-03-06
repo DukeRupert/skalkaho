@@ -266,3 +266,19 @@ func (q *Queries) UpdateLineItem(ctx context.Context, arg UpdateLineItemParams) 
 	)
 	return i, err
 }
+
+const updateLineItemSortOrder = `-- name: UpdateLineItemSortOrder :exec
+UPDATE line_items SET sort_order = $1
+WHERE id = $2 AND org_id = $3
+`
+
+type UpdateLineItemSortOrderParams struct {
+	SortOrder int64         `json:"sort_order"`
+	ID        string        `json:"id"`
+	OrgID     uuid.NullUUID `json:"org_id"`
+}
+
+func (q *Queries) UpdateLineItemSortOrder(ctx context.Context, arg UpdateLineItemSortOrderParams) error {
+	_, err := q.db.ExecContext(ctx, updateLineItemSortOrder, arg.SortOrder, arg.ID, arg.OrgID)
+	return err
+}

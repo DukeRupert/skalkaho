@@ -1,4 +1,4 @@
-.PHONY: dev build test sqlc db-migrate db-rollback db-status db-new clean
+.PHONY: dev build test sqlc db-migrate db-rollback db-status db-new clean frontend frontend-dev frontend-install
 
 # Development
 dev:
@@ -38,6 +38,16 @@ sqlc:
 clean:
 	rm -f bin/server
 	rm -f $(DB_PATH)
+
+# Frontend
+frontend-install:
+	cd frontend && npm install
+
+frontend:
+	cd frontend && npm run build
+
+frontend-dev:
+	cd frontend && npm run dev
 
 # Install dependencies
 deps:

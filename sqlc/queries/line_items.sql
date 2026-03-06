@@ -32,6 +32,10 @@ UPDATE line_items SET
 WHERE id = $10 AND org_id = $11
 RETURNING *;
 
+-- name: UpdateLineItemSortOrder :exec
+UPDATE line_items SET sort_order = $1
+WHERE id = $2 AND org_id = $3;
+
 -- name: DeleteLineItem :exec
 DELETE FROM line_items
 WHERE id = $1 AND org_id = $2;

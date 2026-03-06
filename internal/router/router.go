@@ -89,6 +89,14 @@ func Register(mux *http.ServeMux, h *keyboard.Handler, authH *authhandler.Handle
 	mux.Handle("PUT /item-types/{id}", protect(sm, http.HandlerFunc(h.UpdateJobItemType)))
 	mux.Handle("DELETE /item-types/{id}", protect(sm, http.HandlerFunc(h.DeleteJobItemType)))
 
+	// JSON API
+	mux.Handle("GET /api/jobs/{id}", protect(sm, http.HandlerFunc(h.GetJobJSON)))
+	mux.Handle("PATCH /api/jobs/{id}/items/{itemId}", protect(sm, http.HandlerFunc(h.PatchLineItemJSON)))
+	mux.Handle("POST /api/jobs/{id}/items", protect(sm, http.HandlerFunc(h.CreateLineItemJSON)))
+	mux.Handle("DELETE /api/jobs/{id}/items/{itemId}", protect(sm, http.HandlerFunc(h.DeleteLineItemJSON)))
+	mux.Handle("PATCH /api/jobs/{id}/items/reorder", protect(sm, http.HandlerFunc(h.ReorderItemsJSON)))
+	mux.Handle("GET /api/items/search", protect(sm, http.HandlerFunc(h.SearchItemsJSON)))
+
 	// Line Items
 	mux.Handle("GET /categories/{categoryID}/spreadsheet-form", protect(sm, http.HandlerFunc(h.GetSpreadsheetInlineForm)))
 	mux.Handle("GET /items/{id}/spreadsheet-edit", protect(sm, http.HandlerFunc(h.GetSpreadsheetEditForm)))
