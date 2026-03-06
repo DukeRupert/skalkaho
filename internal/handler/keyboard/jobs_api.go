@@ -63,10 +63,10 @@ type QuoteItemType struct {
 }
 
 type QuoteTotals struct {
-	Subtotal      float64            `json:"subtotal"`
-	SurchargeTotal float64           `json:"surcharge_total"`
-	GrandTotal    float64            `json:"grand_total"`
-	TypeSubtotals map[string]float64 `json:"type_subtotals"`
+	Subtotal       float64            `json:"subtotal"`
+	SurchargeTotal float64            `json:"surcharge_total"`
+	GrandTotal     float64            `json:"grand_total"`
+	TypeSubtotals  map[string]float64 `json:"type_subtotals"`
 }
 
 // --- Conversion helpers ---
@@ -436,14 +436,14 @@ func (h *Handler) CreateLineItemJSON(w http.ResponseWriter, r *http.Request) {
 	jobID := r.PathValue("id")
 
 	var input struct {
-		CategoryID string   `json:"category_id"`
-		Type       string   `json:"type"`
-		Name       string   `json:"name"`
-		Quantity   float64  `json:"quantity"`
-		Unit       string   `json:"unit"`
-		UnitPrice  float64  `json:"unit_price"`
-		Tag        *string  `json:"tag"`
-		SortOrder  *int64   `json:"sort_order"`
+		CategoryID string  `json:"category_id"`
+		Type       string  `json:"type"`
+		Name       string  `json:"name"`
+		Quantity   float64 `json:"quantity"`
+		Unit       string  `json:"unit"`
+		UnitPrice  float64 `json:"unit_price"`
+		Tag        *string `json:"tag"`
+		SortOrder  *int64  `json:"sort_order"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "Invalid JSON")
@@ -642,4 +642,3 @@ func (h *Handler) SearchItemsJSON(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, results)
 }
-
