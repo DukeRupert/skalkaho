@@ -199,9 +199,9 @@ func (q *Queries) ListItemTemplatesByCategory(ctx context.Context, arg ListItemT
 
 const searchItemTemplates = `-- name: SearchItemTemplates :many
 SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
-WHERE (org_id = $1 OR org_id IS NULL) AND name LIKE '%' || $2 || '%'
+WHERE (org_id = $1 OR org_id IS NULL) AND (name ILIKE '%' || $2 || '%' OR category ILIKE '%' || $2 || '%')
 ORDER BY name
-LIMIT 10
+LIMIT 20
 `
 
 type SearchItemTemplatesParams struct {
@@ -242,9 +242,9 @@ func (q *Queries) SearchItemTemplates(ctx context.Context, arg SearchItemTemplat
 
 const searchItemTemplatesByType = `-- name: SearchItemTemplatesByType :many
 SELECT id, type, category, name, default_unit, default_price, org_id FROM item_templates
-WHERE (org_id = $1 OR org_id IS NULL) AND type = $2 AND name LIKE '%' || $3 || '%'
+WHERE (org_id = $1 OR org_id IS NULL) AND type = $2 AND (name ILIKE '%' || $3 || '%' OR category ILIKE '%' || $3 || '%')
 ORDER BY name
-LIMIT 10
+LIMIT 20
 `
 
 type SearchItemTemplatesByTypeParams struct {
