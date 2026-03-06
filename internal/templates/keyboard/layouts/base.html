@@ -589,6 +589,13 @@ document.addEventListener('keydown', function(e) {
         return;
     }
 
+    // If a Svelte quote editor is on the page, delegate arrow/nav keys to it
+    const quoteEditor = document.querySelector('.quote-editor');
+    if (quoteEditor && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'j' || e.key === 'k' || e.key === 'Tab' || e.key === 'Enter')) {
+        quoteEditor.focus();
+        return;
+    }
+
     // Navigation
     switch (e.key) {
         case 'j':

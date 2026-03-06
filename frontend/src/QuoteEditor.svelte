@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fetchJob, patchItem, createItem, deleteItem } from './api';
+  import { fetchJob, patchItem, createItem, deleteItem, searchTemplates } from './api';
   import { calculateTotals } from './surcharge';
   import { autofocus } from './actions';
   import type {
@@ -11,6 +11,7 @@
     QuoteTotals,
     GridRow,
     EditableColumn,
+    TemplateResult,
   } from './types';
 
   let { jobId }: { jobId: string } = $props();
@@ -19,11 +20,22 @@
   let data: QuoteResponse | null = $state(null);
   let error: string | null = $state(null);
   let loading = $state(true);
-  let selectedRow = $state(0);
+  let selectedRow = $state(-1);
   let selectedCol = $state(0);
   let editing = $state(false);
   let editValue = $state('');
   let gridEl: HTMLDivElement | undefined = $state();
+
+  // --- Item search modal state ---
+  let searchOpen = $state(false);
+  let searchType = $state('material');
+  let searchCategoryId = $state('');
+  let searchQuery = $state('');
+  let searchResults: TemplateResult[] = $state([]);
+  let searchSelectedIdx = $state(0);
+  let searchLoading = $state(false);
+  let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+  let searchResultsEl: HTMLDivElement | undefined = $state();
 
   const COLUMNS: EditableColumn[] = ['name', 'quantity', 'unit', 'unit_price', 'surcharge_percent'];
   const COL_HEADERS = ['Name', 'Qty', 'Unit', 'Price', 'Markup %'];
@@ -144,6 +156,153 @@
     return null;
   }
 
+  // --- Item search modal ---
+  function openSearch(type: string, categoryId: string) {
+    searchType = type;
+    searchCategoryId = categoryId;
+    searchQuery = '';
+    searchResults = [];
+    searchSelectedIdx = 0;
+    searchOpen = true;
+    searchLoading = false;
+  }
+
+  function closeSearch() {
+    searchOpen = false;
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    // Refocus the grid
+    tick().then(() => gridEl?.focus());
+  }
+
+  function handleSearchInput(e: Event) {
+    const value = (e.target as HTMLInputElement).value;
+    searchQuery = value;
+    searchSelectedIdx = 0;
+
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    if (value.length === 0) {
+      searchResults = [];
+      searchLoading = false;
+      return;
+    }
+    searchLoading = true;
+    searchDebounceTimer = setTimeout(async () => {
+      try {
+        searchResults = await searchTemplates(value, searchType);
+      } catch (err) {
+        console.error('Search failed:', err);
+        searchResults = [];
+      } finally {
+        searchLoading = false;
+      }
+    }, 200);
+  }
+
+  async function pickTemplate(template: TemplateResult | null) {
+    closeSearch();
+    if (!data) return;
+
+    const name = template ? template.name : 'New Item';
+    const unit = template ? template.default_unit : (searchType === 'labor' ? 'hr' : 'ea');
+    const unitPrice = template ? template.default_price : 0;
+
+    try {
+      const resp = await createItem(jobId, {
+        category_id: searchCategoryId,
+        type: searchType,
+        name,
+        quantity: 1,
+        unit: unit,
+        unit_price: unitPrice,
+      });
+
+      const cat = findCategory(data.categories, searchCategoryId);
+      if (cat) {
+        cat.items = [...cat.items, resp.item];
+        data.totals = resp.totals;
+
+        await tick();
+        const newIdx = gridRows.findIndex(r => r.item?.id === resp.item.id);
+        if (newIdx >= 0) {
+          selectedRow = newIdx;
+          // Template picked: jump to quantity and start editing
+          selectedCol = 1;
+          startEditing();
+        }
+      }
+    } catch (e) {
+      console.error('Failed to create item:', e);
+    }
+  }
+
+  async function pickSearchAsNewItem() {
+    const name = searchQuery.trim() || 'New Item';
+    const editName = !searchQuery.trim();
+    closeSearch();
+    if (!data) return;
+
+    try {
+      const resp = await createItem(jobId, {
+        category_id: searchCategoryId,
+        type: searchType,
+        name,
+        quantity: 1,
+        unit: searchType === 'labor' ? 'hr' : 'ea',
+        unit_price: 0,
+      });
+
+      const cat = findCategory(data.categories, searchCategoryId);
+      if (cat) {
+        cat.items = [...cat.items, resp.item];
+        data.totals = resp.totals;
+
+        await tick();
+        const newIdx = gridRows.findIndex(r => r.item?.id === resp.item.id);
+        if (newIdx >= 0) {
+          selectedRow = newIdx;
+          // No name: edit name. Has name: edit quantity.
+          selectedCol = editName ? 0 : 1;
+          startEditing();
+        }
+      }
+    } catch (e) {
+      console.error('Failed to create item:', e);
+    }
+  }
+
+  function scrollSearchResult() {
+    tick().then(() => {
+      if (!searchResultsEl) return;
+      const item = searchResultsEl.children[searchSelectedIdx] as HTMLElement | undefined;
+      item?.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  function handleSearchKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeSearch();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        searchSelectedIdx = Math.min(searchSelectedIdx + 1, searchResults.length - 1);
+        scrollSearchResult();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      searchSelectedIdx = Math.max(searchSelectedIdx - 1, 0);
+      scrollSearchResult();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (searchResults.length > 0 && searchSelectedIdx < searchResults.length) {
+        pickTemplate(searchResults[searchSelectedIdx]);
+      } else {
+        // No results - create item with typed name (or blank)
+        pickSearchAsNewItem();
+      }
+    }
+  }
+
   // --- Actions ---
   async function commitEdit() {
     if (!editing || !data) return;
@@ -156,6 +315,7 @@
 
     if (editValue === oldValue) {
       editing = false;
+      tick().then(() => gridEl?.focus());
       return;
     }
 
@@ -165,20 +325,20 @@
       patch.name = editValue;
     } else if (col === 'quantity') {
       const v = parseFloat(editValue);
-      if (isNaN(v) || v <= 0) { editing = false; return; }
+      if (isNaN(v) || v <= 0) { editing = false; tick().then(() => gridEl?.focus()); return; }
       patch.quantity = v;
     } else if (col === 'unit') {
       patch.unit = editValue;
     } else if (col === 'unit_price') {
       const v = parseFloat(editValue);
-      if (isNaN(v)) { editing = false; return; }
+      if (isNaN(v)) { editing = false; tick().then(() => gridEl?.focus()); return; }
       patch.unit_price = v;
     } else if (col === 'surcharge_percent') {
       if (editValue === '' || editValue === 'inherit') {
         patch.surcharge_percent = null;
       } else {
         const v = parseFloat(editValue);
-        if (isNaN(v)) { editing = false; return; }
+        if (isNaN(v)) { editing = false; tick().then(() => gridEl?.focus()); return; }
         patch.surcharge_percent = v;
       }
     }
@@ -186,6 +346,7 @@
     // Optimistic update
     findAndUpdateItem(data.categories, item.id, (i) => ({ ...i, ...patch }));
     editing = false;
+    tick().then(() => gridEl?.focus());
 
     try {
       const resp = await patchItem(jobId, item.id, patch);
@@ -259,6 +420,7 @@
 
   function cancelEdit() {
     editing = false;
+    tick().then(() => gridEl?.focus());
   }
 
   // Svelte tick for waiting for DOM updates
@@ -268,7 +430,8 @@
 
   // --- Keyboard handler ---
   function handleKeydown(e: KeyboardEvent) {
-    // Don't handle if typing in an input outside our grid
+    // Don't handle if search modal is open or typing in an input outside our grid
+    if (searchOpen) return;
     const target = e.target as HTMLElement;
     if (target.tagName === 'SELECT' || target.tagName === 'TEXTAREA') return;
 
@@ -336,19 +499,19 @@
       case 'm': {
         e.preventDefault();
         const catId = gridRows[selectedRow]?.categoryId;
-        if (catId) addItem(catId, 'material');
+        if (catId) openSearch('material', catId);
         break;
       }
       case 'l': {
         e.preventDefault();
         const catId = gridRows[selectedRow]?.categoryId;
-        if (catId) addItem(catId, 'labor');
+        if (catId) openSearch('labor', catId);
         break;
       }
       case 'e': {
         e.preventDefault();
         const catId = gridRows[selectedRow]?.categoryId;
-        if (catId) addItem(catId, 'equipment');
+        if (catId) openSearch('equipment', catId);
         break;
       }
       case 'd':
@@ -372,6 +535,21 @@
   }
 
   function moveToNextItemRow(direction: 1 | -1) {
+    if (gridRows.length === 0) return;
+
+    // If current row is a category or out of bounds, jump to first/last item
+    if (selectedRow < 0 || selectedRow >= gridRows.length || gridRows[selectedRow].kind === 'category') {
+      if (direction === 1) {
+        const first = gridRows.findIndex(r => r.kind === 'item');
+        if (first >= 0) selectedRow = first;
+      } else {
+        for (let i = gridRows.length - 1; i >= 0; i--) {
+          if (gridRows[i].kind === 'item') { selectedRow = i; break; }
+        }
+      }
+      return;
+    }
+
     let next = selectedRow + direction;
     // Skip category header rows
     while (next >= 0 && next < gridRows.length && gridRows[next].kind === 'category') {
@@ -527,15 +705,71 @@
       </div>
     </div>
 
-    <!-- Keyboard shortcuts hint -->
-    <div class="mt-2 flex flex-wrap gap-3 text-xs text-slate-400 px-1">
-      <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">↑↓</kbd> navigate</span>
-      <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">Tab</kbd> next row</span>
-      <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">Enter</kbd> edit</span>
-      <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">m</kbd> material</span>
-      <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">l</kbd> labor</span>
-      <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">e</kbd> equipment</span>
-      <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">d</kbd> delete</span>
+  {/if}
+
+  <!-- Item Search Modal -->
+  {#if searchOpen}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div class="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]" onclick={() => closeSearch()}>
+      <div class="absolute inset-0 bg-black/30"></div>
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div
+        class="relative bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-md mx-4"
+        onclick={(e) => e.stopPropagation()}
+        onkeydown={handleSearchKeydown}
+      >
+        <div class="px-4 pt-4 pb-2">
+          <div class="flex items-center gap-2 mb-3">
+            <span
+              class="text-xs font-medium px-2 py-0.5 rounded-full text-white"
+              style="background-color: {getTypeColor(searchType)}"
+            >
+              {searchType}
+            </span>
+            <span class="text-sm text-slate-500">Search or press Enter to create blank</span>
+          </div>
+          <input
+            type="text"
+            class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm outline-none focus:border-copper-400 focus:ring-1 focus:ring-copper-400"
+            placeholder="Type to search items..."
+            value={searchQuery}
+            oninput={handleSearchInput}
+            use:autofocus
+          />
+        </div>
+        <div class="max-h-64 overflow-y-auto" bind:this={searchResultsEl}>
+          {#if searchLoading}
+            <div class="px-4 py-3 text-sm text-slate-400">Searching...</div>
+          {:else if searchQuery && searchResults.length === 0}
+            <div class="px-4 py-3 text-sm text-slate-400">No templates found. Press Enter to create "{searchQuery}" as a new item.</div>
+          {:else}
+            {#each searchResults as result, idx}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div
+                class="flex items-center justify-between px-4 py-2 cursor-pointer text-sm {idx === searchSelectedIdx ? 'bg-copper-50' : 'hover:bg-slate-50'}"
+                onclick={() => pickTemplate(result)}
+                onmouseenter={() => { searchSelectedIdx = idx; }}
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-slate-800 truncate">{result.name}</div>
+                  <div class="text-xs text-slate-400">{result.category} &middot; {result.default_unit}</div>
+                </div>
+                <div class="text-sm tabular-nums text-slate-600 ml-3">
+                  {formatMoney(result.default_price)}
+                </div>
+              </div>
+            {/each}
+          {/if}
+        </div>
+        <div class="px-4 py-2 border-t border-slate-100 text-xs text-slate-400 flex gap-3">
+          <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">↑↓</kbd> navigate</span>
+          <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">Enter</kbd> select</span>
+          <span><kbd class="font-mono px-1 py-0.5 bg-slate-100 border border-slate-200 rounded">Esc</kbd> cancel</span>
+        </div>
+      </div>
     </div>
   {/if}
 </div>
