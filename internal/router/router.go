@@ -56,6 +56,17 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	// Estimate builder API (JSON)
 	mux.Handle("GET /api/estimate/{id}", protect(sm, http.HandlerFunc(appH.GetEstimate)))
 	mux.Handle("POST /api/estimate/{id}", protect(sm, http.HandlerFunc(appH.SaveEstimate)))
+
+	// Quote management (protected)
+	mux.Handle("GET /projects/{id}/quotes", protect(sm, http.HandlerFunc(appH.ListQuotes)))
+	mux.Handle("POST /projects/{id}/quotes", protect(sm, http.HandlerFunc(appH.CreateQuote)))
+	mux.Handle("POST /quotes/{id}/send", protect(sm, http.HandlerFunc(appH.SendQuote)))
+	mux.Handle("POST /quotes/{id}/resend", protect(sm, http.HandlerFunc(appH.ResendQuote)))
+	mux.Handle("GET /quotes/{id}/send-modal", protect(sm, http.HandlerFunc(appH.GetSendModal)))
+
+	// Public quote page (no auth)
+	mux.HandleFunc("GET /q/{token}", appH.GetQuotePage)
+	mux.HandleFunc("POST /q/{token}", appH.SubmitSignature)
 }
 
 // protect wraps a handler with session loading and authentication requirement.

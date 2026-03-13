@@ -6,6 +6,7 @@ import (
 
 	"github.com/dukerupert/skalkaho/internal/auth"
 	"github.com/dukerupert/skalkaho/internal/repository"
+	"github.com/dukerupert/skalkaho/internal/service/email"
 	"github.com/dukerupert/skalkaho/internal/templates"
 )
 
@@ -24,9 +25,10 @@ type ProjectStub struct {
 
 // Handler serves the main application pages.
 type Handler struct {
-	queries  *repository.Queries
-	renderer *templates.Renderer
-	logger   *slog.Logger
+	queries     *repository.Queries
+	renderer    *templates.Renderer
+	logger      *slog.Logger
+	emailClient *email.Client
 }
 
 // NewHandler creates a new app handler.

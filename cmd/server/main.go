@@ -19,6 +19,7 @@ import (
 	"github.com/dukerupert/skalkaho/internal/middleware"
 	"github.com/dukerupert/skalkaho/internal/repository"
 	"github.com/dukerupert/skalkaho/internal/router"
+	"github.com/dukerupert/skalkaho/internal/service/email"
 	"github.com/dukerupert/skalkaho/internal/templates"
 )
 
@@ -78,9 +79,16 @@ func main() {
 		cfg.SecureCookies,
 	)
 
+	// Initialize email client
+	emailClient := email.NewClient(cfg.PostmarkAPIKey, "noreply@skalkaho.com")
+	if emailClient.Enabled() {
+		logger.Info("Email sending enabled via Postmark")
+	}
+
 	// Initialize handlers
 	authHandler := authhandler.NewHandler(queries, renderer, sessionManager, logger)
 	appHandler := apphandler.NewHandler(queries, renderer, logger)
+	appHandler.SetEmailClient(emailClient)
 
 	// Setup router
 	mux := http.NewServeMux()

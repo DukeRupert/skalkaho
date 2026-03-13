@@ -184,12 +184,28 @@
     </div>
     {{end}}
 
-    <!-- Quote Versions (stub for Phase 9) -->
-    <div class="mb-6">
-        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quote Versions</h2>
-        <div class="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400">
-            <p class="text-sm">No quotes generated yet.</p>
-            <p class="text-xs mt-1">Quote generation coming in a future update.</p>
+    <!-- Quote Versions -->
+    <div class="mb-6" x-data="{ showSend: false }">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Quote Versions</h2>
+            <button hx-post="/projects/{{.FullProject.ID}}/quotes" hx-target="#quote-list" hx-swap="innerHTML"
+                class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700">
+                Create New Quote
+            </button>
+        </div>
+        <div id="quote-list"
+            hx-get="/projects/{{.FullProject.ID}}/quotes" hx-trigger="load" hx-swap="innerHTML">
+            <div class="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400">
+                <p class="text-sm">Loading quotes...</p>
+            </div>
+        </div>
+
+        <!-- Send Modal -->
+        <div x-show="showSend" x-cloak class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="absolute inset-0 bg-black/50" @click="showSend = false"></div>
+            <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6" @click.stop>
+                <div id="send-modal-content"></div>
+            </div>
         </div>
     </div>
 
@@ -232,4 +248,117 @@
             class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Update Status</button>
     </div>
 </form>
+{{end}}
+
+{{define "quote-list"}}
+{{if .Quotes}}
+<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <table class="w-full">
+        <thead>
+            <tr class="border-b border-gray-200 bg-gray-50">
+                <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Version</th>
+                <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Sent</th>
+                <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Expires</th>
+                <th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Quotes}}
+            <tr class="border-b border-gray-100">
+                <td class="px-4 py-3 text-sm font-medium text-gray-900">v{{.Version}}</td>
+                <td class="px-4 py-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                        {{if eq .Status "draft"}}bg-gray-100 text-gray-700
+                        {{else if eq .Status "sent"}}bg-blue-100 text-blue-700
+                        {{else if eq .Status "signed"}}bg-green-100 text-green-700
+                        {{else if eq .Status "expired"}}bg-red-100 text-red-700
+                        {{else if eq .Status "superseded"}}bg-yellow-100 text-yellow-700{{end}}">
+                        {{.Status}}
+                    </span>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-500">{{if .SentAt}}{{.SentAt}}{{else}}&mdash;{{end}}</td>
+                <td class="px-4 py-3 text-sm text-gray-500">{{if .ExpiresAt}}{{.ExpiresAt}}{{else}}&mdash;{{end}}</td>
+                <td class="px-4 py-3 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                        {{if .Token}}
+                        <a href="/q/{{.Token}}" target="_blank"
+                            class="text-xs text-blue-600 hover:text-blue-800">View</a>
+                        {{end}}
+                        {{if eq .Status "draft"}}
+                        <button hx-get="/quotes/{{.ID}}/send-modal" hx-target="#send-modal-content" hx-swap="innerHTML"
+                            @htmx:after-swap.window="showSend = true"
+                            class="text-xs text-blue-600 hover:text-blue-800">Send</button>
+                        {{else if eq .Status "sent"}}
+                        <button hx-get="/quotes/{{.ID}}/send-modal" hx-target="#send-modal-content" hx-swap="innerHTML"
+                            @htmx:after-swap.window="showSend = true"
+                            class="text-xs text-blue-600 hover:text-blue-800">Resend</button>
+                        {{end}}
+                    </div>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</div>
+{{else}}
+<div class="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400">
+    <p class="text-sm">No quotes generated yet.</p>
+    <p class="text-xs mt-1">Click "Create New Quote" to snapshot the current estimate.</p>
+</div>
+{{end}}
+{{end}}
+
+{{define "send-modal"}}
+<h2 class="text-lg font-semibold text-gray-900 mb-4">
+    {{if eq .Status "draft"}}Send Quote{{else}}Resend Quote{{end}}
+</h2>
+{{if .QuoteURL}}
+<div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Share Link</label>
+    <div class="flex items-center gap-2">
+        <input type="text" value="{{.QuoteURL}}" readonly id="quote-link"
+            class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600" />
+        <button type="button" onclick="navigator.clipboard.writeText(window.location.origin + document.getElementById('quote-link').value)"
+            class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200">Copy</button>
+    </div>
+</div>
+{{end}}
+<form hx-post="/quotes/{{.QuoteID}}/{{if eq .Status "draft"}}send{{else}}resend{{end}}"
+    hx-target="#send-modal-content" hx-swap="innerHTML">
+    <div class="mb-4">
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email to Client (optional)</label>
+        <input type="email" name="email" id="email" value="{{.Email}}"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="client@example.com" />
+    </div>
+    <div class="flex justify-end gap-3">
+        <button type="button" @click="showSend = false"
+            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+        <button type="submit"
+            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+            {{if eq .Status "draft"}}Send Quote{{else}}Resend Quote{{end}}
+        </button>
+    </div>
+</form>
+{{end}}
+
+{{define "send-modal-result"}}
+<div class="text-center py-4">
+    <svg class="w-12 h-12 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <h2 class="text-lg font-semibold text-gray-900 mb-2">Quote Sent!</h2>
+    <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Share Link</label>
+        <div class="flex items-center gap-2">
+            <input type="text" value="{{.QuoteURL}}" readonly id="sent-quote-link"
+                class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600" />
+            <button type="button" onclick="navigator.clipboard.writeText(window.location.origin + document.getElementById('sent-quote-link').value)"
+                class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200">Copy</button>
+        </div>
+    </div>
+    <button type="button" @click="showSend = false"
+        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Done</button>
+</div>
 {{end}}
