@@ -33,7 +33,7 @@ func (q *Queries) CountJobs(ctx context.Context, arg CountJobsParams) (int64, er
 const createJob = `-- name: CreateJob :one
 INSERT INTO jobs (id, org_id, name, customer_name, surcharge_percent, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, surcharge_mode, status, expires_at, client_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id
+RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup
 `
 
 type CreateJobParams struct {
@@ -81,6 +81,11 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, erro
 		&i.LaborSurchargePercent,
 		&i.EquipmentSurchargePercent,
 		&i.OrgID,
+		&i.MaterialsMarkup,
+		&i.LaborMarkup,
+		&i.EquipmentMarkup,
+		&i.SubsMarkup,
+		&i.OtherMarkup,
 	)
 	return i, err
 }
@@ -101,7 +106,7 @@ func (q *Queries) DeleteJob(ctx context.Context, arg DeleteJobParams) error {
 }
 
 const getJob = `-- name: GetJob :one
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup FROM jobs
 WHERE id = $1 AND org_id = $2
 `
 
@@ -127,12 +132,17 @@ func (q *Queries) GetJob(ctx context.Context, arg GetJobParams) (Job, error) {
 		&i.LaborSurchargePercent,
 		&i.EquipmentSurchargePercent,
 		&i.OrgID,
+		&i.MaterialsMarkup,
+		&i.LaborMarkup,
+		&i.EquipmentMarkup,
+		&i.SubsMarkup,
+		&i.OtherMarkup,
 	)
 	return i, err
 }
 
 const listJobs = `-- name: ListJobs :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup FROM jobs
 WHERE org_id = $1
 ORDER BY created_at DESC
 `
@@ -160,6 +170,11 @@ func (q *Queries) ListJobs(ctx context.Context, orgID uuid.NullUUID) ([]Job, err
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
 			&i.OrgID,
+			&i.MaterialsMarkup,
+			&i.LaborMarkup,
+			&i.EquipmentMarkup,
+			&i.SubsMarkup,
+			&i.OtherMarkup,
 		); err != nil {
 			return nil, err
 		}
@@ -176,7 +191,7 @@ func (q *Queries) ListJobs(ctx context.Context, orgID uuid.NullUUID) ([]Job, err
 
 const listJobsByClientWithEstimateStatus = `-- name: ListJobsByClientWithEstimateStatus :many
 SELECT
-    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent, j.org_id,
+    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent, j.org_id, j.materials_markup, j.labor_markup, j.equipment_markup, j.subs_markup, j.other_markup,
     (SELECT COUNT(*) FROM estimates WHERE job_id = j.id AND org_id = j.org_id) as estimate_count,
     (SELECT status FROM estimates WHERE job_id = j.id AND org_id = j.org_id ORDER BY version DESC LIMIT 1) as latest_estimate_status,
     (SELECT sr.status FROM signature_requests sr
@@ -207,6 +222,11 @@ type ListJobsByClientWithEstimateStatusRow struct {
 	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
 	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
 	OrgID                     uuid.NullUUID   `json:"org_id"`
+	MaterialsMarkup           float64         `json:"materials_markup"`
+	LaborMarkup               float64         `json:"labor_markup"`
+	EquipmentMarkup           float64         `json:"equipment_markup"`
+	SubsMarkup                float64         `json:"subs_markup"`
+	OtherMarkup               float64         `json:"other_markup"`
 	EstimateCount             int64           `json:"estimate_count"`
 	LatestEstimateStatus      string          `json:"latest_estimate_status"`
 	LatestSignatureStatus     string          `json:"latest_signature_status"`
@@ -235,6 +255,11 @@ func (q *Queries) ListJobsByClientWithEstimateStatus(ctx context.Context, arg Li
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
 			&i.OrgID,
+			&i.MaterialsMarkup,
+			&i.LaborMarkup,
+			&i.EquipmentMarkup,
+			&i.SubsMarkup,
+			&i.OtherMarkup,
 			&i.EstimateCount,
 			&i.LatestEstimateStatus,
 			&i.LatestSignatureStatus,
@@ -253,7 +278,7 @@ func (q *Queries) ListJobsByClientWithEstimateStatus(ctx context.Context, arg Li
 }
 
 const listJobsPaginated = `-- name: ListJobsPaginated :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup FROM jobs
 WHERE org_id = $1
   AND ($2 = '' OR status = $2)
 ORDER BY created_at DESC
@@ -295,6 +320,11 @@ func (q *Queries) ListJobsPaginated(ctx context.Context, arg ListJobsPaginatedPa
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
 			&i.OrgID,
+			&i.MaterialsMarkup,
+			&i.LaborMarkup,
+			&i.EquipmentMarkup,
+			&i.SubsMarkup,
+			&i.OtherMarkup,
 		); err != nil {
 			return nil, err
 		}
@@ -310,7 +340,7 @@ func (q *Queries) ListJobsPaginated(ctx context.Context, arg ListJobsPaginatedPa
 }
 
 const listJobsPaginatedByName = `-- name: ListJobsPaginatedByName :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup FROM jobs
 WHERE org_id = $1
   AND ($2 = '' OR status = $2)
 ORDER BY name ASC
@@ -352,6 +382,11 @@ func (q *Queries) ListJobsPaginatedByName(ctx context.Context, arg ListJobsPagin
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
 			&i.OrgID,
+			&i.MaterialsMarkup,
+			&i.LaborMarkup,
+			&i.EquipmentMarkup,
+			&i.SubsMarkup,
+			&i.OtherMarkup,
 		); err != nil {
 			return nil, err
 		}
@@ -367,7 +402,7 @@ func (q *Queries) ListJobsPaginatedByName(ctx context.Context, arg ListJobsPagin
 }
 
 const listJobsPaginatedByNameDesc = `-- name: ListJobsPaginatedByNameDesc :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup FROM jobs
 WHERE org_id = $1
   AND ($2 = '' OR status = $2)
 ORDER BY name DESC
@@ -409,6 +444,11 @@ func (q *Queries) ListJobsPaginatedByNameDesc(ctx context.Context, arg ListJobsP
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
 			&i.OrgID,
+			&i.MaterialsMarkup,
+			&i.LaborMarkup,
+			&i.EquipmentMarkup,
+			&i.SubsMarkup,
+			&i.OtherMarkup,
 		); err != nil {
 			return nil, err
 		}
@@ -424,7 +464,7 @@ func (q *Queries) ListJobsPaginatedByNameDesc(ctx context.Context, arg ListJobsP
 }
 
 const listJobsPaginatedOldest = `-- name: ListJobsPaginatedOldest :many
-SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id FROM jobs
+SELECT id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup FROM jobs
 WHERE org_id = $1
   AND ($2 = '' OR status = $2)
 ORDER BY created_at ASC
@@ -466,6 +506,11 @@ func (q *Queries) ListJobsPaginatedOldest(ctx context.Context, arg ListJobsPagin
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
 			&i.OrgID,
+			&i.MaterialsMarkup,
+			&i.LaborMarkup,
+			&i.EquipmentMarkup,
+			&i.SubsMarkup,
+			&i.OtherMarkup,
 		); err != nil {
 			return nil, err
 		}
@@ -482,7 +527,7 @@ func (q *Queries) ListJobsPaginatedOldest(ctx context.Context, arg ListJobsPagin
 
 const listJobsWithEstimateStatus = `-- name: ListJobsWithEstimateStatus :many
 SELECT
-    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent, j.org_id,
+    j.id, j.name, j.customer_name, j.surcharge_percent, j.surcharge_mode, j.created_at, j.status, j.expires_at, j.client_id, j.material_surcharge_percent, j.labor_surcharge_percent, j.equipment_surcharge_percent, j.org_id, j.materials_markup, j.labor_markup, j.equipment_markup, j.subs_markup, j.other_markup,
     (SELECT COUNT(*) FROM estimates WHERE job_id = j.id AND org_id = j.org_id) as estimate_count,
     (SELECT status FROM estimates WHERE job_id = j.id AND org_id = j.org_id ORDER BY version DESC LIMIT 1) as latest_estimate_status,
     (SELECT sr.status FROM signature_requests sr
@@ -517,6 +562,11 @@ type ListJobsWithEstimateStatusRow struct {
 	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
 	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
 	OrgID                     uuid.NullUUID   `json:"org_id"`
+	MaterialsMarkup           float64         `json:"materials_markup"`
+	LaborMarkup               float64         `json:"labor_markup"`
+	EquipmentMarkup           float64         `json:"equipment_markup"`
+	SubsMarkup                float64         `json:"subs_markup"`
+	OtherMarkup               float64         `json:"other_markup"`
 	EstimateCount             int64           `json:"estimate_count"`
 	LatestEstimateStatus      string          `json:"latest_estimate_status"`
 	LatestSignatureStatus     string          `json:"latest_signature_status"`
@@ -550,6 +600,11 @@ func (q *Queries) ListJobsWithEstimateStatus(ctx context.Context, arg ListJobsWi
 			&i.LaborSurchargePercent,
 			&i.EquipmentSurchargePercent,
 			&i.OrgID,
+			&i.MaterialsMarkup,
+			&i.LaborMarkup,
+			&i.EquipmentMarkup,
+			&i.SubsMarkup,
+			&i.OtherMarkup,
 			&i.EstimateCount,
 			&i.LatestEstimateStatus,
 			&i.LatestSignatureStatus,
@@ -580,7 +635,7 @@ UPDATE jobs SET
     expires_at = $9,
     client_id = $10
 WHERE id = $11 AND org_id = $12
-RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id
+RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup
 `
 
 type UpdateJobParams struct {
@@ -628,12 +683,17 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) (Job, erro
 		&i.LaborSurchargePercent,
 		&i.EquipmentSurchargePercent,
 		&i.OrgID,
+		&i.MaterialsMarkup,
+		&i.LaborMarkup,
+		&i.EquipmentMarkup,
+		&i.SubsMarkup,
+		&i.OtherMarkup,
 	)
 	return i, err
 }
 
 const updateJobStatus = `-- name: UpdateJobStatus :one
-UPDATE jobs SET status = $1 WHERE id = $2 AND org_id = $3 RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id
+UPDATE jobs SET status = $1 WHERE id = $2 AND org_id = $3 RETURNING id, name, customer_name, surcharge_percent, surcharge_mode, created_at, status, expires_at, client_id, material_surcharge_percent, labor_surcharge_percent, equipment_surcharge_percent, org_id, materials_markup, labor_markup, equipment_markup, subs_markup, other_markup
 `
 
 type UpdateJobStatusParams struct {
@@ -659,6 +719,11 @@ func (q *Queries) UpdateJobStatus(ctx context.Context, arg UpdateJobStatusParams
 		&i.LaborSurchargePercent,
 		&i.EquipmentSurchargePercent,
 		&i.OrgID,
+		&i.MaterialsMarkup,
+		&i.LaborMarkup,
+		&i.EquipmentMarkup,
+		&i.SubsMarkup,
+		&i.OtherMarkup,
 	)
 	return i, err
 }

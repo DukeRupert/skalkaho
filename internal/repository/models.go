@@ -51,6 +51,14 @@ type CompanyProfile struct {
 	OrgID     uuid.UUID      `json:"org_id"`
 }
 
+type ComponentGroup struct {
+	ID            string        `json:"id"`
+	OrgID         uuid.NullUUID `json:"org_id"`
+	SubcategoryID string        `json:"subcategory_id"`
+	Name          string        `json:"name"`
+	SortOrder     int64         `json:"sort_order"`
+}
+
 type Estimate struct {
 	ID          string         `json:"id"`
 	JobID       string         `json:"job_id"`
@@ -75,6 +83,23 @@ type EstimateCategory struct {
 	Total            float64        `json:"total"`
 	SortOrder        int64          `json:"sort_order"`
 	OrgID            uuid.NullUUID  `json:"org_id"`
+}
+
+type EstimateLineItem struct {
+	ID               string         `json:"id"`
+	OrgID            uuid.NullUUID  `json:"org_id"`
+	SubcategoryID    string         `json:"subcategory_id"`
+	ComponentGroupID sql.NullString `json:"component_group_id"`
+	CategoryType     string         `json:"category_type"`
+	ItemName         string         `json:"item_name"`
+	Quantity         float64        `json:"quantity"`
+	Unit             string         `json:"unit"`
+	UnitPrice        float64        `json:"unit_price"`
+	IsCustom         bool           `json:"is_custom"`
+	MaterialID       sql.NullInt32  `json:"material_id"`
+	PriceOverride    bool           `json:"price_override"`
+	Description      sql.NullString `json:"description"`
+	SortOrder        int64          `json:"sort_order"`
 }
 
 type ItemTemplate struct {
@@ -102,6 +127,11 @@ type Job struct {
 	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
 	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
 	OrgID                     uuid.NullUUID   `json:"org_id"`
+	MaterialsMarkup           float64         `json:"materials_markup"`
+	LaborMarkup               float64         `json:"labor_markup"`
+	EquipmentMarkup           float64         `json:"equipment_markup"`
+	SubsMarkup                float64         `json:"subs_markup"`
+	OtherMarkup               float64         `json:"other_markup"`
 }
 
 type JobItemType struct {
@@ -172,6 +202,14 @@ type PriceImportMatch struct {
 	OrgID             uuid.NullUUID  `json:"org_id"`
 }
 
+type Section struct {
+	ID        string        `json:"id"`
+	OrgID     uuid.NullUUID `json:"org_id"`
+	JobID     string        `json:"job_id"`
+	Name      string        `json:"name"`
+	SortOrder int64         `json:"sort_order"`
+}
+
 type Session struct {
 	ID             uuid.UUID      `json:"id"`
 	UserID         uuid.UUID      `json:"user_id"`
@@ -220,6 +258,25 @@ type SignatureRequest struct {
 	SenderUserAgent sql.NullString `json:"sender_user_agent"`
 	CreatedAt       string         `json:"created_at"`
 	OrgID           uuid.NullUUID  `json:"org_id"`
+}
+
+type Subcategory struct {
+	ID                     string          `json:"id"`
+	OrgID                  uuid.NullUUID   `json:"org_id"`
+	SectionID              string          `json:"section_id"`
+	Name                   string          `json:"name"`
+	SortOrder              int64           `json:"sort_order"`
+	LumpSum                float64         `json:"lump_sum"`
+	MaterialsMarkup        sql.NullFloat64 `json:"materials_markup"`
+	LaborMarkup            sql.NullFloat64 `json:"labor_markup"`
+	EquipmentMarkup        sql.NullFloat64 `json:"equipment_markup"`
+	SubsMarkup             sql.NullFloat64 `json:"subs_markup"`
+	OtherMarkup            sql.NullFloat64 `json:"other_markup"`
+	MaterialsMarkupEnabled bool            `json:"materials_markup_enabled"`
+	LaborMarkupEnabled     bool            `json:"labor_markup_enabled"`
+	EquipmentMarkupEnabled bool            `json:"equipment_markup_enabled"`
+	SubsMarkupEnabled      bool            `json:"subs_markup_enabled"`
+	OtherMarkupEnabled     bool            `json:"other_markup_enabled"`
 }
 
 type User struct {
