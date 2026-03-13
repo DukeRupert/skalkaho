@@ -10,6 +10,15 @@ import (
 //go:embed layouts/*.html partials/*.html pages/*.html
 var templateFS embed.FS
 
+var funcMap = template.FuncMap{
+	"divf": func(a, b int64) float64 {
+		if b == 0 {
+			return 0
+		}
+		return float64(a) / float64(b)
+	},
+}
+
 // Renderer parses and renders HTML templates.
 // Pages are composed with layouts and partials using template inheritance.
 type Renderer struct {
@@ -36,7 +45,7 @@ func NewRenderer() (*Renderer, error) {
 		name := page.Name()
 
 		// Parse the page together with layouts and partials
-		tmpl, err := template.ParseFS(templateFS,
+		tmpl, err := template.New(name).Funcs(funcMap).ParseFS(templateFS,
 			"pages/"+name,
 			"layouts/*.html",
 			"partials/*.html",

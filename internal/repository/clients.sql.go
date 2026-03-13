@@ -10,6 +10,39 @@ import (
 	"database/sql"
 )
 
+const countClients = `-- name: CountClients :one
+SELECT COUNT(*) AS total FROM clients
+`
+
+func (q *Queries) CountClients(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countClients)
+	var total int64
+	err := row.Scan(&total)
+	return total, err
+}
+
+const countProjectsByClient = `-- name: CountProjectsByClient :one
+SELECT COUNT(*) AS total FROM projects WHERE client_id = $1
+`
+
+func (q *Queries) CountProjectsByClient(ctx context.Context, clientID sql.NullString) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countProjectsByClient, clientID)
+	var total int64
+	err := row.Scan(&total)
+	return total, err
+}
+
+const countTotalClientProjects = `-- name: CountTotalClientProjects :one
+SELECT COUNT(*) AS total FROM projects WHERE client_id IS NOT NULL
+`
+
+func (q *Queries) CountTotalClientProjects(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countTotalClientProjects)
+	var total int64
+	err := row.Scan(&total)
+	return total, err
+}
+
 const createClient = `-- name: CreateClient :one
 INSERT INTO clients (id, company_name, contact_name, email, phone, address, notes)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -85,6 +118,47 @@ SELECT id, company_name, contact_name, email, phone, address, notes, created_at 
 
 func (q *Queries) ListClients(ctx context.Context) ([]Client, error) {
 	rows, err := q.db.QueryContext(ctx, listClients)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Client{}
+	for rows.Next() {
+		var i Client
+		if err := rows.Scan(
+			&i.ID,
+			&i.CompanyName,
+			&i.ContactName,
+			&i.Email,
+			&i.Phone,
+			&i.Address,
+			&i.Notes,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchClients = `-- name: SearchClients :many
+SELECT id, company_name, contact_name, email, phone, address, notes, created_at FROM clients
+WHERE company_name ILIKE '%' || $1::text || '%'
+   OR contact_name ILIKE '%' || $1::text || '%'
+   OR email ILIKE '%' || $1::text || '%'
+   OR phone ILIKE '%' || $1::text || '%'
+ORDER BY company_name ASC
+`
+
+func (q *Queries) SearchClients(ctx context.Context, searchTerm string) ([]Client, error) {
+	rows, err := q.db.QueryContext(ctx, searchClients, searchTerm)
 	if err != nil {
 		return nil, err
 	}

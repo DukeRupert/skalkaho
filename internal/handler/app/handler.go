@@ -54,12 +54,9 @@ func (h *Handler) Projects(w http.ResponseWriter, r *http.Request) {
 	h.ListProjects(w, r)
 }
 
-// Clients renders the clients page.
+// Clients delegates to ListClients for the full client management page.
 func (h *Handler) Clients(w http.ResponseWriter, r *http.Request) {
-	if err := h.renderer.Render(w, "clients.html", h.pageData(r, "clients")); err != nil {
-		h.logger.Error("rendering clients", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	h.ListClients(w, r)
 }
 
 // Materials renders the materials database page.
