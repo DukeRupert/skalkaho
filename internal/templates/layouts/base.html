@@ -8,9 +8,20 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>.fouc-guard{opacity:0}.fouc-ready{opacity:1;transition:opacity .05s}</style>
+    <script>
+    // Reveal page once Tailwind CDN finishes processing styles
+    if (window.tailwind) {
+      document.addEventListener('DOMContentLoaded', function() { document.body.classList.replace('fouc-guard','fouc-ready'); });
+    } else {
+      document.addEventListener('tailwindcss:loaded', function() { document.body.classList.replace('fouc-guard','fouc-ready'); });
+      // Fallback: reveal after 300ms if event never fires
+      setTimeout(function() { document.body && document.body.classList.replace('fouc-guard','fouc-ready'); }, 300);
+    }
+    </script>
     {{block "head" .}}{{end}}
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-gray-50 min-h-screen fouc-guard" hx-boost="true">
     <div class="flex min-h-screen">
         {{template "sidebar" .}}
         <main class="flex-1 ml-[220px] p-8">

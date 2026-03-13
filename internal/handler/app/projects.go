@@ -72,7 +72,7 @@ func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// HTMX partial: return just the table rows
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		if err := h.renderer.RenderPartial(w, "projects.html", "project-rows", data); err != nil {
 			h.logger.Error("rendering project rows", "error", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -140,7 +140,7 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// HTMX: return empty to remove the row
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		w.Header().Set("HX-Redirect", "/")
 		w.WriteHeader(http.StatusOK)
 		return
@@ -183,7 +183,7 @@ func (h *Handler) UpdateProjectStatus(w http.ResponseWriter, r *http.Request) {
 		redirect = ref
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		w.Header().Set("HX-Redirect", redirect)
 		w.WriteHeader(http.StatusOK)
 		return

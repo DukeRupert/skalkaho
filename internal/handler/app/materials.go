@@ -72,7 +72,7 @@ func (h *Handler) ListMaterials(w http.ResponseWriter, r *http.Request) {
 		Search:      search,
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		if err := h.renderer.RenderPartial(w, "materials.html", "material-rows", data); err != nil {
 			h.logger.Error("rendering material rows", "error", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -202,7 +202,7 @@ func (h *Handler) DeleteMaterial(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		w.Header().Set("HX-Redirect", "/materials")
 		w.WriteHeader(http.StatusOK)
 		return
@@ -252,7 +252,7 @@ func (h *Handler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		w.Header().Set("HX-Redirect", "/materials")
 		w.WriteHeader(http.StatusOK)
 		return

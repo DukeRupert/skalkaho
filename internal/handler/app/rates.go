@@ -80,7 +80,7 @@ func (h *Handler) ListRates(w http.ResponseWriter, r *http.Request) {
 		Search:         search,
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		if err := h.renderer.RenderPartial(w, "rates.html", "rate-rows", data); err != nil {
 			h.logger.Error("rendering rate rows", "error", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -202,7 +202,7 @@ func (h *Handler) DeleteRate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		w.Header().Set("HX-Redirect", "/rates")
 		w.WriteHeader(http.StatusOK)
 		return
@@ -251,7 +251,7 @@ func (h *Handler) DeleteRateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("HX-Request") == "true" {
+	if isHTMXPartial(r) {
 		w.Header().Set("HX-Redirect", "/rates")
 		w.WriteHeader(http.StatusOK)
 		return

@@ -40,6 +40,12 @@ func NewHandler(queries *repository.Queries, renderer *templates.Renderer, logge
 	}
 }
 
+// isHTMXPartial returns true for HTMX requests that expect a partial response
+// (not boosted navigation, which should receive the full page).
+func isHTMXPartial(r *http.Request) bool {
+	return r.Header.Get("HX-Request") == "true" && r.Header.Get("HX-Boosted") != "true"
+}
+
 func (h *Handler) pageData(r *http.Request, activePage string) PageData {
 	name := auth.UserNameFromContext(r.Context())
 	if name == "" {
