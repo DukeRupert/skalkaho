@@ -1,4 +1,4 @@
-.PHONY: dev build test sqlc db-migrate db-rollback db-status db-new clean frontend frontend-dev frontend-install
+.PHONY: dev build test sqlc clean
 
 # Development
 dev:
@@ -6,48 +6,26 @@ dev:
 
 build:
 	go build -o bin/server ./cmd/server
+	go build -o bin/seed ./cmd/seed
 
 # Testing
 test:
 	go test ./internal/domain/... -v
 
-test-short:
-	go test ./internal/domain/...
-
-# Database
-DB_PATH ?= quotes.db
-
-db-migrate:
-	go run ./cmd/migrate up
-
-db-rollback:
-	go run ./cmd/migrate down
-
-db-status:
-	go run ./cmd/migrate status
-
-db-reset:
-	rm -f $(DB_PATH)
-	go run ./cmd/migrate up
-
 # Code generation
 sqlc:
 	sqlc generate
 
+# User management
+seed-create:
+	go run ./cmd/seed create --email $(EMAIL) --password $(PASSWORD) --name "$(NAME)"
+
+seed-list:
+	go run ./cmd/seed list
+
 # Cleanup
 clean:
-	rm -f bin/server
-	rm -f $(DB_PATH)
-
-# Frontend (legacy)
-frontend-install:
-	cd frontend && npm install
-
-frontend:
-	cd frontend && npm run build
-
-frontend-dev:
-	cd frontend && npm run dev
+	rm -f bin/server bin/seed
 
 # Estimate Builder (Svelte)
 ui-install:
@@ -59,7 +37,7 @@ ui:
 ui-watch:
 	cd ui && npm run watch
 
-# Install dependencies
+# Dependencies
 deps:
 	go mod download
 	go mod tidy

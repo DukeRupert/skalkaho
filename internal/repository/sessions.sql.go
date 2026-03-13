@@ -9,18 +9,16 @@ import (
 	"context"
 	"database/sql"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO sessions (user_id, org_id, token_hash, user_agent, ip_address, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, user_id, org_id, token_hash, user_agent, ip_address, expires_at, last_activity_at, created_at
+INSERT INTO sessions (user_id, token_hash, user_agent, ip_address, expires_at)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, user_id, token_hash, user_agent, ip_address, expires_at, last_activity_at, created_at
 `
 
 type CreateSessionParams struct {
-	UserID    uuid.UUID      `json:"user_id"`
-	OrgID     uuid.UUID      `json:"org_id"`
+	UserID    string         `json:"user_id"`
 	TokenHash string         `json:"token_hash"`
 	UserAgent sql.NullString `json:"user_agent"`
 	IpAddress sql.NullString `json:"ip_address"`
@@ -30,7 +28,6 @@ type CreateSessionParams struct {
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error) {
 	row := q.db.QueryRowContext(ctx, createSession,
 		arg.UserID,
-		arg.OrgID,
 		arg.TokenHash,
 		arg.UserAgent,
 		arg.IpAddress,
@@ -40,7 +37,6 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.OrgID,
 		&i.TokenHash,
 		&i.UserAgent,
 		&i.IpAddress,
@@ -52,20 +48,11 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 }
 
 const deleteExpiredSessions = `-- name: DeleteExpiredSessions :exec
-DELETE FROM sessions WHERE expires_at < NOW()
+DELETE FROM sessions WHERE expires_at <= now()
 `
 
 func (q *Queries) DeleteExpiredSessions(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, deleteExpiredSessions)
-	return err
-}
-
-const deleteSession = `-- name: DeleteSession :exec
-DELETE FROM sessions WHERE id = $1
-`
-
-func (q *Queries) DeleteSession(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteSession, id)
 	return err
 }
 
@@ -82,22 +69,24 @@ const deleteUserSessions = `-- name: DeleteUserSessions :exec
 DELETE FROM sessions WHERE user_id = $1
 `
 
-func (q *Queries) DeleteUserSessions(ctx context.Context, userID uuid.UUID) error {
+func (q *Queries) DeleteUserSessions(ctx context.Context, userID string) error {
 	_, err := q.db.ExecContext(ctx, deleteUserSessions, userID)
 	return err
 }
 
 const getSessionByTokenHash = `-- name: GetSessionByTokenHash :one
-SELECT s.id, s.user_id, s.org_id, s.token_hash, s.user_agent, s.ip_address, s.expires_at, s.last_activity_at, s.created_at, u.email, u.name, u.role, u.status as user_status
+SELECT
+    s.id, s.user_id, s.token_hash, s.user_agent, s.ip_address,
+    s.expires_at, s.last_activity_at, s.created_at,
+    u.email, u.name, u.status AS user_status
 FROM sessions s
-JOIN users u ON s.user_id = u.id
-WHERE s.token_hash = $1 AND s.expires_at > NOW() LIMIT 1
+JOIN users u ON u.id = s.user_id
+WHERE s.token_hash = $1 AND s.expires_at > now()
 `
 
 type GetSessionByTokenHashRow struct {
-	ID             uuid.UUID      `json:"id"`
-	UserID         uuid.UUID      `json:"user_id"`
-	OrgID          uuid.UUID      `json:"org_id"`
+	ID             string         `json:"id"`
+	UserID         string         `json:"user_id"`
 	TokenHash      string         `json:"token_hash"`
 	UserAgent      sql.NullString `json:"user_agent"`
 	IpAddress      sql.NullString `json:"ip_address"`
@@ -106,7 +95,6 @@ type GetSessionByTokenHashRow struct {
 	CreatedAt      time.Time      `json:"created_at"`
 	Email          string         `json:"email"`
 	Name           string         `json:"name"`
-	Role           string         `json:"role"`
 	UserStatus     string         `json:"user_status"`
 }
 
@@ -116,7 +104,6 @@ func (q *Queries) GetSessionByTokenHash(ctx context.Context, tokenHash string) (
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.OrgID,
 		&i.TokenHash,
 		&i.UserAgent,
 		&i.IpAddress,
@@ -125,17 +112,16 @@ func (q *Queries) GetSessionByTokenHash(ctx context.Context, tokenHash string) (
 		&i.CreatedAt,
 		&i.Email,
 		&i.Name,
-		&i.Role,
 		&i.UserStatus,
 	)
 	return i, err
 }
 
 const updateSessionActivity = `-- name: UpdateSessionActivity :exec
-UPDATE sessions SET last_activity_at = NOW() WHERE id = $1
+UPDATE sessions SET last_activity_at = now() WHERE id = $1
 `
 
-func (q *Queries) UpdateSessionActivity(ctx context.Context, id uuid.UUID) error {
+func (q *Queries) UpdateSessionActivity(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, updateSessionActivity, id)
 	return err
 }

@@ -7,82 +7,37 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-
-	"github.com/google/uuid"
 )
 
-const clearUserResetToken = `-- name: ClearUserResetToken :exec
-UPDATE users
-SET
-    reset_token = NULL,
-    reset_token_expires_at = NULL,
-    updated_at = NOW()
-WHERE id = $1
-`
-
-func (q *Queries) ClearUserResetToken(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, clearUserResetToken, id)
-	return err
-}
-
-const countUsersByOrg = `-- name: CountUsersByOrg :one
-SELECT COUNT(*) FROM users
-WHERE org_id = $1
-`
-
-func (q *Queries) CountUsersByOrg(ctx context.Context, orgID uuid.UUID) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countUsersByOrg, orgID)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (
-    org_id,
-    email,
-    password_hash,
-    name,
-    role,
-    status
-) VALUES (
-    $1, $2, $3, $4, $5, $6
-) RETURNING id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at
+INSERT INTO users (id, email, password_hash, name, status)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, email, password_hash, name, status, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	OrgID        uuid.UUID `json:"org_id"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"password_hash"`
-	Name         string    `json:"name"`
-	Role         string    `json:"role"`
-	Status       string    `json:"status"`
+	ID           string `json:"id"`
+	Email        string `json:"email"`
+	PasswordHash string `json:"password_hash"`
+	Name         string `json:"name"`
+	Status       string `json:"status"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
-		arg.OrgID,
+		arg.ID,
 		arg.Email,
 		arg.PasswordHash,
 		arg.Name,
-		arg.Role,
 		arg.Status,
 	)
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.OrgID,
 		&i.Email,
 		&i.PasswordHash,
-		&i.Role,
 		&i.Name,
-		&i.EmailVerified,
 		&i.Status,
-		&i.ResetToken,
-		&i.ResetTokenExpiresAt,
-		&i.VerificationToken,
-		&i.LastLoginAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -90,36 +45,27 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users
-WHERE id = $1
+DELETE FROM users WHERE id = $1
 `
 
-func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
+func (q *Queries) DeleteUser(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteUser, id)
 	return err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at FROM users
-WHERE id = $1 LIMIT 1
+SELECT id, email, password_hash, name, status, created_at, updated_at FROM users WHERE id = $1
 `
 
-func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
+func (q *Queries) GetUser(ctx context.Context, id string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.OrgID,
 		&i.Email,
 		&i.PasswordHash,
-		&i.Role,
 		&i.Name,
-		&i.EmailVerified,
 		&i.Status,
-		&i.ResetToken,
-		&i.ResetTokenExpiresAt,
-		&i.VerificationToken,
-		&i.LastLoginAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -127,128 +73,30 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at FROM users
-WHERE org_id = $1 AND email = $2 LIMIT 1
+SELECT id, email, password_hash, name, status, created_at, updated_at FROM users WHERE email = $1
 `
 
-type GetUserByEmailParams struct {
-	OrgID uuid.UUID `json:"org_id"`
-	Email string    `json:"email"`
-}
-
-func (q *Queries) GetUserByEmail(ctx context.Context, arg GetUserByEmailParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmail, arg.OrgID, arg.Email)
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,
-		&i.OrgID,
 		&i.Email,
 		&i.PasswordHash,
-		&i.Role,
 		&i.Name,
-		&i.EmailVerified,
 		&i.Status,
-		&i.ResetToken,
-		&i.ResetTokenExpiresAt,
-		&i.VerificationToken,
-		&i.LastLoginAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getUserByEmailOnly = `-- name: GetUserByEmailOnly :one
-SELECT id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at FROM users
-WHERE email = $1 LIMIT 1
+const listUsers = `-- name: ListUsers :many
+SELECT id, email, password_hash, name, status, created_at, updated_at FROM users ORDER BY created_at DESC
 `
 
-func (q *Queries) GetUserByEmailOnly(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByEmailOnly, email)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.OrgID,
-		&i.Email,
-		&i.PasswordHash,
-		&i.Role,
-		&i.Name,
-		&i.EmailVerified,
-		&i.Status,
-		&i.ResetToken,
-		&i.ResetTokenExpiresAt,
-		&i.VerificationToken,
-		&i.LastLoginAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getUserByResetToken = `-- name: GetUserByResetToken :one
-SELECT id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at FROM users
-WHERE reset_token = $1
-  AND reset_token_expires_at > NOW()
-LIMIT 1
-`
-
-func (q *Queries) GetUserByResetToken(ctx context.Context, resetToken sql.NullString) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByResetToken, resetToken)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.OrgID,
-		&i.Email,
-		&i.PasswordHash,
-		&i.Role,
-		&i.Name,
-		&i.EmailVerified,
-		&i.Status,
-		&i.ResetToken,
-		&i.ResetTokenExpiresAt,
-		&i.VerificationToken,
-		&i.LastLoginAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getUserByVerificationToken = `-- name: GetUserByVerificationToken :one
-SELECT id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at FROM users
-WHERE verification_token = $1 LIMIT 1
-`
-
-func (q *Queries) GetUserByVerificationToken(ctx context.Context, verificationToken sql.NullString) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByVerificationToken, verificationToken)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.OrgID,
-		&i.Email,
-		&i.PasswordHash,
-		&i.Role,
-		&i.Name,
-		&i.EmailVerified,
-		&i.Status,
-		&i.ResetToken,
-		&i.ResetTokenExpiresAt,
-		&i.VerificationToken,
-		&i.LastLoginAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const listUsersByOrg = `-- name: ListUsersByOrg :many
-SELECT id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at FROM users
-WHERE org_id = $1
-ORDER BY created_at ASC
-`
-
-func (q *Queries) ListUsersByOrg(ctx context.Context, orgID uuid.UUID) ([]User, error) {
-	rows, err := q.db.QueryContext(ctx, listUsersByOrg, orgID)
+func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listUsers)
 	if err != nil {
 		return nil, err
 	}
@@ -258,17 +106,10 @@ func (q *Queries) ListUsersByOrg(ctx context.Context, orgID uuid.UUID) ([]User, 
 		var i User
 		if err := rows.Scan(
 			&i.ID,
-			&i.OrgID,
 			&i.Email,
 			&i.PasswordHash,
-			&i.Role,
 			&i.Name,
-			&i.EmailVerified,
 			&i.Status,
-			&i.ResetToken,
-			&i.ResetTokenExpiresAt,
-			&i.VerificationToken,
-			&i.LastLoginAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -285,131 +126,16 @@ func (q *Queries) ListUsersByOrg(ctx context.Context, orgID uuid.UUID) ([]User, 
 	return items, nil
 }
 
-const setUserResetToken = `-- name: SetUserResetToken :exec
-UPDATE users
-SET
-    reset_token = $1,
-    reset_token_expires_at = $2,
-    updated_at = NOW()
-WHERE id = $3
+const updateUserStatus = `-- name: UpdateUserStatus :exec
+UPDATE users SET status = $2, updated_at = now() WHERE id = $1
 `
 
-type SetUserResetTokenParams struct {
-	ResetToken          sql.NullString `json:"reset_token"`
-	ResetTokenExpiresAt sql.NullTime   `json:"reset_token_expires_at"`
-	ID                  uuid.UUID      `json:"id"`
+type UpdateUserStatusParams struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
 }
 
-func (q *Queries) SetUserResetToken(ctx context.Context, arg SetUserResetTokenParams) error {
-	_, err := q.db.ExecContext(ctx, setUserResetToken, arg.ResetToken, arg.ResetTokenExpiresAt, arg.ID)
-	return err
-}
-
-const setUserVerificationToken = `-- name: SetUserVerificationToken :exec
-UPDATE users
-SET
-    verification_token = $1,
-    updated_at = NOW()
-WHERE id = $2
-`
-
-type SetUserVerificationTokenParams struct {
-	VerificationToken sql.NullString `json:"verification_token"`
-	ID                uuid.UUID      `json:"id"`
-}
-
-func (q *Queries) SetUserVerificationToken(ctx context.Context, arg SetUserVerificationTokenParams) error {
-	_, err := q.db.ExecContext(ctx, setUserVerificationToken, arg.VerificationToken, arg.ID)
-	return err
-}
-
-const updateUser = `-- name: UpdateUser :one
-UPDATE users
-SET
-    email = COALESCE($1, email),
-    password_hash = COALESCE($2, password_hash),
-    name = COALESCE($3, name),
-    role = COALESCE($4, role),
-    status = COALESCE($5, status),
-    email_verified = COALESCE($6, email_verified),
-    reset_token = $7,
-    reset_token_expires_at = $8,
-    verification_token = $9,
-    last_login_at = COALESCE($10, last_login_at),
-    updated_at = NOW()
-WHERE id = $11
-RETURNING id, org_id, email, password_hash, role, name, email_verified, status, reset_token, reset_token_expires_at, verification_token, last_login_at, created_at, updated_at
-`
-
-type UpdateUserParams struct {
-	Email               sql.NullString `json:"email"`
-	PasswordHash        sql.NullString `json:"password_hash"`
-	Name                sql.NullString `json:"name"`
-	Role                sql.NullString `json:"role"`
-	Status              sql.NullString `json:"status"`
-	EmailVerified       sql.NullBool   `json:"email_verified"`
-	ResetToken          sql.NullString `json:"reset_token"`
-	ResetTokenExpiresAt sql.NullTime   `json:"reset_token_expires_at"`
-	VerificationToken   sql.NullString `json:"verification_token"`
-	LastLoginAt         sql.NullTime   `json:"last_login_at"`
-	ID                  uuid.UUID      `json:"id"`
-}
-
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser,
-		arg.Email,
-		arg.PasswordHash,
-		arg.Name,
-		arg.Role,
-		arg.Status,
-		arg.EmailVerified,
-		arg.ResetToken,
-		arg.ResetTokenExpiresAt,
-		arg.VerificationToken,
-		arg.LastLoginAt,
-		arg.ID,
-	)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.OrgID,
-		&i.Email,
-		&i.PasswordHash,
-		&i.Role,
-		&i.Name,
-		&i.EmailVerified,
-		&i.Status,
-		&i.ResetToken,
-		&i.ResetTokenExpiresAt,
-		&i.VerificationToken,
-		&i.LastLoginAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const updateUserLastLogin = `-- name: UpdateUserLastLogin :exec
-UPDATE users
-SET last_login_at = NOW()
-WHERE id = $1
-`
-
-func (q *Queries) UpdateUserLastLogin(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, updateUserLastLogin, id)
-	return err
-}
-
-const verifyUserEmail = `-- name: VerifyUserEmail :exec
-UPDATE users
-SET
-    email_verified = TRUE,
-    verification_token = NULL,
-    updated_at = NOW()
-WHERE id = $1
-`
-
-func (q *Queries) VerifyUserEmail(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, verifyUserEmail, id)
+func (q *Queries) UpdateUserStatus(ctx context.Context, arg UpdateUserStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserStatus, arg.ID, arg.Status)
 	return err
 }

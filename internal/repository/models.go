@@ -8,36 +8,22 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
-type Category struct {
-	ID               string          `json:"id"`
-	JobID            string          `json:"job_id"`
-	ParentID         sql.NullString  `json:"parent_id"`
-	Name             string          `json:"name"`
-	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
-	SortOrder        int64           `json:"sort_order"`
-	OrgID            uuid.NullUUID   `json:"org_id"`
-}
-
 type Client struct {
-	ID        string         `json:"id"`
-	Name      string         `json:"name"`
-	Company   sql.NullString `json:"company"`
-	Email     sql.NullString `json:"email"`
-	Phone     sql.NullString `json:"phone"`
-	Address   sql.NullString `json:"address"`
-	City      sql.NullString `json:"city"`
-	State     sql.NullString `json:"state"`
-	Zip       sql.NullString `json:"zip"`
-	TaxID     sql.NullString `json:"tax_id"`
-	Notes     sql.NullString `json:"notes"`
-	CreatedAt string         `json:"created_at"`
-	OrgID     uuid.NullUUID  `json:"org_id"`
+	ID          string         `json:"id"`
+	CompanyName string         `json:"company_name"`
+	ContactName sql.NullString `json:"contact_name"`
+	Email       sql.NullString `json:"email"`
+	Phone       sql.NullString `json:"phone"`
+	Address     sql.NullString `json:"address"`
+	Notes       sql.NullString `json:"notes"`
+	CreatedAt   time.Time      `json:"created_at"`
 }
 
 type CompanyProfile struct {
+	ID        string         `json:"id"`
 	Name      string         `json:"name"`
 	Email     sql.NullString `json:"email"`
 	Phone     sql.NullString `json:"phone"`
@@ -46,48 +32,18 @@ type CompanyProfile struct {
 	State     sql.NullString `json:"state"`
 	Zip       sql.NullString `json:"zip"`
 	LogoPath  sql.NullString `json:"logo_path"`
-	CreatedAt string         `json:"created_at"`
-	UpdatedAt string         `json:"updated_at"`
-	OrgID     uuid.UUID      `json:"org_id"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }
 
 type ComponentGroup struct {
-	ID            string        `json:"id"`
-	OrgID         uuid.NullUUID `json:"org_id"`
-	SubcategoryID string        `json:"subcategory_id"`
-	Name          string        `json:"name"`
-	SortOrder     int64         `json:"sort_order"`
+	ID            string `json:"id"`
+	SubcategoryID string `json:"subcategory_id"`
+	Name          string `json:"name"`
+	SortOrder     int64  `json:"sort_order"`
 }
 
-type Estimate struct {
-	ID          string         `json:"id"`
-	JobID       string         `json:"job_id"`
-	Version     int64          `json:"version"`
-	Status      string         `json:"status"`
-	GrandTotal  float64        `json:"grand_total"`
-	Notes       sql.NullString `json:"notes"`
-	SentAt      sql.NullString `json:"sent_at"`
-	RespondedAt sql.NullString `json:"responded_at"`
-	CreatedAt   string         `json:"created_at"`
-	OrgID       uuid.NullUUID  `json:"org_id"`
-}
-
-type EstimateCategory struct {
+type LineItem struct {
 	ID               string         `json:"id"`
-	EstimateID       string         `json:"estimate_id"`
-	CategoryID       string         `json:"category_id"`
-	ParentCategoryID sql.NullString `json:"parent_category_id"`
-	Tier             int64          `json:"tier"`
-	Name             string         `json:"name"`
-	Description      sql.NullString `json:"description"`
-	Total            float64        `json:"total"`
-	SortOrder        int64          `json:"sort_order"`
-	OrgID            uuid.NullUUID  `json:"org_id"`
-}
-
-type EstimateLineItem struct {
-	ID               string         `json:"id"`
-	OrgID            uuid.NullUUID  `json:"org_id"`
 	SubcategoryID    string         `json:"subcategory_id"`
 	ComponentGroupID sql.NullString `json:"component_group_id"`
 	CategoryType     string         `json:"category_type"`
@@ -96,124 +52,100 @@ type EstimateLineItem struct {
 	Unit             string         `json:"unit"`
 	UnitPrice        float64        `json:"unit_price"`
 	IsCustom         bool           `json:"is_custom"`
-	MaterialID       sql.NullInt32  `json:"material_id"`
+	MaterialID       sql.NullString `json:"material_id"`
 	PriceOverride    bool           `json:"price_override"`
 	Description      sql.NullString `json:"description"`
 	SortOrder        int64          `json:"sort_order"`
 }
 
-type ItemTemplate struct {
-	ID           int64          `json:"id"`
-	Type         string         `json:"type"`
-	Category     string         `json:"category"`
-	Name         string         `json:"name"`
-	DefaultUnit  string         `json:"default_unit"`
-	DefaultPrice float64        `json:"default_price"`
-	OrgID        uuid.NullUUID  `json:"org_id"`
-	Subcategory  sql.NullString `json:"subcategory"`
-}
-
-type Job struct {
-	ID                        string          `json:"id"`
-	Name                      string          `json:"name"`
-	CustomerName              sql.NullString  `json:"customer_name"`
-	SurchargePercent          float64         `json:"surcharge_percent"`
-	SurchargeMode             string          `json:"surcharge_mode"`
-	CreatedAt                 string          `json:"created_at"`
-	Status                    string          `json:"status"`
-	ExpiresAt                 sql.NullString  `json:"expires_at"`
-	ClientID                  sql.NullString  `json:"client_id"`
-	MaterialSurchargePercent  sql.NullFloat64 `json:"material_surcharge_percent"`
-	LaborSurchargePercent     sql.NullFloat64 `json:"labor_surcharge_percent"`
-	EquipmentSurchargePercent sql.NullFloat64 `json:"equipment_surcharge_percent"`
-	OrgID                     uuid.NullUUID   `json:"org_id"`
-	MaterialsMarkup           float64         `json:"materials_markup"`
-	LaborMarkup               float64         `json:"labor_markup"`
-	EquipmentMarkup           float64         `json:"equipment_markup"`
-	SubsMarkup                float64         `json:"subs_markup"`
-	OtherMarkup               float64         `json:"other_markup"`
-}
-
-type JobItemType struct {
-	ID               string          `json:"id"`
-	JobID            string          `json:"job_id"`
-	Name             string          `json:"name"`
-	Slug             string          `json:"slug"`
-	Color            string          `json:"color"`
-	SortOrder        int64           `json:"sort_order"`
-	CreatedAt        string          `json:"created_at"`
-	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
-	OrgID            uuid.NullUUID   `json:"org_id"`
-}
-
-type LineItem struct {
-	ID               string          `json:"id"`
-	CategoryID       string          `json:"category_id"`
-	Type             string          `json:"type"`
-	Name             string          `json:"name"`
-	Description      sql.NullString  `json:"description"`
-	Quantity         float64         `json:"quantity"`
-	Unit             string          `json:"unit"`
-	UnitPrice        float64         `json:"unit_price"`
-	SurchargePercent sql.NullFloat64 `json:"surcharge_percent"`
-	SortOrder        int64           `json:"sort_order"`
-	Tag              sql.NullString  `json:"tag"`
-	OrgID            uuid.NullUUID   `json:"org_id"`
-}
-
-type Organization struct {
-	ID                 uuid.UUID      `json:"id"`
-	Name               string         `json:"name"`
-	Subdomain          string         `json:"subdomain"`
-	StripeCustomerID   sql.NullString `json:"stripe_customer_id"`
-	Plan               string         `json:"plan"`
-	Status             string         `json:"status"`
-	TrialEndsAt        sql.NullTime   `json:"trial_ends_at"`
-	SubscriptionEndsAt sql.NullTime   `json:"subscription_ends_at"`
-	CreatedAt          time.Time      `json:"created_at"`
-	UpdatedAt          time.Time      `json:"updated_at"`
-}
-
-type PriceImport struct {
+type Material struct {
 	ID           string         `json:"id"`
-	Filename     string         `json:"filename"`
-	Status       string         `json:"status"`
-	TotalRows    int64          `json:"total_rows"`
-	MatchedRows  int64          `json:"matched_rows"`
-	ErrorMessage sql.NullString `json:"error_message"`
-	CreatedAt    string         `json:"created_at"`
-	AppliedAt    sql.NullString `json:"applied_at"`
-	OrgID        uuid.NullUUID  `json:"org_id"`
+	Name         string         `json:"name"`
+	SupplierID   string         `json:"supplier_id"`
+	UnitPrice    float64        `json:"unit_price"`
+	Unit         string         `json:"unit"`
+	SupplierCode sql.NullString `json:"supplier_code"`
+	PriceSource  string         `json:"price_source"`
+	LastUpdated  time.Time      `json:"last_updated"`
+	CreatedAt    time.Time      `json:"created_at"`
 }
 
-type PriceImportMatch struct {
-	ID                int64          `json:"id"`
-	ImportID          string         `json:"import_id"`
-	RowNumber         int64          `json:"row_number"`
-	SourceName        string         `json:"source_name"`
-	SourceUnit        sql.NullString `json:"source_unit"`
-	SourcePrice       float64        `json:"source_price"`
-	MatchedTemplateID sql.NullInt32  `json:"matched_template_id"`
-	Confidence        float64        `json:"confidence"`
-	MatchReason       sql.NullString `json:"match_reason"`
-	Status            string         `json:"status"`
-	NewName           sql.NullString `json:"new_name"`
-	CreatedAt         string         `json:"created_at"`
-	OrgID             uuid.NullUUID  `json:"org_id"`
+type Project struct {
+	ID              string         `json:"id"`
+	Name            string         `json:"name"`
+	ClientID        sql.NullString `json:"client_id"`
+	ClientName      sql.NullString `json:"client_name"`
+	Status          string         `json:"status"`
+	Total           float64        `json:"total"`
+	Description     sql.NullString `json:"description"`
+	MaterialsMarkup float64        `json:"materials_markup"`
+	LaborMarkup     float64        `json:"labor_markup"`
+	EquipmentMarkup float64        `json:"equipment_markup"`
+	SubsMarkup      float64        `json:"subs_markup"`
+	OtherMarkup     float64        `json:"other_markup"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+type Quote struct {
+	ID               string                `json:"id"`
+	ProjectID        string                `json:"project_id"`
+	Version          int64                 `json:"version"`
+	Status           string                `json:"status"`
+	EstimateSnapshot pqtype.NullRawMessage `json:"estimate_snapshot"`
+	TotalsSnapshot   pqtype.NullRawMessage `json:"totals_snapshot"`
+	Token            sql.NullString        `json:"token"`
+	ExpiresAt        sql.NullTime          `json:"expires_at"`
+	SentAt           sql.NullTime          `json:"sent_at"`
+	CreatedAt        time.Time             `json:"created_at"`
+	CreatedBy        sql.NullString        `json:"created_by"`
+}
+
+type QuoteEmail struct {
+	ID         string         `json:"id"`
+	QuoteID    string         `json:"quote_id"`
+	Recipient  string         `json:"recipient"`
+	SentAt     time.Time      `json:"sent_at"`
+	ProviderID sql.NullString `json:"provider_id"`
+}
+
+type QuoteSignature struct {
+	ID         string         `json:"id"`
+	QuoteID    string         `json:"quote_id"`
+	SignerName string         `json:"signer_name"`
+	SignerIp   sql.NullString `json:"signer_ip"`
+	SignedAt   time.Time      `json:"signed_at"`
+}
+
+type Rate struct {
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	CategoryID  string         `json:"category_id"`
+	Supplier    sql.NullString `json:"supplier"`
+	Rate        float64        `json:"rate"`
+	Unit        string         `json:"unit"`
+	Notes       sql.NullString `json:"notes"`
+	LastUpdated time.Time      `json:"last_updated"`
+	CreatedAt   time.Time      `json:"created_at"`
+}
+
+type RateCategory struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	SortOrder int64     `json:"sort_order"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Section struct {
-	ID        string        `json:"id"`
-	OrgID     uuid.NullUUID `json:"org_id"`
-	JobID     string        `json:"job_id"`
-	Name      string        `json:"name"`
-	SortOrder int64         `json:"sort_order"`
+	ID        string `json:"id"`
+	ProjectID string `json:"project_id"`
+	Name      string `json:"name"`
+	SortOrder int64  `json:"sort_order"`
 }
 
 type Session struct {
-	ID             uuid.UUID      `json:"id"`
-	UserID         uuid.UUID      `json:"user_id"`
-	OrgID          uuid.UUID      `json:"org_id"`
+	ID             string         `json:"id"`
+	UserID         string         `json:"user_id"`
 	TokenHash      string         `json:"token_hash"`
 	UserAgent      sql.NullString `json:"user_agent"`
 	IpAddress      sql.NullString `json:"ip_address"`
@@ -222,47 +154,8 @@ type Session struct {
 	CreatedAt      time.Time      `json:"created_at"`
 }
 
-type Setting struct {
-	DefaultSurchargeMode    string    `json:"default_surcharge_mode"`
-	DefaultSurchargePercent float64   `json:"default_surcharge_percent"`
-	OrgID                   uuid.UUID `json:"org_id"`
-}
-
-type Signature struct {
-	ID                 string         `json:"id"`
-	RequestID          string         `json:"request_id"`
-	LegalName          string         `json:"legal_name"`
-	ConsentText        string         `json:"consent_text"`
-	DocumentHash       string         `json:"document_hash"`
-	SignedAt           string         `json:"signed_at"`
-	SignerIp           string         `json:"signer_ip"`
-	SignerUserAgent    string         `json:"signer_user_agent"`
-	SignerEmail        string         `json:"signer_email"`
-	CertificatePdfPath sql.NullString `json:"certificate_pdf_path"`
-	CreatedAt          string         `json:"created_at"`
-	OrgID              uuid.NullUUID  `json:"org_id"`
-}
-
-type SignatureRequest struct {
-	ID              string         `json:"id"`
-	EstimateID      string         `json:"estimate_id"`
-	RecipientEmail  string         `json:"recipient_email"`
-	RecipientName   string         `json:"recipient_name"`
-	Token           string         `json:"token"`
-	DocumentHash    string         `json:"document_hash"`
-	QuoteSnapshot   string         `json:"quote_snapshot"`
-	Message         sql.NullString `json:"message"`
-	Status          string         `json:"status"`
-	ExpiresAt       string         `json:"expires_at"`
-	SenderIp        sql.NullString `json:"sender_ip"`
-	SenderUserAgent sql.NullString `json:"sender_user_agent"`
-	CreatedAt       string         `json:"created_at"`
-	OrgID           uuid.NullUUID  `json:"org_id"`
-}
-
 type Subcategory struct {
 	ID                     string          `json:"id"`
-	OrgID                  uuid.NullUUID   `json:"org_id"`
 	SectionID              string          `json:"section_id"`
 	Name                   string          `json:"name"`
 	SortOrder              int64           `json:"sort_order"`
@@ -279,19 +172,19 @@ type Subcategory struct {
 	OtherMarkupEnabled     bool            `json:"other_markup_enabled"`
 }
 
+type Supplier struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	SortOrder int64     `json:"sort_order"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type User struct {
-	ID                  uuid.UUID      `json:"id"`
-	OrgID               uuid.UUID      `json:"org_id"`
-	Email               string         `json:"email"`
-	PasswordHash        string         `json:"password_hash"`
-	Role                string         `json:"role"`
-	Name                string         `json:"name"`
-	EmailVerified       bool           `json:"email_verified"`
-	Status              string         `json:"status"`
-	ResetToken          sql.NullString `json:"reset_token"`
-	ResetTokenExpiresAt sql.NullTime   `json:"reset_token_expires_at"`
-	VerificationToken   sql.NullString `json:"verification_token"`
-	LastLoginAt         sql.NullTime   `json:"last_login_at"`
-	CreatedAt           time.Time      `json:"created_at"`
-	UpdatedAt           time.Time      `json:"updated_at"`
+	ID           string    `json:"id"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"password_hash"`
+	Name         string    `json:"name"`
+	Status       string    `json:"status"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }

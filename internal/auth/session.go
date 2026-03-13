@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dukerupert/skalkaho/internal/repository"
-	"github.com/google/uuid"
 )
 
 // SessionManager manages user sessions.
@@ -21,12 +20,10 @@ type SessionManager struct {
 
 // Session represents a user session with associated user information.
 type Session struct {
-	ID             uuid.UUID
-	UserID         uuid.UUID
-	OrgID          uuid.UUID
+	ID             string
+	UserID         string
 	Email          string
 	Name           string
-	Role           string
 	ExpiresAt      time.Time
 	LastActivityAt time.Time
 	CreatedAt      time.Time
@@ -34,8 +31,7 @@ type Session struct {
 
 // CreateSessionParams contains parameters for creating a session.
 type CreateSessionParams struct {
-	UserID    uuid.UUID
-	OrgID     uuid.UUID
+	UserID    string
 	UserAgent string
 	IPAddress string
 }
@@ -63,15 +59,10 @@ func (sm *SessionManager) CreateSession(ctx context.Context, params CreateSessio
 	// Hash token for storage
 	tokenHash := HashSessionToken(token)
 
-	// Get user info first (before creating session)
+	// Get user info
 	user, err := sm.queries.GetUser(ctx, params.UserID)
 	if err != nil {
 		return "", nil, fmt.Errorf("getting user: %w", err)
-	}
-
-	// Validate user belongs to the specified organization
-	if user.OrgID != params.OrgID {
-		return "", nil, fmt.Errorf("user does not belong to specified organization")
 	}
 
 	// Calculate expiration
@@ -80,7 +71,6 @@ func (sm *SessionManager) CreateSession(ctx context.Context, params CreateSessio
 	// Create session in database
 	dbSession, err := sm.queries.CreateSession(ctx, repository.CreateSessionParams{
 		UserID:    params.UserID,
-		OrgID:     params.OrgID,
 		TokenHash: tokenHash,
 		UserAgent: sql.NullString{String: params.UserAgent, Valid: params.UserAgent != ""},
 		IpAddress: sql.NullString{String: params.IPAddress, Valid: params.IPAddress != ""},
@@ -90,14 +80,11 @@ func (sm *SessionManager) CreateSession(ctx context.Context, params CreateSessio
 		return "", nil, fmt.Errorf("creating session in database: %w", err)
 	}
 
-	// Build session with user info
 	session := &Session{
 		ID:             dbSession.ID,
 		UserID:         dbSession.UserID,
-		OrgID:          dbSession.OrgID,
 		Email:          user.Email,
 		Name:           user.Name,
-		Role:           user.Role,
 		ExpiresAt:      dbSession.ExpiresAt,
 		LastActivityAt: dbSession.LastActivityAt,
 		CreatedAt:      dbSession.CreatedAt,
@@ -107,16 +94,13 @@ func (sm *SessionManager) CreateSession(ctx context.Context, params CreateSessio
 }
 
 // ValidateSession validates a session token and returns the session details.
-// Returns an error if the token is invalid, expired, or the user is inactive.
 func (sm *SessionManager) ValidateSession(ctx context.Context, token string) (*Session, error) {
 	if token == "" {
 		return nil, fmt.Errorf("empty token")
 	}
 
-	// Hash token to look up in database
 	tokenHash := HashSessionToken(token)
 
-	// Retrieve session (query already checks expiration)
 	sessionRow, err := sm.queries.GetSessionByTokenHash(ctx, tokenHash)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -125,7 +109,6 @@ func (sm *SessionManager) ValidateSession(ctx context.Context, token string) (*S
 		return nil, fmt.Errorf("retrieving session: %w", err)
 	}
 
-	// Check user status
 	if sessionRow.UserStatus != "active" {
 		return nil, fmt.Errorf("user is not active")
 	}
@@ -137,12 +120,10 @@ func (sm *SessionManager) ValidateSession(ctx context.Context, token string) (*S
 	session := &Session{
 		ID:             sessionRow.ID,
 		UserID:         sessionRow.UserID,
-		OrgID:          sessionRow.OrgID,
 		Email:          sessionRow.Email,
 		Name:           sessionRow.Name,
-		Role:           sessionRow.Role,
 		ExpiresAt:      sessionRow.ExpiresAt,
-		LastActivityAt: now, // Use the current time since we just updated it
+		LastActivityAt: now,
 		CreatedAt:      sessionRow.CreatedAt,
 	}
 
@@ -150,23 +131,18 @@ func (sm *SessionManager) ValidateSession(ctx context.Context, token string) (*S
 }
 
 // DestroySession destroys a session given its token.
-// This operation is idempotent - destroying a non-existent session does not error.
 func (sm *SessionManager) DestroySession(ctx context.Context, token string) error {
 	if token == "" {
-		return nil // Idempotent
-	}
-
-	tokenHash := HashSessionToken(token)
-	if err := sm.queries.DeleteSessionByTokenHash(ctx, tokenHash); err != nil {
-		// Even if session doesn't exist, don't error (idempotent)
 		return nil
 	}
 
+	tokenHash := HashSessionToken(token)
+	_ = sm.queries.DeleteSessionByTokenHash(ctx, tokenHash)
 	return nil
 }
 
 // DestroyAllUserSessions destroys all sessions for a given user.
-func (sm *SessionManager) DestroyAllUserSessions(ctx context.Context, userID uuid.UUID) error {
+func (sm *SessionManager) DestroyAllUserSessions(ctx context.Context, userID string) error {
 	if err := sm.queries.DeleteUserSessions(ctx, userID); err != nil {
 		return fmt.Errorf("deleting user sessions: %w", err)
 	}

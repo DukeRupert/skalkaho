@@ -51,6 +51,26 @@ The authoritative spec is `docs/skalkaho-spec.md`. This plan references section 
 
 ## 2. What to Keep vs. Rebuild
 
+### Pre-port audit (completed)
+
+Before porting, an audit was performed on all files listed below to identify multi-tenant assumptions that could break silently. Key findings:
+
+| File | Org/Role refs | Action |
+|------|---------------|--------|
+| `auth/auth.go` | 0 | Port as-is |
+| `auth/session.go` | 5 OrgID + 1 Role in Session struct, org validation in CreateSession (line ~73) | Remove OrgID & Role from Session struct, remove org validation |
+| `auth/context.go` | `OrgIDFromContext()`, `UserRoleFromContext()` | Delete both functions; keep UserID/Email/Name/Session helpers |
+| `auth/middleware.go` | `RequireRole()` (lines 67–89) | Delete function entirely |
+| `domain/estimate.go` | 0 | Port as-is |
+| `handler/keyboard/estimate_api.go` | 18+ `GetOrgID()` calls, all query params include OrgID | Remove all GetOrgID calls, update all query call signatures |
+| `handler/keyboard/tenant.go` | `GetOrgID()`, `MustGetOrgID()`, `GetUserRole()` — 265 downstream call sites | Delete entire file |
+| `config/config.go` | 5 legacy fields | Remove DatabasePath, SeedDemoUser, PriceImportToken, AutoApproveThreshold, AnthropicAPIKey |
+| `database/database.go` | SQLite fallback block (lines 25–30), `Dialect()` function | Remove SQLite code, PG-only |
+| `ui/src/**` | 0 explicit org_id in payloads | Route renaming only (`{jobID}` → `{projectID}`) |
+| `sqlc/queries/*.sql` | 132 org_id refs across ~50 queries | All rewritten from scratch in greenfield |
+
+**Critical note for Phase 7:** The estimate API handler (`estimate_api.go`) has the heaviest multi-tenant coupling: every query call passes `OrgID` as a parameter struct field (e.g., `repository.GetJobParams{ID: jobID, OrgID: orgID}`). These aren't just search-and-replace deletions — the sqlc-generated parameter structs change shape when the queries are rewritten without `org_id`. The implementing agent must rewrite the handler against the new query signatures, not attempt to patch the old one.
+
 ### Port from existing codebase (adapt, don't copy verbatim)
 
 | Component | Source | Changes needed |
@@ -58,12 +78,13 @@ The authoritative spec is `docs/skalkaho-spec.md`. This plan references section 
 | **Svelte Estimate Builder** | `ui/` (12 files) | Remove all `org_id` references from API calls. Rename `job` → `project` in API URLs (`/api/estimate/{projectID}`). No changes to component logic — markup engine, undo, autosave, autocomplete all stay. |
 | **Markup engine (Go)** | `internal/domain/estimate.go` | Keep `ResolveMarkup()`, `EstimatePayload`, all Estimate* structs. Remove `org_id` from all struct fields. Rename references from "job" to "project" where they appear in JSON tags or field names. |
 | **Auth primitives** | `internal/auth/auth.go` | Keep `HashPassword()`, `CheckPassword()`, `GenerateSessionToken()`, `HashSessionToken()`. These are pure functions with no org dependency. |
-| **Session manager** | `internal/auth/session.go` | Simplify: remove `OrgID` from `Session` struct and `CreateSessionParams`. Remove org validation from `CreateSession()`. |
-| **Auth middleware** | `internal/auth/middleware.go` | Keep `SessionMiddleware` and `RequireAuth`. Remove `RequireRole`. Remove org-related context helpers. |
+| **Session manager** | `internal/auth/session.go` | Simplify: remove `OrgID` and `Role` from `Session` struct and `CreateSessionParams`. Remove org validation from `CreateSession()`. Remove role population from `ValidateSession()`. |
+| **Auth middleware** | `internal/auth/middleware.go` | Keep `SessionMiddleware` and `RequireAuth`. Delete `RequireRole` entirely. |
+| **Auth context** | `internal/auth/context.go` | Delete `OrgIDFromContext()` and `UserRoleFromContext()`. Keep `UserIDFromContext()`, `UserEmailFromContext()`, `UserNameFromContext()`, `IsAuthenticated()`, `SessionFromContext()`. |
 | **Middleware** | `internal/middleware/` | Keep Recover, RequestID, Logger as-is. |
 | **Config** | `internal/config/config.go` | Remove `DatabasePath`, `SeedDemoUser`, `PriceImportToken`, `AutoApproveThreshold`, `AnthropicAPIKey`. Keep session config, `ADDR`, `ENVIRONMENT`, `DATABASE_URL`. Add `POSTMARK_API_KEY`. |
-| **Database** | `internal/database/` | PostgreSQL only. Remove SQLite detection and fallback. |
-| **Estimate API handler** | `internal/handler/keyboard/estimate_api.go` | Port `GetEstimateJSON`, `SaveEstimateJSON`, `buildEstimatePayload`, validation. Remove all `orgID`/`GetOrgID()` calls. Change `job` → `project` in route params. The autocomplete data source changes from `item_templates` to the new `materials` + `rates` tables. |
+| **Database** | `internal/database/` | PostgreSQL only. Remove SQLite detection and fallback. Require `DATABASE_URL`; fail startup if missing. |
+| **Estimate API handler** | `internal/handler/keyboard/estimate_api.go` | Rewrite (not patch) against new sqlc query signatures. Port `GetEstimateJSON`, `SaveEstimateJSON`, `buildEstimatePayload`, validation logic. Remove all `orgID`/`GetOrgID()` calls. Change `job` → `project` in route params. Autocomplete data source changes from `item_templates` to `materials` + `rates` tables. |
 
 ### Build new
 
@@ -178,7 +199,35 @@ CREATE INDEX idx_projects_client_id ON projects(client_id);
 CREATE INDEX idx_projects_status ON projects(status);
 ```
 
-### Migration 004: Estimate Builder (4-level hierarchy)
+### Migration 004: Materials
+
+> **Ordering rationale:** Materials must be created before the Estimate Builder tables because `line_items.material_id` references `materials(id)`. This was originally numbered 005 but swapped to avoid a forward FK reference.
+
+```sql
+-- +goose Up
+CREATE TABLE suppliers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE materials (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    supplier_id TEXT NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
+    unit_price REAL NOT NULL DEFAULT 0,
+    unit TEXT NOT NULL DEFAULT 'ea',
+    supplier_code TEXT,
+    price_source TEXT NOT NULL DEFAULT 'Manual' CHECK (price_source IN ('Supplier', 'Manual')),
+    last_updated TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_materials_supplier_id ON materials(supplier_id);
+```
+
+### Migration 005: Estimate Builder (4-level hierarchy)
 
 ```sql
 -- +goose Up
@@ -238,34 +287,6 @@ CREATE TABLE line_items (
 
 CREATE INDEX idx_line_items_subcategory_id ON line_items(subcategory_id);
 CREATE INDEX idx_line_items_component_group_id ON line_items(component_group_id);
-```
-
-**Note:** Migration 004 references `materials(id)` from migration 005. These two migrations must be ordered so materials comes first, OR the FK on `line_items.material_id` should be deferred to a later migration. The implementing agent should reorder 004 and 005 as needed, or add the FK via ALTER TABLE in a migration after 005.
-
-### Migration 005: Materials
-
-```sql
--- +goose Up
-CREATE TABLE suppliers (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    sort_order INTEGER NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE materials (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    supplier_id TEXT NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
-    unit_price REAL NOT NULL DEFAULT 0,
-    unit TEXT NOT NULL DEFAULT 'ea',
-    supplier_code TEXT,
-    price_source TEXT NOT NULL DEFAULT 'Manual' CHECK (price_source IN ('Supplier', 'Manual')),
-    last_updated TIMESTAMPTZ NOT NULL DEFAULT now(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_materials_supplier_id ON materials(supplier_id);
 ```
 
 ### Migration 006: Rates
@@ -377,7 +398,7 @@ Each phase is independently testable and represents a logical commit boundary. P
 #### Steps
 
 1. **Delete all old migrations** from `cmd/server/migrations/`. Write migrations 001–008 as specified in §3.
-   - Handle the ordering issue: put materials (005) before estimate builder (004), or split the FK into a separate migration.
+   - Migration ordering is already resolved: materials is 004, estimate builder is 005 (see §3 rationale).
 
 2. **Delete all old sqlc queries** from `sqlc/queries/`. Create fresh query files as needed per phase.
 
@@ -818,6 +839,16 @@ CountRatesByCategory(category_id) → count
 
 7. **Build Svelte bundle:** `cd ui && npm run build` → outputs to `static/estimate-builder/`
 
+8. **Create shared cost calculation function** (`internal/domain/cost.go`):
+   - **This is a prerequisite for Phase 8, not an afterthought.** Build it now while the estimate save logic is fresh.
+   - `CalculateProjectCosts(sections, subcategories, lineItems, globals) → ProjectCostSummary`
+   - Inputs: the same data structures loaded by `buildEstimatePayload`
+   - Uses `ResolveMarkup()` for each line item
+   - Returns per-category totals, per-section breakdown, and grand total
+   - The estimate builder's save handler (`SaveEstimateJSON`) should call this function to compute `projects.total`
+   - Phase 8's overview handler will call the same function to render cost KPIs
+   - **Single source of truth**: if markup logic changes, it changes in one place
+
 #### Acceptance criteria
 - Navigate to `/projects/{id}/estimate` → Svelte mounts, fetches data, renders hierarchy
 - Add sections, subcategories, groups, line items
@@ -826,6 +857,7 @@ CountRatesByCategory(category_id) → count
 - Undo works (Ctrl+Z)
 - Markup controls (global + per-subcategory) work
 - Navigation guard warns on unsaved changes
+- `projects.total` is updated on each save via `domain.CalculateProjectCosts()`
 
 ---
 
@@ -855,14 +887,13 @@ Implements spec §4.6.
 
 #### Cost calculation
 
-The overview page needs server-side cost calculation. Port the markup resolution logic:
-1. Load all sections, subcategories, line items for the project
-2. For each line item, resolve effective markup using `domain.ResolveMarkup()`
-3. Calculate: `line_total = quantity × unit_price × (1 + markup/100)`
-4. Sum by category_type for each subcategory (+ lump_sum), section, and project total
-5. Update `projects.total` on each save (or calculate on read)
+The overview page uses the shared `domain.CalculateProjectCosts()` function created in Phase 7 step 8. **Do not reimplement cost calculation here.**
 
-Create a shared calculation function in `internal/domain/` that both the overview handler and the save handler can use.
+1. Load all sections, subcategories, line items for the project (same queries as estimate builder)
+2. Call `domain.CalculateProjectCosts(sections, subcategories, lineItems, globals)` → `ProjectCostSummary`
+3. Render the `ProjectCostSummary` into the template (per-category KPIs, per-section breakdown, grand total)
+
+The `projects.total` column is already kept in sync by the estimate builder's save handler (Phase 7). The overview reads it directly for the dashboard but recalculates the full breakdown on demand for the detail view.
 
 #### Acceptance criteria
 - Overview shows project info, client info, cost breakdown

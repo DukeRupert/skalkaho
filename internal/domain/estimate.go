@@ -1,7 +1,6 @@
 package domain
 
 // EstimatePayload is the JSON contract between the Go API and the Svelte estimate builder.
-// It represents the full estimate state for a project/job.
 type EstimatePayload struct {
 	Project     EstimateProject     `json:"project"`
 	Globals     MarkupGlobals       `json:"globals"`
@@ -92,7 +91,7 @@ type EstimateLineItem struct {
 	Unit             string       `json:"unit"`
 	UnitPrice        float64      `json:"unit_price"`
 	IsCustom         bool         `json:"is_custom"`
-	MaterialID       *int64       `json:"material_id,omitempty"`
+	MaterialID       *string      `json:"material_id,omitempty"`
 	PriceOverride    bool         `json:"price_override"`
 	Description      *string      `json:"description,omitempty"`
 	SortOrder        int          `json:"sort_order"`
@@ -101,21 +100,21 @@ type EstimateLineItem struct {
 
 // MaterialDBEntry represents a material from the database for autocomplete.
 type MaterialDBEntry struct {
-	ID           int64   `json:"id"`
+	ID           string  `json:"id"`
 	Name         string  `json:"name"`
-	Category     string  `json:"category"`
-	DefaultUnit  string  `json:"default_unit"`
-	DefaultPrice float64 `json:"default_price"`
+	Supplier     string  `json:"supplier"`
+	UnitPrice    float64 `json:"unit_price"`
+	Unit         string  `json:"unit"`
+	SupplierCode string  `json:"supplier_code,omitempty"`
 }
 
 // RateDBEntry represents a labor/equipment/subs rate for autocomplete.
 type RateDBEntry struct {
-	ID           int64   `json:"id"`
-	Type         string  `json:"type"`
-	Name         string  `json:"name"`
-	Category     string  `json:"category"`
-	DefaultUnit  string  `json:"default_unit"`
-	DefaultPrice float64 `json:"default_price"`
+	ID       string  `json:"id"`
+	Name     string  `json:"name"`
+	Category string  `json:"category"`
+	Rate     float64 `json:"rate"`
+	Unit     string  `json:"unit"`
 }
 
 // ResolveMarkup resolves the effective markup percentage for a line item
