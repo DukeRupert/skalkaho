@@ -14,8 +14,11 @@ import (
 	"github.com/dukerupert/skalkaho/internal/auth"
 	"github.com/dukerupert/skalkaho/internal/config"
 	"github.com/dukerupert/skalkaho/internal/database"
+	authhandler "github.com/dukerupert/skalkaho/internal/handler/auth"
 	"github.com/dukerupert/skalkaho/internal/middleware"
 	"github.com/dukerupert/skalkaho/internal/repository"
+	"github.com/dukerupert/skalkaho/internal/router"
+	"github.com/dukerupert/skalkaho/internal/templates"
 )
 
 //go:embed migrations/*.sql
@@ -58,7 +61,12 @@ func main() {
 
 	// Initialize repository
 	queries := repository.New(db)
-	_ = queries // Used by handlers in later phases
+
+	// Initialize template renderer
+	renderer, err := templates.NewRenderer()
+	if err != nil {
+		log.Fatalf("Failed to initialize templates: %v", err)
+	}
 
 	// Initialize session manager
 	sessionManager := auth.NewSessionManager(
@@ -68,18 +76,13 @@ func main() {
 		cfg.SessionCookieName,
 		cfg.SecureCookies,
 	)
-	_ = sessionManager // Used by router in later phases
 
-	// Setup router with health check
+	// Initialize handlers
+	authHandler := authhandler.NewHandler(queries, renderer, sessionManager, logger)
+
+	// Setup router
 	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OK"))
-	})
-
-	// Static files
-	mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	router.Register(mux, authHandler, sessionManager)
 
 	// Apply middleware
 	handler := middleware.Chain(mux,
@@ -102,9 +105,5 @@ func runMigrations(db *sql.DB) error {
 		return err
 	}
 
-	if err := goose.Up(db, "migrations"); err != nil {
-		return err
-	}
-
-	return nil
+	return goose.Up(db, "migrations")
 }
