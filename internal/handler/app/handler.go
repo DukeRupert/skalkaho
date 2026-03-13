@@ -59,12 +59,9 @@ func (h *Handler) Clients(w http.ResponseWriter, r *http.Request) {
 	h.ListClients(w, r)
 }
 
-// Materials renders the materials database page.
+// Materials delegates to ListMaterials for the full materials management page.
 func (h *Handler) Materials(w http.ResponseWriter, r *http.Request) {
-	if err := h.renderer.Render(w, "materials.html", h.pageData(r, "materials")); err != nil {
-		h.logger.Error("rendering materials", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	h.ListMaterials(w, r)
 }
 
 // Rates renders the labor & equipment rates page.
