@@ -64,12 +64,9 @@ func (h *Handler) Materials(w http.ResponseWriter, r *http.Request) {
 	h.ListMaterials(w, r)
 }
 
-// Rates renders the labor & equipment rates page.
+// Rates delegates to ListRates for the full rates management page.
 func (h *Handler) Rates(w http.ResponseWriter, r *http.Request) {
-	if err := h.renderer.Render(w, "rates.html", h.pageData(r, "rates")); err != nil {
-		h.logger.Error("rendering rates", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	h.ListRates(w, r)
 }
 
 // loadProject fetches a project and returns a ProjectStub for sidebar rendering.
