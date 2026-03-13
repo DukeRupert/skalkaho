@@ -1,11 +1,19 @@
 <script>
-	let { status, savedAt } = $props();
+	let { status, savedAt, onsave } = $props();
+
+	let now = $state(Date.now());
+
+	// Update relative time every 10 seconds
+	$effect(() => {
+		const interval = setInterval(() => { now = Date.now(); }, 10000);
+		return () => clearInterval(interval);
+	});
 
 	let statusText = $derived.by(() => {
 		switch (status) {
 			case 'clean':
 				if (savedAt) {
-					const ago = Math.round((Date.now() - savedAt.getTime()) / 1000);
+					const ago = Math.round((now - savedAt.getTime()) / 1000);
 					if (ago < 5) return 'Saved just now';
 					if (ago < 60) return `Saved ${ago}s ago`;
 					return `Saved ${Math.round(ago / 60)}m ago`;
@@ -16,7 +24,7 @@
 			case 'saving':
 				return 'Saving...';
 			case 'error':
-				return 'Save failed — retrying';
+				return 'Save failed';
 			default:
 				return '';
 		}
@@ -37,7 +45,7 @@
 			case 'clean': return 'bg-green-400';
 			case 'dirty': return 'bg-amber-400';
 			case 'saving': return 'bg-blue-400 animate-pulse';
-			case 'error': return 'bg-red-400';
+			case 'error': return 'bg-red-400 animate-pulse';
 			default: return 'bg-slate-400';
 		}
 	});
@@ -45,5 +53,23 @@
 
 <div class="flex items-center gap-1.5 text-xs {statusColor}">
 	<span class="w-2 h-2 rounded-full {dotColor}"></span>
-	{statusText}
+	<span>{statusText}</span>
+	{#if status === 'dirty' && onsave}
+		<button
+			onclick={onsave}
+			class="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 transition-colors"
+			title="Save now (Ctrl+S)"
+		>
+			Save
+		</button>
+	{/if}
+	{#if status === 'error' && onsave}
+		<button
+			onclick={onsave}
+			class="ml-1 px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 transition-colors"
+			title="Retry save"
+		>
+			Retry
+		</button>
+	{/if}
 </div>
