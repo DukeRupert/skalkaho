@@ -3,12 +3,11 @@
 	import ComponentGroupBlock from './ComponentGroupBlock.svelte';
 	import { subcategoryTotals, formatMoney, resolveMarkup, formatPercent } from './markup.js';
 
-	let { subcat, globals, collapsed = false } = $props();
+	let { subcat, globals, collapsed = false, onchange } = $props();
 
 	let isCollapsed = $state(collapsed);
 	let totals = $derived(subcategoryTotals(subcat, globals));
 
-	// Build markup summary for display
 	let markupSummary = $derived.by(() => {
 		const types = ['materials', 'labor', 'equipment', 'subs', 'other'];
 		return types.map(t => ({
@@ -50,10 +49,8 @@
 		<span class="font-mono text-sm font-semibold text-slate-700">{formatMoney(totals.withMarkup)}</span>
 	</button>
 
-	<!-- Subcategory content -->
 	{#if !isCollapsed}
 		<div class="px-4 pb-3">
-			<!-- Markup row (if overrides) -->
 			{#if hasOverrides}
 				<div class="flex items-center gap-3 py-1.5 px-2 bg-amber-50 rounded text-xs mb-2">
 					<span class="font-medium text-amber-700">Markup:</span>
@@ -65,46 +62,44 @@
 				</div>
 			{/if}
 
-			<!-- Line items table header -->
 			{#if totalItems > 0}
 				<table class="w-full">
 					<thead>
 						<tr class="text-xs text-slate-400 uppercase tracking-wide border-b border-slate-100">
-							<th class="px-2 py-1 text-left w-20">Type</th>
-							<th class="px-2 py-1 text-left">Name</th>
-							<th class="px-2 py-1 text-right w-20">Qty</th>
-							<th class="px-2 py-1 text-center w-16">Unit</th>
-							<th class="px-2 py-1 text-right w-24">Price</th>
+							<th class="px-1 py-1 text-left w-24">Type</th>
+							<th class="px-1 py-1 text-left">Name</th>
+							<th class="px-1 py-1 text-right w-20">Qty</th>
+							<th class="px-1 py-1 text-center w-16">Unit</th>
+							<th class="px-1 py-1 text-right w-24">Price</th>
 							<th class="px-2 py-1 text-right w-16">Markup</th>
 							<th class="px-2 py-1 text-right w-24">w/ Markup</th>
 							<th class="px-2 py-1 text-right w-28">Total</th>
 						</tr>
 					</thead>
 					<tbody>
-						<!-- Ungrouped items -->
 						{#each subcat.line_items as item (item.id)}
 							<LineItemRow
 								{item}
 								{globals}
 								markupOverrides={subcat.markup_overrides}
 								markupEnabled={subcat.markup_enabled}
+								{onchange}
 							/>
 						{/each}
 					</tbody>
 				</table>
 			{/if}
 
-			<!-- Component groups -->
 			{#each subcat.component_groups as group (group.id)}
 				<ComponentGroupBlock
 					{group}
 					{globals}
 					markupOverrides={subcat.markup_overrides}
 					markupEnabled={subcat.markup_enabled}
+					{onchange}
 				/>
 			{/each}
 
-			<!-- Subcategory total row -->
 			<div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100 text-sm">
 				<span class="text-slate-500">
 					Subtotal: {formatMoney(totals.base)}

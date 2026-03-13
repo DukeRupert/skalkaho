@@ -1,13 +1,18 @@
 <script>
 	import SectionBlock from './lib/SectionBlock.svelte';
 	import FooterSummary from './lib/FooterSummary.svelte';
+	import SaveStatus from './lib/SaveStatus.svelte';
 	import { formatPercent } from './lib/markup.js';
+	import { createAutoSave } from './lib/autosave.svelte.js';
 
 	let { projectId } = $props();
 
 	let estimate = $state(null);
 	let error = $state(null);
 	let loading = $state(true);
+
+	// Auto-save controller
+	const autoSave = createAutoSave(projectId);
 
 	async function fetchEstimate() {
 		try {
@@ -16,6 +21,8 @@
 				throw new Error(`Failed to load estimate: ${res.status}`);
 			}
 			estimate = await res.json();
+			// Register the getter for auto-save
+			autoSave.register(() => estimate);
 		} catch (e) {
 			error = e.message;
 		} finally {
@@ -28,6 +35,24 @@
 			fetchEstimate();
 		}
 	});
+
+	// Warn on navigation when dirty
+	$effect(() => {
+		function handleBeforeUnload(e) {
+			if (autoSave.status === 'dirty' || autoSave.status === 'saving') {
+				e.preventDefault();
+			}
+		}
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		return () => {
+			window.removeEventListener('beforeunload', handleBeforeUnload);
+			autoSave.destroy();
+		};
+	});
+
+	function handleChange() {
+		autoSave.markDirty();
+	}
 </script>
 
 {#if loading}
@@ -47,6 +72,7 @@
 				<span class="text-xs text-slate-400">Estimate Builder</span>
 			</div>
 			<div class="flex items-center gap-3">
+				<SaveStatus status={autoSave.status} savedAt={autoSave.savedAt} />
 				<span class="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300 uppercase tracking-wide">
 					{estimate.project.status}
 				</span>
@@ -87,7 +113,7 @@
 				</div>
 			{:else}
 				{#each estimate.sections as section (section.id)}
-					<SectionBlock {section} globals={estimate.globals} />
+					<SectionBlock {section} globals={estimate.globals} onchange={handleChange} />
 				{/each}
 			{/if}
 		</div>

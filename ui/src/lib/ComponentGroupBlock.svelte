@@ -1,7 +1,7 @@
 <script>
 	import LineItemRow from './LineItemRow.svelte';
 
-	let { group, globals, markupOverrides, markupEnabled } = $props();
+	let { group, globals, markupOverrides, markupEnabled, onchange } = $props();
 </script>
 
 <div class="ml-4 mt-2">
@@ -13,7 +13,7 @@
 		<table class="w-full">
 			<tbody>
 				{#each group.line_items as item (item.id)}
-					<LineItemRow {item} {globals} {markupOverrides} {markupEnabled} />
+					<LineItemRow {item} {globals} {markupOverrides} {markupEnabled} {onchange} />
 				{/each}
 			</tbody>
 		</table>

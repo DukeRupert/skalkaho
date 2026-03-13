@@ -2,7 +2,7 @@
 	import SubcategoryBlock from './SubcategoryBlock.svelte';
 	import { sectionTotals, formatMoney } from './markup.js';
 
-	let { section, globals, collapsed = false } = $props();
+	let { section, globals, collapsed = false, onchange } = $props();
 
 	let isCollapsed = $state(collapsed);
 	let totals = $derived(sectionTotals(section, globals));
@@ -34,7 +34,6 @@
 		<span class="font-mono font-semibold">{formatMoney(totals.withMarkup)}</span>
 	</button>
 
-	<!-- Section content -->
 	{#if !isCollapsed}
 		{#if section.subcategories.length === 0}
 			<div class="px-4 py-8 text-center text-slate-400 text-sm">
@@ -42,7 +41,7 @@
 			</div>
 		{:else}
 			{#each section.subcategories as subcat (subcat.id)}
-				<SubcategoryBlock {subcat} {globals} />
+				<SubcategoryBlock {subcat} {globals} {onchange} />
 			{/each}
 		{/if}
 	{/if}
