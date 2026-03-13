@@ -14,6 +14,7 @@ import (
 	"github.com/dukerupert/skalkaho/internal/auth"
 	"github.com/dukerupert/skalkaho/internal/config"
 	"github.com/dukerupert/skalkaho/internal/database"
+	apphandler "github.com/dukerupert/skalkaho/internal/handler/app"
 	authhandler "github.com/dukerupert/skalkaho/internal/handler/auth"
 	"github.com/dukerupert/skalkaho/internal/middleware"
 	"github.com/dukerupert/skalkaho/internal/repository"
@@ -79,10 +80,11 @@ func main() {
 
 	// Initialize handlers
 	authHandler := authhandler.NewHandler(queries, renderer, sessionManager, logger)
+	appHandler := apphandler.NewHandler(queries, renderer, logger)
 
 	// Setup router
 	mux := http.NewServeMux()
-	router.Register(mux, authHandler, sessionManager)
+	router.Register(mux, authHandler, appHandler, sessionManager)
 
 	// Apply middleware
 	handler := middleware.Chain(mux,

@@ -1,0 +1,12 @@
+{{template "base" .}}
+{{define "title"}}{{if .Project}}{{.Project.Name}} — {{end}}Estimate Builder — Skalkaho{{end}}
+{{define "content"}}
+<div>
+    <h1 class="text-2xl font-bold text-gray-900">Estimate Builder</h1>
+    <p class="mt-2 text-gray-600">Build and manage project estimates.</p>
+    <div id="estimate-app" class="mt-6">
+        <!-- Svelte 5 island will mount here in Phase 9 -->
+        <p class="text-gray-400 italic">Estimate builder coming soon.</p>
+    </div>
+</div>
+{{end}}

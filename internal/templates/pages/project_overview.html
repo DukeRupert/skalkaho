@@ -1,0 +1,8 @@
+{{template "base" .}}
+{{define "title"}}{{if .Project}}{{.Project.Name}} — {{end}}Overview — Skalkaho{{end}}
+{{define "content"}}
+<div>
+    <h1 class="text-2xl font-bold text-gray-900">Job Overview</h1>
+    <p class="mt-2 text-gray-600">Project details and summary.</p>
+</div>
+{{end}}

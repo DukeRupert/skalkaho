@@ -4,11 +4,12 @@ import (
 	"net/http"
 
 	"github.com/dukerupert/skalkaho/internal/auth"
+	apphandler "github.com/dukerupert/skalkaho/internal/handler/app"
 	authhandler "github.com/dukerupert/skalkaho/internal/handler/auth"
 )
 
 // Register sets up all routes.
-func Register(mux *http.ServeMux, authH *authhandler.Handler, sm *auth.SessionManager) {
+func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.Handler, sm *auth.SessionManager) {
 	// Health check (public)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -24,12 +25,13 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, sm *auth.SessionMa
 	mux.HandleFunc("GET /logout", authH.Logout)
 	mux.HandleFunc("POST /logout", authH.Logout)
 
-	// Protected routes
-	// Placeholder: root redirects to login if not authenticated
-	mux.Handle("GET /", protect(sm, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(`<!DOCTYPE html><html><head><title>Skalkaho</title></head><body><h1>Welcome to Skalkaho</h1><p>You are logged in.</p><a href="/logout">Sign out</a></body></html>`))
-	})))
+	// Protected app routes
+	mux.Handle("GET /{$}", protect(sm, http.HandlerFunc(appH.Projects)))
+	mux.Handle("GET /clients", protect(sm, http.HandlerFunc(appH.Clients)))
+	mux.Handle("GET /materials", protect(sm, http.HandlerFunc(appH.Materials)))
+	mux.Handle("GET /rates", protect(sm, http.HandlerFunc(appH.Rates)))
+	mux.Handle("GET /projects/{id}", protect(sm, http.HandlerFunc(appH.ProjectOverview)))
+	mux.Handle("GET /projects/{id}/estimate", protect(sm, http.HandlerFunc(appH.EstimateBuilder)))
 }
 
 // protect wraps a handler with session loading and authentication requirement.

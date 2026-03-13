@@ -4,19 +4,21 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"io"
 	"net/http"
 )
 
-//go:embed pages/*.html
+//go:embed layouts/*.html partials/*.html pages/*.html
 var templateFS embed.FS
 
 // Renderer parses and renders HTML templates.
+// Pages are composed with layouts and partials using template inheritance.
 type Renderer struct {
 	templates map[string]*template.Template
 }
 
 // NewRenderer creates a new Renderer by parsing all page templates.
+// Each page is parsed together with layouts and partials so that
+// {{template "base" .}} and {{template "sidebar" .}} work.
 func NewRenderer() (*Renderer, error) {
 	r := &Renderer{
 		templates: make(map[string]*template.Template),
@@ -32,7 +34,13 @@ func NewRenderer() (*Renderer, error) {
 			continue
 		}
 		name := page.Name()
-		tmpl, err := template.ParseFS(templateFS, "pages/"+name)
+
+		// Parse the page together with layouts and partials
+		tmpl, err := template.ParseFS(templateFS,
+			"pages/"+name,
+			"layouts/*.html",
+			"partials/*.html",
+		)
 		if err != nil {
 			return nil, fmt.Errorf("parsing template %s: %w", name, err)
 		}
@@ -43,20 +51,13 @@ func NewRenderer() (*Renderer, error) {
 }
 
 // Render executes a named template and writes it to the response.
+// For pages that use the base layout, the page template should call
+// {{template "base" .}} which renders the full layout with sidebar.
 func (r *Renderer) Render(w http.ResponseWriter, name string, data any) error {
 	tmpl, ok := r.templates[name]
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	return tmpl.Execute(w, data)
-}
-
-// RenderToWriter executes a named template and writes to an io.Writer.
-func (r *Renderer) RenderToWriter(w io.Writer, name string, data any) error {
-	tmpl, ok := r.templates[name]
-	if !ok {
-		return fmt.Errorf("template %q not found", name)
-	}
 	return tmpl.Execute(w, data)
 }
