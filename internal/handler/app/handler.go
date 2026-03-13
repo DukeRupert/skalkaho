@@ -49,12 +49,9 @@ func (h *Handler) pageData(r *http.Request, activePage string) PageData {
 	}
 }
 
-// Projects renders the projects list page.
+// Projects redirects to ListProjects (kept for backward compat during phase transition).
 func (h *Handler) Projects(w http.ResponseWriter, r *http.Request) {
-	if err := h.renderer.Render(w, "projects.html", h.pageData(r, "projects")); err != nil {
-		h.logger.Error("rendering projects", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	h.ListProjects(w, r)
 }
 
 // Clients renders the clients page.
@@ -81,14 +78,20 @@ func (h *Handler) Rates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// loadProject fetches a project and returns a ProjectStub for sidebar rendering.
+func (h *Handler) loadProject(r *http.Request) *ProjectStub {
+	projectID := r.PathValue("id")
+	project, err := h.queries.GetProject(r.Context(), projectID)
+	if err != nil {
+		return &ProjectStub{ID: projectID, Name: "Unknown Project"}
+	}
+	return &ProjectStub{ID: project.ID, Name: project.Name}
+}
+
 // ProjectOverview renders the project overview page.
 func (h *Handler) ProjectOverview(w http.ResponseWriter, r *http.Request) {
-	projectID := r.PathValue("id")
 	data := h.pageData(r, "overview")
-	data.Project = &ProjectStub{
-		ID:   projectID,
-		Name: "Project " + projectID, // Stub: real name loaded in Phase 3
-	}
+	data.Project = h.loadProject(r)
 	if err := h.renderer.Render(w, "project_overview.html", data); err != nil {
 		h.logger.Error("rendering project overview", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -97,12 +100,8 @@ func (h *Handler) ProjectOverview(w http.ResponseWriter, r *http.Request) {
 
 // EstimateBuilder renders the estimate builder page.
 func (h *Handler) EstimateBuilder(w http.ResponseWriter, r *http.Request) {
-	projectID := r.PathValue("id")
 	data := h.pageData(r, "estimate")
-	data.Project = &ProjectStub{
-		ID:   projectID,
-		Name: "Project " + projectID, // Stub: real name loaded in Phase 3
-	}
+	data.Project = h.loadProject(r)
 	if err := h.renderer.Render(w, "estimate_builder.html", data); err != nil {
 		h.logger.Error("rendering estimate builder", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

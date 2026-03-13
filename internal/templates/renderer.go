@@ -61,3 +61,14 @@ func (r *Renderer) Render(w http.ResponseWriter, name string, data any) error {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	return tmpl.Execute(w, data)
 }
+
+// RenderPartial executes a named block within a page template.
+// Used for HTMX partial responses that return just a fragment.
+func (r *Renderer) RenderPartial(w http.ResponseWriter, page, block string, data any) error {
+	tmpl, ok := r.templates[page]
+	if !ok {
+		return fmt.Errorf("template %q not found", page)
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	return tmpl.ExecuteTemplate(w, block, data)
+}

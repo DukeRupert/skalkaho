@@ -26,7 +26,10 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	mux.HandleFunc("POST /logout", authH.Logout)
 
 	// Protected app routes
-	mux.Handle("GET /{$}", protect(sm, http.HandlerFunc(appH.Projects)))
+	mux.Handle("GET /{$}", protect(sm, http.HandlerFunc(appH.ListProjects)))
+	mux.Handle("POST /projects", protect(sm, http.HandlerFunc(appH.CreateProject)))
+	mux.Handle("DELETE /projects/{id}", protect(sm, http.HandlerFunc(appH.DeleteProject)))
+	mux.Handle("PATCH /projects/{id}/status", protect(sm, http.HandlerFunc(appH.UpdateProjectStatus)))
 	mux.Handle("GET /clients", protect(sm, http.HandlerFunc(appH.Clients)))
 	mux.Handle("GET /materials", protect(sm, http.HandlerFunc(appH.Materials)))
 	mux.Handle("GET /rates", protect(sm, http.HandlerFunc(appH.Rates)))
