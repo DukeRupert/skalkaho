@@ -2,7 +2,7 @@
 	import SubcategoryBlock from './SubcategoryBlock.svelte';
 	import { sectionTotals, formatMoney } from './markup.js';
 
-	let { section, globals, collapsed = false, onchange } = $props();
+	let { section, globals, collapsed = false, onchange, materialsDb = [], ratesDb = [] } = $props();
 
 	let isCollapsed = $state(collapsed);
 	let totals = $derived(sectionTotals(section, globals));
@@ -16,7 +16,6 @@
 </script>
 
 <div class="mb-4 border border-slate-200 rounded-lg overflow-hidden bg-white">
-	<!-- Section header -->
 	<button
 		class="w-full flex items-center justify-between px-4 py-3 bg-slate-800 text-white hover:bg-slate-700 transition-colors text-left"
 		onclick={() => isCollapsed = !isCollapsed}
@@ -41,7 +40,7 @@
 			</div>
 		{:else}
 			{#each section.subcategories as subcat (subcat.id)}
-				<SubcategoryBlock {subcat} {globals} {onchange} />
+				<SubcategoryBlock {subcat} {globals} {onchange} {materialsDb} {ratesDb} />
 			{/each}
 		{/if}
 	{/if}

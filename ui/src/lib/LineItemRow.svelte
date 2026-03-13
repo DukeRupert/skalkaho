@@ -1,7 +1,7 @@
 <script>
 	import { resolveMarkup, afterMarkupPrice, lineItemTotal, formatMoney } from './markup.js';
 
-	let { item, globals, markupOverrides, markupEnabled, onchange } = $props();
+	let { item, globals, markupOverrides, markupEnabled, onchange, ondelete } = $props();
 
 	const CATEGORY_TYPES = ['materials', 'labor', 'equipment', 'subs', 'other'];
 
@@ -52,6 +52,10 @@
 	function handleTypeChange(e) {
 		item.category_type = e.target.value;
 		handleInput();
+	}
+
+	function handleDelete() {
+		ondelete?.(item.id);
 	}
 </script>
 
@@ -123,5 +127,17 @@
 	<!-- After markup (computed) -->
 	<td class="px-2 py-1.5 text-right font-mono text-slate-500 w-24 text-xs">{formatMoney(markedUpPrice)}</td>
 	<!-- Total (computed) -->
-	<td class="px-2 py-1.5 text-right font-mono font-medium w-28">{formatMoney(total)}</td>
+	<td class="px-2 py-1.5 text-right font-mono font-medium w-24">{formatMoney(total)}</td>
+	<!-- Delete -->
+	<td class="px-1 py-1 w-8">
+		<button
+			onclick={handleDelete}
+			class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-0.5"
+			title="Delete item"
+		>
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+			</svg>
+		</button>
+	</td>
 </tr>

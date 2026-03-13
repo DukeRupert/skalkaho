@@ -113,7 +113,13 @@
 				</div>
 			{:else}
 				{#each estimate.sections as section (section.id)}
-					<SectionBlock {section} globals={estimate.globals} onchange={handleChange} />
+					<SectionBlock
+						{section}
+						globals={estimate.globals}
+						onchange={handleChange}
+						materialsDb={estimate.materials_db}
+						ratesDb={estimate.rates_db}
+					/>
 				{/each}
 			{/if}
 		</div>

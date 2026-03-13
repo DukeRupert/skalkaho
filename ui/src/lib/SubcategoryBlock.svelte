@@ -1,11 +1,14 @@
 <script>
 	import LineItemRow from './LineItemRow.svelte';
 	import ComponentGroupBlock from './ComponentGroupBlock.svelte';
+	import Autocomplete from './Autocomplete.svelte';
 	import { subcategoryTotals, formatMoney, resolveMarkup, formatPercent } from './markup.js';
+	import { nanoid } from 'nanoid';
 
-	let { subcat, globals, collapsed = false, onchange } = $props();
+	let { subcat, globals, collapsed = false, onchange, materialsDb = [], ratesDb = [] } = $props();
 
 	let isCollapsed = $state(collapsed);
+	let showAddForm = $state(false);
 	let totals = $derived(subcategoryTotals(subcat, globals));
 
 	let markupSummary = $derived.by(() => {
@@ -23,6 +26,33 @@
 		subcat.line_items.length +
 		subcat.component_groups.reduce((sum, g) => sum + g.line_items.length, 0)
 	);
+
+	function addItem(itemData) {
+		subcat.line_items.push({
+			id: nanoid(),
+			category_type: itemData.category_type,
+			item_name: itemData.item_name,
+			quantity: 1,
+			unit: itemData.unit,
+			unit_price: itemData.unit_price,
+			is_custom: itemData.is_custom,
+			material_id: itemData.material_id,
+			price_override: false,
+			description: null,
+			sort_order: subcat.line_items.length,
+			component_group_id: null,
+		});
+		showAddForm = false;
+		onchange?.();
+	}
+
+	function deleteItem(itemId) {
+		const idx = subcat.line_items.findIndex(li => li.id === itemId);
+		if (idx !== -1) {
+			subcat.line_items.splice(idx, 1);
+			onchange?.();
+		}
+	}
 </script>
 
 <div class="border-t border-slate-200">
@@ -62,7 +92,7 @@
 				</div>
 			{/if}
 
-			{#if totalItems > 0}
+			{#if totalItems > 0 || subcat.line_items.length > 0}
 				<table class="w-full">
 					<thead>
 						<tr class="text-xs text-slate-400 uppercase tracking-wide border-b border-slate-100">
@@ -73,7 +103,8 @@
 							<th class="px-1 py-1 text-right w-24">Price</th>
 							<th class="px-2 py-1 text-right w-16">Markup</th>
 							<th class="px-2 py-1 text-right w-24">w/ Markup</th>
-							<th class="px-2 py-1 text-right w-28">Total</th>
+							<th class="px-2 py-1 text-right w-24">Total</th>
+							<th class="w-8"></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -84,6 +115,7 @@
 								markupOverrides={subcat.markup_overrides}
 								markupEnabled={subcat.markup_enabled}
 								{onchange}
+								ondelete={deleteItem}
 							/>
 						{/each}
 					</tbody>
@@ -97,8 +129,33 @@
 					markupOverrides={subcat.markup_overrides}
 					markupEnabled={subcat.markup_enabled}
 					{onchange}
+					{materialsDb}
+					{ratesDb}
 				/>
 			{/each}
+
+			<!-- Add item button + autocomplete -->
+			{#if showAddForm}
+				<div class="mt-2">
+					<Autocomplete
+						{materialsDb}
+						{ratesDb}
+						categoryType="materials"
+						onselect={addItem}
+						oncancel={() => showAddForm = false}
+					/>
+				</div>
+			{:else}
+				<button
+					onclick={() => showAddForm = true}
+					class="mt-2 text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+					</svg>
+					Add Item
+				</button>
+			{/if}
 
 			<div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100 text-sm">
 				<span class="text-slate-500">
