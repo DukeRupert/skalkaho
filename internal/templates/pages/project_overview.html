@@ -1,8 +1,235 @@
 {{template "base" .}}
 {{define "title"}}{{if .Project}}{{.Project.Name}} — {{end}}Overview — Skalkaho{{end}}
 {{define "content"}}
-<div>
-    <h1 class="text-2xl font-bold text-gray-900">Job Overview</h1>
-    <p class="mt-2 text-gray-600">Project details and summary.</p>
+<div x-data="{ showStatus: false, statusHtml: '' }">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{.FullProject.Name}}</h1>
+            {{if .FullProject.Description.Valid}}
+            <p class="mt-1 text-sm text-gray-500">{{.FullProject.Description.String}}</p>
+            {{end}}
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- Status Badge -->
+            <button
+                hx-get="/projects/{{.FullProject.ID}}/status-modal" hx-target="#status-modal-content" hx-swap="innerHTML"
+                @htmx:after-swap.window="showStatus = true"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer
+                    {{if eq .FullProject.Status "Draft"}}bg-gray-100 text-gray-700 hover:bg-gray-200
+                    {{else if eq .FullProject.Status "In Review"}}bg-yellow-100 text-yellow-700 hover:bg-yellow-200
+                    {{else if eq .FullProject.Status "Active"}}bg-green-100 text-green-700 hover:bg-green-200
+                    {{else if eq .FullProject.Status "Completed"}}bg-blue-100 text-blue-700 hover:bg-blue-200{{end}}">
+                {{.FullProject.Status}}
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <a href="/projects/{{.FullProject.ID}}/estimate"
+                class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+                Edit Estimate
+            </a>
+        </div>
+    </div>
+
+    <!-- Info Cards Row -->
+    <div class="grid grid-cols-2 gap-6 mb-6">
+        <!-- Project Info -->
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Project Info</h2>
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Created</dt>
+                    <dd class="text-gray-900">{{.FullProject.CreatedAt.Format "Jan 2, 2006"}}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Last Updated</dt>
+                    <dd class="text-gray-900">{{.FullProject.UpdatedAt.Format "Jan 2, 2006"}}</dd>
+                </div>
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Markups</dt>
+                    <dd class="text-gray-900 font-mono text-xs">
+                        Mat {{printf "%.0f" .FullProject.MaterialsMarkup}}%
+                        Lab {{printf "%.0f" .FullProject.LaborMarkup}}%
+                        Equip {{printf "%.0f" .FullProject.EquipmentMarkup}}%
+                        Subs {{printf "%.0f" .FullProject.SubsMarkup}}%
+                        Other {{printf "%.0f" .FullProject.OtherMarkup}}%
+                    </dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Client Info -->
+        <div class="bg-white rounded-lg border border-gray-200 p-5">
+            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Client</h2>
+            {{if .Client}}
+            <dl class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Company</dt>
+                    <dd class="text-gray-900 font-medium">{{.Client.CompanyName}}</dd>
+                </div>
+                {{if .Client.ContactName.Valid}}
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Contact</dt>
+                    <dd class="text-gray-900">{{.Client.ContactName.String}}</dd>
+                </div>
+                {{end}}
+                {{if .Client.Email.Valid}}
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Email</dt>
+                    <dd class="text-gray-900">{{.Client.Email.String}}</dd>
+                </div>
+                {{end}}
+                {{if .Client.Phone.Valid}}
+                <div class="flex justify-between">
+                    <dt class="text-gray-500">Phone</dt>
+                    <dd class="text-gray-900">{{.Client.Phone.String}}</dd>
+                </div>
+                {{end}}
+            </dl>
+            {{else}}
+            <p class="text-sm text-gray-400">No client linked to this project.</p>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Cost Summary KPIs -->
+    <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Cost Summary</h2>
+        <div class="grid grid-cols-6 gap-3">
+            <!-- Grand Total -->
+            <div class="bg-gray-900 text-white rounded-lg p-4">
+                <p class="text-xs text-gray-400">Grand Total</p>
+                <p class="text-xl font-bold">{{money .CostSummary.GrandTotal}}</p>
+                <p class="text-xs text-gray-400 mt-1">Base {{money .CostSummary.BaseTotal}} + Markup {{money .CostSummary.MarkupTotal}}</p>
+            </div>
+            {{if gtf (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup) 0}}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-xs text-blue-600">Materials</p>
+                <p class="text-lg font-bold text-blue-900">{{money (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup)}}</p>
+                <p class="text-xs text-blue-400">Base {{money .CostSummary.MaterialsBase}}</p>
+            </div>
+            {{end}}
+            {{if gtf (addf .CostSummary.LaborBase .CostSummary.LaborMarkup) 0}}
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p class="text-xs text-amber-600">Labor</p>
+                <p class="text-lg font-bold text-amber-900">{{money (addf .CostSummary.LaborBase .CostSummary.LaborMarkup)}}</p>
+                <p class="text-xs text-amber-400">Base {{money .CostSummary.LaborBase}}</p>
+            </div>
+            {{end}}
+            {{if gtf (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup) 0}}
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <p class="text-xs text-purple-600">Equipment</p>
+                <p class="text-lg font-bold text-purple-900">{{money (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup)}}</p>
+                <p class="text-xs text-purple-400">Base {{money .CostSummary.EquipmentBase}}</p>
+            </div>
+            {{end}}
+            {{if gtf (addf .CostSummary.SubsBase .CostSummary.SubsMarkup) 0}}
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p class="text-xs text-green-600">Subcontractors</p>
+                <p class="text-lg font-bold text-green-900">{{money (addf .CostSummary.SubsBase .CostSummary.SubsMarkup)}}</p>
+                <p class="text-xs text-green-400">Base {{money .CostSummary.SubsBase}}</p>
+            </div>
+            {{end}}
+            {{if gtf (addf .CostSummary.OtherBase .CostSummary.OtherMarkup) 0}}
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p class="text-xs text-gray-600">Other</p>
+                <p class="text-lg font-bold text-gray-900">{{money (addf .CostSummary.OtherBase .CostSummary.OtherMarkup)}}</p>
+                <p class="text-xs text-gray-400">Base {{money .CostSummary.OtherBase}}</p>
+            </div>
+            {{end}}
+            {{if gtf .CostSummary.LumpSumTotal 0}}
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p class="text-xs text-gray-600">Lump Sums</p>
+                <p class="text-lg font-bold text-gray-900">{{money .CostSummary.LumpSumTotal}}</p>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- Sections Breakdown -->
+    {{if .CostSummary.Sections}}
+    <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Sections Breakdown</h2>
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-gray-200 bg-gray-50">
+                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Section</th>
+                        <th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .CostSummary.Sections}}
+                    <tr class="border-b border-gray-100">
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{.Name}}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right font-mono">{{money .Total}}</td>
+                    </tr>
+                    {{end}}
+                    <tr class="bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-bold text-gray-900">Total</td>
+                        <td class="px-4 py-3 text-sm font-bold text-gray-900 text-right font-mono">{{money .CostSummary.GrandTotal}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{else}}
+    <div class="mb-6 text-center py-12 text-gray-400 bg-white rounded-lg border border-gray-200">
+        <p class="text-sm">No estimate data yet.</p>
+        <p class="text-xs mt-1">
+            <a href="/projects/{{.FullProject.ID}}/estimate" class="text-blue-500 hover:text-blue-700">Open the Estimate Builder</a>
+            to start building your estimate.
+        </p>
+    </div>
+    {{end}}
+
+    <!-- Quote Versions (stub for Phase 9) -->
+    <div class="mb-6">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Quote Versions</h2>
+        <div class="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400">
+            <p class="text-sm">No quotes generated yet.</p>
+            <p class="text-xs mt-1">Quote generation coming in a future update.</p>
+        </div>
+    </div>
+
+    <!-- Status Modal -->
+    <div x-show="showStatus" x-cloak class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/50" @click="showStatus = false"></div>
+        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-sm p-6" @click.stop>
+            <div id="status-modal-content"></div>
+        </div>
+    </div>
 </div>
+{{end}}
+
+{{define "status-modal"}}
+<h2 class="text-lg font-semibold text-gray-900 mb-4">Change Status</h2>
+<form hx-patch="/projects/{{.ProjectID}}/status" hx-swap="none">
+    <div class="space-y-2">
+        {{$current := .Status}}
+        <label class="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 {{if eq $current "Draft"}}bg-blue-50 ring-1 ring-blue-200{{end}}">
+            <input type="radio" name="status" value="Draft" {{if eq $current "Draft"}}checked{{end}} class="text-blue-600 focus:ring-blue-500" />
+            <div><span class="text-sm font-medium text-gray-900">Draft</span> <span class="text-xs text-gray-400 ml-1">Work in progress</span></div>
+        </label>
+        <label class="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 {{if eq $current "In Review"}}bg-blue-50 ring-1 ring-blue-200{{end}}">
+            <input type="radio" name="status" value="In Review" {{if eq $current "In Review"}}checked{{end}} class="text-blue-600 focus:ring-blue-500" />
+            <div><span class="text-sm font-medium text-gray-900">In Review</span> <span class="text-xs text-gray-400 ml-1">Ready for client review</span></div>
+        </label>
+        <label class="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 {{if eq $current "Active"}}bg-blue-50 ring-1 ring-blue-200{{end}}">
+            <input type="radio" name="status" value="Active" {{if eq $current "Active"}}checked{{end}} class="text-blue-600 focus:ring-blue-500" />
+            <div><span class="text-sm font-medium text-gray-900">Active</span> <span class="text-xs text-gray-400 ml-1">Approved and active</span></div>
+        </label>
+        <label class="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 {{if eq $current "Completed"}}bg-blue-50 ring-1 ring-blue-200{{end}}">
+            <input type="radio" name="status" value="Completed" {{if eq $current "Completed"}}checked{{end}} class="text-blue-600 focus:ring-blue-500" />
+            <div><span class="text-sm font-medium text-gray-900">Completed</span> <span class="text-xs text-gray-400 ml-1">Project finished</span></div>
+        </label>
+    </div>
+    <div class="flex justify-end gap-3 mt-6">
+        <button type="button" @click="showStatus = false"
+            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
+        <button type="submit" @click="showStatus = false"
+            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Update Status</button>
+    </div>
+</form>
 {{end}}

@@ -79,14 +79,9 @@ func (h *Handler) loadProject(r *http.Request) *ProjectStub {
 	return &ProjectStub{ID: project.ID, Name: project.Name}
 }
 
-// ProjectOverview renders the project overview page.
+// ProjectOverview delegates to GetProjectOverview for the full overview page.
 func (h *Handler) ProjectOverview(w http.ResponseWriter, r *http.Request) {
-	data := h.pageData(r, "overview")
-	data.Project = h.loadProject(r)
-	if err := h.renderer.Render(w, "project_overview.html", data); err != nil {
-		h.logger.Error("rendering project overview", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	h.GetProjectOverview(w, r)
 }
 
 // EstimateBuilder renders the estimate builder page.

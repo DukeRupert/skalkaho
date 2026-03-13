@@ -17,6 +17,15 @@ var funcMap = template.FuncMap{
 		}
 		return float64(a) / float64(b)
 	},
+	"money": func(v float64) string {
+		return fmt.Sprintf("$%.2f", v)
+	},
+	"addf": func(a, b float64) float64 {
+		return a + b
+	},
+	"gtf": func(a, b float64) bool {
+		return a > b
+	},
 }
 
 // Renderer parses and renders HTML templates.

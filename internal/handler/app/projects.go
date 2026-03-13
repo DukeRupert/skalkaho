@@ -175,14 +175,21 @@ func (h *Handler) UpdateProjectStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// HTMX: redirect to refresh the page
+	// Redirect back to the referring page (overview or project list)
+	redirect := "/"
+	if ref := r.Header.Get("HX-Current-URL"); ref != "" {
+		redirect = ref
+	} else if ref := r.Referer(); ref != "" {
+		redirect = ref
+	}
+
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", "/")
+		w.Header().Set("HX-Redirect", redirect)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
 func toNullString(s string) sql.NullString {

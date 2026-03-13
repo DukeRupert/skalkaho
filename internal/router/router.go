@@ -49,7 +49,8 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	mux.Handle("DELETE /rates/{id}", protect(sm, http.HandlerFunc(appH.DeleteRate)))
 	mux.Handle("POST /rate-categories", protect(sm, http.HandlerFunc(appH.CreateRateCategory)))
 	mux.Handle("DELETE /rate-categories/{id}", protect(sm, http.HandlerFunc(appH.DeleteRateCategory)))
-	mux.Handle("GET /projects/{id}", protect(sm, http.HandlerFunc(appH.ProjectOverview)))
+	mux.Handle("GET /projects/{id}", protect(sm, http.HandlerFunc(appH.GetProjectOverview)))
+	mux.Handle("GET /projects/{id}/status-modal", protect(sm, http.HandlerFunc(appH.GetStatusModal)))
 	mux.Handle("GET /projects/{id}/estimate", protect(sm, http.HandlerFunc(appH.EstimateBuilder)))
 
 	// Estimate builder API (JSON)
