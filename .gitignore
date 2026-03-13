@@ -34,6 +34,9 @@ frontend/node_modules/
 static/js/quote-editor.iife.js
 static/js/quote-editor.iife.js.map
 
+# Estimate Builder (Svelte)
+ui/node_modules/
+
 # Editor/IDE
 # .idea/
 # .vscode/

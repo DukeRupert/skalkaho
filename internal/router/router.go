@@ -97,7 +97,8 @@ func Register(mux *http.ServeMux, h *keyboard.Handler, authH *authhandler.Handle
 	mux.Handle("PATCH /api/jobs/{id}/items/reorder", protect(sm, http.HandlerFunc(h.ReorderItemsJSON)))
 	mux.Handle("GET /api/items/search", protect(sm, http.HandlerFunc(h.SearchItemsJSON)))
 
-	// Estimate Builder API
+	// Estimate Builder
+	mux.Handle("GET /jobs/{jobID}/estimate-builder", protect(sm, http.HandlerFunc(h.GetEstimateBuilder)))
 	mux.Handle("GET /api/estimate/{jobID}", protect(sm, http.HandlerFunc(h.GetEstimateJSON)))
 	mux.Handle("POST /api/estimate/{jobID}", protect(sm, http.HandlerFunc(h.SaveEstimateJSON)))
 

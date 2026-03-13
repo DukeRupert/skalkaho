@@ -1,0 +1,19 @@
+{
+  "name": "skalkaho-estimate-builder",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "svelte": "^5.53.11",
+    "vite": "^8.0.0"
+  },
+  "dependencies": {
+    "nanoid": "^5.1.6"
+  }
+}

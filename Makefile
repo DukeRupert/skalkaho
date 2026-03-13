@@ -39,7 +39,7 @@ clean:
 	rm -f bin/server
 	rm -f $(DB_PATH)
 
-# Frontend
+# Frontend (legacy)
 frontend-install:
 	cd frontend && npm install
 
@@ -48,6 +48,16 @@ frontend:
 
 frontend-dev:
 	cd frontend && npm run dev
+
+# Estimate Builder (Svelte)
+ui-install:
+	cd ui && npm install
+
+ui:
+	cd ui && npm run build
+
+ui-watch:
+	cd ui && npm run watch
 
 # Install dependencies
 deps:

@@ -15,6 +15,34 @@ import (
 
 // --- GET /api/estimate/{jobID} ---
 
+// GetEstimateBuilder renders the estimate builder page with the Svelte mount point.
+func (h *Handler) GetEstimateBuilder(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := middleware.LoggerFromContext(ctx)
+	orgID := GetOrgID(ctx)
+	jobID := r.PathValue("jobID")
+
+	job, err := h.queries.GetJob(ctx, repository.GetJobParams{ID: jobID, OrgID: orgID})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Job not found", http.StatusNotFound)
+			return
+		}
+		logger.Error("failed to get job", "error", err)
+		http.Error(w, "Failed to load job", http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Job": job,
+	}
+
+	if err := h.renderer.Render(w, "estimate_builder", data); err != nil {
+		logger.Error("failed to render estimate builder", "error", err)
+		http.Error(w, "Failed to render page", http.StatusInternalServerError)
+	}
+}
+
 // GetEstimateJSON returns the full estimate payload for the Svelte estimate builder.
 func (h *Handler) GetEstimateJSON(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
