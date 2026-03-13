@@ -51,6 +51,10 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	mux.Handle("DELETE /rate-categories/{id}", protect(sm, http.HandlerFunc(appH.DeleteRateCategory)))
 	mux.Handle("GET /projects/{id}", protect(sm, http.HandlerFunc(appH.ProjectOverview)))
 	mux.Handle("GET /projects/{id}/estimate", protect(sm, http.HandlerFunc(appH.EstimateBuilder)))
+
+	// Estimate builder API (JSON)
+	mux.Handle("GET /api/estimate/{id}", protect(sm, http.HandlerFunc(appH.GetEstimate)))
+	mux.Handle("POST /api/estimate/{id}", protect(sm, http.HandlerFunc(appH.SaveEstimate)))
 }
 
 // protect wraps a handler with session loading and authentication requirement.

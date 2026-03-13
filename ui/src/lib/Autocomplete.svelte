@@ -16,28 +16,34 @@
 			pool = materialsDb.map(m => ({
 				id: m.id,
 				name: m.name,
-				category: m.category,
-				unit: m.default_unit,
-				price: m.default_price,
+				category: m.supplier || '',
+				unit: m.unit,
+				price: m.unit_price,
 				type: 'materials',
 				source: 'material',
 			}));
 		} else {
 			// Labor, equipment, subs, other — search rates
+			const catMap = {
+				labor: 'Labor',
+				equipment: 'Equipment Rentals',
+				subs: 'Subcontractors',
+				other: 'Other',
+			};
 			pool = ratesDb
 				.filter(r => {
-					// Map rate types to category types
-					if (categoryType === 'labor') return r.type === 'labor';
-					if (categoryType === 'equipment') return r.type === 'equipment';
-					// subs and other — show all rates as fallback
+					if (categoryType === 'labor') return r.category === 'Labor';
+					if (categoryType === 'equipment') return r.category === 'Equipment Rentals';
+					if (categoryType === 'subs') return r.category === 'Subcontractors';
+					if (categoryType === 'other') return r.category === 'Other';
 					return true;
 				})
 				.map(r => ({
 					id: r.id,
 					name: r.name,
 					category: r.category,
-					unit: r.default_unit,
-					price: r.default_price,
+					unit: r.unit,
+					price: r.rate,
 					type: categoryType,
 					source: 'rate',
 				}));

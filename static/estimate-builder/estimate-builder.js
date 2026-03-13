@@ -2263,17 +2263,17 @@ function xi(e, t) {
 		return t = i() === "materials" ? n().map((e) => ({
 			id: e.id,
 			name: e.name,
-			category: e.category,
-			unit: e.default_unit,
-			price: e.default_price,
+			category: e.supplier || "",
+			unit: e.unit,
+			price: e.unit_price,
 			type: "materials",
 			source: "material"
-		})) : r().filter((e) => i() === "labor" ? e.type === "labor" : i() === "equipment" ? e.type === "equipment" : !0).map((e) => ({
+		})) : r().filter((e) => i() === "labor" ? e.category === "Labor" : i() === "equipment" ? e.category === "Equipment Rentals" : i() === "subs" ? e.category === "Subcontractors" : i() === "other" ? e.category === "Other" : !0).map((e) => ({
 			id: e.id,
 			name: e.name,
 			category: e.category,
-			unit: e.default_unit,
-			price: e.default_price,
+			unit: e.unit,
+			price: e.rate,
 			type: i(),
 			source: "rate"
 		})), t.filter((t) => t.name.toLowerCase().includes(e) || t.category.toLowerCase().includes(e)).slice(0, 15);
