@@ -62,6 +62,7 @@ WORKDIR /app
 
 # Copy binaries and static files from builder
 COPY --from=builder /app/bin/server /app/server
+COPY --from=builder /app/bin/seed /app/seed
 COPY --from=builder /app/static /app/static
 
 RUN chown -R skalkaho:skalkaho /app

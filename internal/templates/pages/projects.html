@@ -31,7 +31,7 @@
             <h1 class="page-title">Your Work</h1>
         </div>
         <button hx-get="/projects/new-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
-            class="btn-primary">
+            class="btn-primary" data-shortcut="new">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -63,24 +63,27 @@
         </div>
     </div>
 
-    <!-- Status Tabs + Search -->
-    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 0;">
-        <div class="tab-bar">
-            {{$status := .Status}}
-            <a href="/" class="tab {{if eq $status ""}}tab--active{{end}}">All</a>
-            <a href="/?status=Draft" class="tab {{if eq $status "Draft"}}tab--active{{end}}">Draft</a>
-            <a href="/?status=In+Review" class="tab {{if eq $status "In Review"}}tab--active{{end}}">In Review</a>
-            <a href="/?status=Active" class="tab {{if eq $status "Active"}}tab--active{{end}}">Active</a>
-            <a href="/?status=Completed" class="tab {{if eq $status "Completed"}}tab--active{{end}}">Completed</a>
-        </div>
+    <!-- Status Tabs -->
+    <div class="tab-bar">
+        {{$status := .Status}}
+        <a href="/" class="tab {{if eq $status ""}}tab--active{{end}}">All</a>
+        <a href="/?status=Draft" class="tab {{if eq $status "Draft"}}tab--active{{end}}">Draft</a>
+        <a href="/?status=In+Review" class="tab {{if eq $status "In Review"}}tab--active{{end}}">In Review</a>
+        <a href="/?status=Active" class="tab {{if eq $status "Active"}}tab--active{{end}}">Active</a>
+        <a href="/?status=Completed" class="tab {{if eq $status "Completed"}}tab--active{{end}}">Completed</a>
+    </div>
+
+    <!-- Search toolbar -->
+    <div class="sub-filter-bar">
+        <div></div>
         <input type="search" name="search" value="{{.Search}}" placeholder="Search projects..."
             hx-get="/" hx-trigger="input changed delay:300ms" hx-target="#project-rows" hx-select="#project-rows"
             hx-push-url="true" hx-include="this"
-            class="search-input" style="margin-bottom: 1px;" />
+            class="search-input" />
     </div>
 
     <!-- Projects Table -->
-    <div class="table-wrap">
+    <div class="table-wrap" style="border-top: none;">
         <table>
             <thead>
                 <tr>

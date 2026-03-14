@@ -2,11 +2,11 @@ package domain
 
 // EstimatePayload is the JSON contract between the Go API and the Svelte estimate builder.
 type EstimatePayload struct {
-	Project     EstimateProject     `json:"project"`
-	Globals     MarkupGlobals       `json:"globals"`
-	Sections    []EstimateSection   `json:"sections"`
-	MaterialsDB []MaterialDBEntry   `json:"materials_db"`
-	RatesDB     []RateDBEntry       `json:"rates_db"`
+	Project     EstimateProject   `json:"project"`
+	Globals     MarkupGlobals     `json:"globals"`
+	Sections    []EstimateSection `json:"sections"`
+	MaterialsDB []MaterialDBEntry `json:"materials_db"`
+	RatesDB     []RateDBEntry     `json:"rates_db"`
 }
 
 // EstimateProject is the minimal project info included in the estimate payload.
@@ -65,10 +65,10 @@ type EstimateSubcategory struct {
 
 // EstimateComponentGroup is the third level, an optional grouping.
 type EstimateComponentGroup struct {
-	ID        string               `json:"id"`
-	Name      string               `json:"name"`
-	SortOrder int                  `json:"sort_order"`
-	LineItems []EstimateLineItem   `json:"line_items"`
+	ID        string             `json:"id"`
+	Name      string             `json:"name"`
+	SortOrder int                `json:"sort_order"`
+	LineItems []EstimateLineItem `json:"line_items"`
 }
 
 // CategoryType enumerates the 5 markup categories for line items.

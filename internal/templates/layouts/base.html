@@ -1268,6 +1268,53 @@
     document.addEventListener('htmx:afterSettle', function(evt) {
       if (window.Alpine) Alpine.initTree(evt.detail.elt);
     });
+    // ── Keyboard shortcuts ──
+    document.addEventListener('keydown', function(e) {
+      // Ignore when typing in form fields
+      var tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) {
+        // Exception: Escape should always blur
+        if (e.key === 'Escape') { e.target.blur(); }
+        return;
+      }
+
+      // Ignore if a visible modal is open
+      var modal = document.querySelector('.modal-backdrop');
+      if (modal && modal.offsetParent !== null) return;
+
+      // Shift + key: navigation
+      if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var nav = { P: '/', C: '/clients', M: '/materials', R: '/rates' };
+        if (nav[e.key]) {
+          e.preventDefault();
+          // Use hx-boost style navigation if available
+          if (window.location.pathname !== nav[e.key]) {
+            window.location.href = nav[e.key];
+          }
+          return;
+        }
+      }
+
+      // Single key shortcuts (no modifiers)
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // n: click the "New" button on current page
+        if (e.key === 'n') {
+          var btn = document.querySelector('[data-shortcut="new"]');
+          if (btn) {
+            e.preventDefault();
+            btn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+          }
+          return;
+        }
+
+        // /: focus the search input
+        if (e.key === '/') {
+          var search = document.querySelector('input[type="search"], .search-input');
+          if (search) { e.preventDefault(); search.focus(); }
+          return;
+        }
+      }
+    });
     </script>
     {{block "head" .}}{{end}}
 </head>

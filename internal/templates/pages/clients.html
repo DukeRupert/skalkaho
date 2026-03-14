@@ -90,7 +90,7 @@
             <h1 class="page-title">Client Directory</h1>
         </div>
         <button hx-get="/clients/new-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
-            class="btn-primary">
+            class="btn-primary" data-shortcut="new">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -116,8 +116,9 @@
         </div>
     </div>
 
-    <!-- Search -->
-    <div class="filters-bar">
+    <!-- Search toolbar -->
+    <div class="sub-filter-bar">
+        <div></div>
         <input type="search" name="search" value="{{.Search}}" placeholder="Search clients..."
             hx-get="/clients" hx-trigger="input changed delay:300ms" hx-target="#client-rows" hx-select="#client-rows"
             hx-push-url="true" hx-include="this"
@@ -125,7 +126,7 @@
     </div>
 
     <!-- Clients Table -->
-    <div class="table-wrap">
+    <div class="table-wrap" style="border-top: none;">
         <table>
             <thead>
                 <tr>
