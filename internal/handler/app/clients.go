@@ -1,7 +1,6 @@
 package app
 
 import (
-	"database/sql"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -200,12 +199,4 @@ func (h *Handler) DeleteClient(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/clients", http.StatusSeeOther)
-}
-
-// nullStr safely extracts a sql.NullString for template display.
-func nullStr(ns sql.NullString) string {
-	if ns.Valid {
-		return ns.String
-	}
-	return ""
 }
