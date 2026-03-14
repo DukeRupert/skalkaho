@@ -12,27 +12,29 @@ Skalkaho is a construction quoting application for small-to-medium contractors. 
 
 ```bash
 # Development
-make dev                # Run development server
-go run ./cmd/server     # Alternative: run directly
+mage dev                # Run development server
 
 # Build
-make build              # Build server + seed binaries to bin/
+mage build              # Build server + seed binaries to bin/
 
 # Testing
-make test               # Run domain tests
-go test ./internal/domain/... -v
+mage test               # Run domain tests
 
 # Code generation
-make sqlc               # Generate repository code from SQL queries
+mage sqlc               # Generate repository code from SQL queries
 
 # User management (requires DATABASE_URL)
-go run ./cmd/seed create --email user@example.com --password secret --name "User Name"
-go run ./cmd/seed list
-go run ./cmd/seed delete --email user@example.com
+EMAIL=user@example.com PASSWORD=secret NAME="User Name" mage seed:create
+mage seed:list
 
 # Estimate Builder frontend
-make ui-install         # Install npm dependencies
-make ui                 # Build Svelte bundle
+mage ui:install         # Install npm dependencies
+mage ui:build           # Build Svelte bundle
+mage ui:watch           # Watch mode
+
+# Other
+mage deps               # Download and tidy Go modules
+mage clean              # Remove built binaries
 ```
 
 ## Architecture
@@ -79,7 +81,7 @@ No `org_id` on any table. Single-tenant. No roles.
 
 ## Key Development Patterns
 
-**Database**: Use sqlc for code generation. Define SQL queries in `sqlc/queries/`, run `make sqlc`. PostgreSQL only via `DATABASE_URL`.
+**Database**: Use sqlc for code generation. Define SQL queries in `sqlc/queries/`, run `mage sqlc`. PostgreSQL only via `DATABASE_URL`.
 
 **Error handling**: Wrap with context, use early returns
 ```go
