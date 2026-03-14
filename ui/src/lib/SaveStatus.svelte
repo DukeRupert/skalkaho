@@ -32,32 +32,32 @@
 
 	let statusColor = $derived.by(() => {
 		switch (status) {
-			case 'clean': return 'text-green-400';
-			case 'dirty': return 'text-amber-400';
+			case 'clean': return 'text-[var(--color-sage)]';
+			case 'dirty': return 'text-[var(--color-sunburst)]';
 			case 'saving': return 'text-blue-400';
 			case 'error': return 'text-red-400';
-			default: return 'text-slate-400';
+			default: return 'text-white/40';
 		}
 	});
 
 	let dotColor = $derived.by(() => {
 		switch (status) {
-			case 'clean': return 'bg-green-400';
-			case 'dirty': return 'bg-amber-400';
+			case 'clean': return 'bg-[var(--color-sage)]';
+			case 'dirty': return 'bg-[var(--color-sunburst)]';
 			case 'saving': return 'bg-blue-400 animate-pulse';
 			case 'error': return 'bg-red-400 animate-pulse';
-			default: return 'bg-slate-400';
+			default: return 'bg-white/40';
 		}
 	});
 </script>
 
-<div class="flex items-center gap-1.5 text-xs {statusColor}">
+<div class="flex items-center gap-1.5 text-xs font-[var(--font-ui)] {statusColor}">
 	<span class="w-2 h-2 rounded-full {dotColor}"></span>
 	<span>{statusText}</span>
 	{#if status === 'dirty' && onsave}
 		<button
 			onclick={onsave}
-			class="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 transition-colors"
+			class="ml-1 px-1.5 py-0.5 rounded bg-[var(--color-sunburst)]/20 hover:bg-[var(--color-sunburst)]/30 text-[var(--color-sunburst)] transition-colors"
 			title="Save now (Ctrl+S)"
 		>
 			Save

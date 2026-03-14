@@ -62,17 +62,17 @@
 				type="text"
 				bind:value={editName}
 				autofocus
-				class="text-xs font-semibold text-slate-500 uppercase tracking-wide px-1 py-0.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-400"
+				class="text-xs font-semibold text-[var(--color-concrete)] uppercase tracking-wide px-1 py-0.5 border border-white/[0.08] rounded bg-white/[0.04] focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] font-[var(--font-ui)]"
 				onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') isEditing = false; }}
 				onblur={commitRename}
 			/>
 		{:else}
-			<span role="button" tabindex="0" class="text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer" ondblclick={startRename}>{group.name}</span>
+			<span role="button" tabindex="0" class="text-xs font-semibold text-[var(--color-muted-text)] uppercase tracking-wide cursor-pointer font-[var(--font-ui)]" ondblclick={startRename}>{group.name}</span>
 		{/if}
-		<span class="text-xs text-slate-400">({group.line_items.length})</span>
+		<span class="text-xs text-white/40 font-[var(--font-body)]">({group.line_items.length})</span>
 		<button
 			onclick={() => ondelete?.(group.id)}
-			class="opacity-0 group-hover/cg:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-0.5"
+			class="opacity-0 group-hover/cg:opacity-100 text-white/30 hover:text-red-400 transition-opacity p-0.5"
 			title="Delete group"
 		>
 			<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,7 +81,7 @@
 		</button>
 		<button
 			onclick={() => showAddForm = !showAddForm}
-			class="text-xs text-blue-500 hover:text-blue-700 ml-auto"
+			class="text-xs text-[var(--color-sunburst)] hover:brightness-110 ml-auto font-[var(--font-ui)]"
 		>
 			+ Add Item
 		</button>

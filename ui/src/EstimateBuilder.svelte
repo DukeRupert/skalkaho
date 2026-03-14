@@ -138,35 +138,35 @@
 	}
 
 	const MARKUP_TYPES = [
-		{ key: 'materials', label: 'Materials', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
-		{ key: 'labor', label: 'Labor', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
-		{ key: 'equipment', label: 'Equipment', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
-		{ key: 'subs', label: 'Subs', bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
-		{ key: 'other', label: 'Other', bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-300' },
+		{ key: 'materials', label: 'Materials', bg: 'bg-blue-900/30', text: 'text-blue-400', border: 'border-blue-800' },
+		{ key: 'labor', label: 'Labor', bg: 'bg-amber-900/30', text: 'text-amber-400', border: 'border-amber-800' },
+		{ key: 'equipment', label: 'Equipment', bg: 'bg-purple-900/30', text: 'text-purple-400', border: 'border-purple-800' },
+		{ key: 'subs', label: 'Subs', bg: 'bg-green-900/30', text: 'text-green-400', border: 'border-green-800' },
+		{ key: 'other', label: 'Other', bg: 'bg-white/[0.06]', text: 'text-[var(--color-concrete)]', border: 'border-white/[0.08]' },
 	];
 </script>
 
 {#if loading}
 	<div class="flex items-center justify-center h-64">
-		<div class="text-slate-500">Loading estimate...</div>
+		<div class="text-[var(--color-muted-text)] font-[var(--font-body)]">Loading estimate...</div>
 	</div>
 {:else if error}
 	<div class="flex items-center justify-center h-64">
-		<div class="text-red-500">{error}</div>
+		<div class="text-red-400 font-[var(--font-body)]">{error}</div>
 	</div>
 {:else if estimate}
 	<div class="estimate-builder pb-16">
 		<!-- Topbar -->
-		<div class="sticky top-0 z-10 bg-slate-900 text-white px-4 py-3 flex items-center justify-between border-b border-slate-700">
+		<div class="sticky top-0 z-10 bg-[var(--color-ink)] text-[var(--color-white)] px-4 py-3 flex items-center justify-between border-b border-white/[0.08]">
 			<div>
-				<h1 class="text-lg font-semibold">{estimate.project.name}</h1>
-				<span class="text-xs text-slate-400">Estimate Builder</span>
+				<h1 class="text-lg font-semibold font-[var(--font-ui)] uppercase tracking-wide">{estimate.project.name}</h1>
+				<span class="text-xs text-[var(--color-muted-text)] font-[var(--font-ui)]">Estimate Builder</span>
 			</div>
 			<div class="flex items-center gap-3">
 				<button
 					onclick={() => { if (undoStack.undo(estimate)) handleChange(); }}
 					disabled={!undoStack.canUndo}
-					class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+					class="text-xs px-2 py-1 rounded bg-white/[0.06] hover:bg-white/[0.1] disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1 font-[var(--font-ui)]"
 					title="Undo (Ctrl+Z)"
 				>
 					<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,26 +175,26 @@
 					Undo
 				</button>
 				<SaveStatus status={autoSave.status} savedAt={autoSave.savedAt} onsave={() => autoSave.save()} />
-				<span class="text-xs px-2 py-1 rounded bg-slate-700 text-slate-300 uppercase tracking-wide">
+				<span class="text-xs px-2 py-1 rounded bg-white/[0.06] text-[var(--color-concrete)] uppercase tracking-wide font-[var(--font-ui)]">
 					{estimate.project.status}
 				</span>
 			</div>
 		</div>
 
 		<!-- Global markup toolbar -->
-		<div class="bg-slate-50 border-b border-slate-200 px-4 py-2">
+		<div class="bg-[var(--color-granite)] border-b border-white/[0.06] px-4 py-2">
 			<div class="flex items-center gap-4 text-sm">
-				<span class="font-medium text-slate-600">Global Markup:</span>
+				<span class="font-medium text-[var(--color-concrete)] font-[var(--font-ui)] uppercase tracking-wide text-xs">Global Markup:</span>
 				{#each MARKUP_TYPES as mt}
 					<label class="flex items-center gap-1 px-2 py-0.5 rounded {mt.bg} {mt.text} font-mono text-xs">
-						<span class="font-medium">{mt.label}</span>
+						<span class="font-medium font-[var(--font-ui)]">{mt.label}</span>
 						<input
 							type="number"
 							value={estimate.globals[`${mt.key}_markup`]}
 							oninput={(e) => handleGlobalMarkup(mt.key, e)}
 							step="1"
 							min="0"
-							class="w-12 text-right bg-transparent border-0 p-0 font-mono text-xs focus:ring-1 focus:ring-blue-400 rounded {mt.text}"
+							class="w-12 text-right bg-transparent border-0 p-0 font-mono text-xs focus:ring-1 focus:ring-[var(--color-sunburst)] rounded {mt.text}"
 						/>
 						<span>%</span>
 					</label>
@@ -205,12 +205,12 @@
 		<!-- Sections -->
 		<div class="p-4">
 			{#if estimate.sections.length === 0 && !showAddSection}
-				<div class="text-center py-16 text-slate-400">
-					<svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<div class="text-center py-16 text-[var(--color-muted-text)]">
+					<svg class="w-12 h-12 mx-auto mb-3 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
 					</svg>
-					<p class="text-lg font-medium">No sections yet</p>
-					<p class="text-sm mt-1">Add a section to start building your estimate.</p>
+					<p class="text-lg font-medium font-[var(--font-ui)]">No sections yet</p>
+					<p class="text-sm mt-1 font-[var(--font-body)]">Add a section to start building your estimate.</p>
 				</div>
 			{:else}
 				{#each estimate.sections as section (section.id)}
@@ -233,16 +233,16 @@
 						type="text"
 						bind:value={newSectionName}
 						placeholder="Section name"
-						class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+						class="flex-1 px-3 py-2 bg-transparent border-0 border-b-2 border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/30"
 						onkeydown={(e) => { if (e.key === 'Enter') addSection(); if (e.key === 'Escape') showAddSection = false; }}
 					/>
-					<button onclick={addSection} class="px-3 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700">Add</button>
-					<button onclick={() => showAddSection = false} class="px-3 py-2 text-slate-500 text-sm hover:text-slate-700">Cancel</button>
+					<button onclick={addSection} class="px-3 py-2 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-sm rounded font-[var(--font-ui)] font-semibold hover:brightness-110">Add</button>
+					<button onclick={() => showAddSection = false} class="px-3 py-2 text-[var(--color-muted-text)] text-sm hover:text-[var(--color-white)] font-[var(--font-ui)]">Cancel</button>
 				</div>
 			{:else}
 				<button
 					onclick={() => showAddSection = true}
-					class="mt-3 text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1"
+					class="mt-3 text-sm text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>

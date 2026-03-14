@@ -126,22 +126,22 @@
 	}
 
 	const MARKUP_TYPES = [
-		{ key: 'materials', label: 'Mat', color: 'text-blue-700' },
-		{ key: 'labor', label: 'Lab', color: 'text-amber-700' },
-		{ key: 'equipment', label: 'Equip', color: 'text-purple-700' },
-		{ key: 'subs', label: 'Subs', color: 'text-green-700' },
-		{ key: 'other', label: 'Other', color: 'text-slate-600' },
+		{ key: 'materials', label: 'Mat', color: 'text-blue-400' },
+		{ key: 'labor', label: 'Lab', color: 'text-amber-400' },
+		{ key: 'equipment', label: 'Equip', color: 'text-purple-400' },
+		{ key: 'subs', label: 'Subs', color: 'text-green-400' },
+		{ key: 'other', label: 'Other', color: 'text-[var(--color-concrete)]' },
 	];
 </script>
 
-<div class="border-t border-slate-200">
+<div class="border-t border-white/[0.06]">
 	<!-- Subcategory header -->
-	<div class="flex items-center justify-between px-4 py-2 hover:bg-slate-50 transition-colors group/subcat">
+	<div class="flex items-center justify-between px-4 py-2 hover:bg-white/[0.03] transition-colors group/subcat">
 		<button
 			class="flex items-center gap-2 text-left flex-1 min-w-0"
 			onclick={() => isCollapsed = !isCollapsed}
 		>
-			<svg class="w-4 h-4 text-slate-400 transition-transform {isCollapsed ? '' : 'rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-4 h-4 text-white/40 transition-transform {isCollapsed ? '' : 'rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
 			</svg>
 			{#if isEditing}
@@ -150,20 +150,20 @@
 					type="text"
 					bind:value={editName}
 					autofocus
-					class="px-2 py-0.5 border border-slate-300 rounded text-sm font-medium text-slate-600 focus:ring-2 focus:ring-blue-400"
+					class="px-2 py-0.5 border border-white/[0.08] rounded text-sm font-medium text-[var(--color-white)] bg-white/[0.04] focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] font-[var(--font-ui)]"
 					onclick={(e) => e.stopPropagation()}
 					onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') isEditing = false; }}
 					onblur={commitRename}
 				/>
 			{:else}
-				<span role="button" tabindex="0" class="font-medium text-slate-600 text-sm" ondblclick={(e) => { e.stopPropagation(); startRename(); }}>{subcat.name}</span>
+				<span role="button" tabindex="0" class="font-medium text-[var(--color-concrete)] text-sm font-[var(--font-ui)]" ondblclick={(e) => { e.stopPropagation(); startRename(); }}>{subcat.name}</span>
 			{/if}
-			<span class="text-xs text-slate-400">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
+			<span class="text-xs text-white/40 font-[var(--font-body)]">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
 			{#if hasOverrides}
-				<span class="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-medium">overrides</span>
+				<span class="text-xs px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 font-medium font-[var(--font-ui)]">overrides</span>
 			{/if}
 			{#if subcat.lump_sum > 0}
-				<span class="text-xs px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">
+				<span class="text-xs px-1.5 py-0.5 rounded bg-green-900/30 text-green-400 font-medium font-[var(--font-ui)]">
 					+{formatMoney(subcat.lump_sum)} lump sum
 				</span>
 			{/if}
@@ -171,17 +171,17 @@
 		<div class="flex items-center gap-2">
 			<button
 				onclick={() => showMarkupPanel = !showMarkupPanel}
-				class="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors"
+				class="text-xs px-1.5 py-0.5 rounded bg-white/[0.06] text-[var(--color-muted-text)] hover:bg-white/[0.1] transition-colors"
 				title="Configure markup"
 			>
 				<svg class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
 				</svg>
 			</button>
-			<span class="font-mono text-sm font-semibold text-slate-700">{formatMoney(totals.withMarkup)}</span>
+			<span class="font-mono text-sm font-semibold text-[var(--color-white)]">{formatMoney(totals.withMarkup)}</span>
 			<button
 				onclick={() => ondelete?.(subcat.id)}
-				class="opacity-0 group-hover/subcat:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-0.5"
+				class="opacity-0 group-hover/subcat:opacity-100 text-white/30 hover:text-red-400 transition-opacity p-0.5"
 				title="Delete subcategory"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,24 +195,24 @@
 		<div class="px-4 pb-3">
 			<!-- Markup controls panel -->
 			{#if showMarkupPanel}
-				<div class="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-3">
+				<div class="bg-[var(--color-granite)] rounded-lg border border-white/[0.08] p-3 mb-3">
 					<div class="flex items-center justify-between mb-2">
-						<span class="text-xs font-semibold text-slate-600 uppercase tracking-wide">Markup Overrides</span>
-						<button onclick={() => showMarkupPanel = false} class="text-xs text-slate-400 hover:text-slate-600">Close</button>
+						<span class="text-xs font-semibold text-[var(--color-concrete)] uppercase tracking-wide font-[var(--font-ui)]">Markup Overrides</span>
+						<button onclick={() => showMarkupPanel = false} class="text-xs text-white/40 hover:text-[var(--color-white)] font-[var(--font-ui)]">Close</button>
 					</div>
 					<div class="grid grid-cols-5 gap-2">
 						{#each MARKUP_TYPES as mt}
 							{@const m = markupSummary.find(x => x.type === mt.key)}
 							<div class="text-center">
-								<span class="block text-xs font-medium {mt.color} mb-1">{mt.label}</span>
+								<span class="block text-xs font-medium {mt.color} mb-1 font-[var(--font-ui)]">{mt.label}</span>
 								<div class="flex items-center justify-center gap-1 mb-1">
 									<input
 										type="checkbox"
 										checked={subcat.markup_enabled[mt.key]}
 										onchange={() => handleToggle(mt.key)}
-										class="w-3 h-3 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+										class="w-3 h-3 rounded border-white/[0.08] bg-white/[0.04] text-[var(--color-sunburst)] focus:ring-[var(--color-sunburst)]"
 									/>
-									<span class="text-xs text-slate-400">{subcat.markup_enabled[mt.key] ? 'On' : 'Off'}</span>
+									<span class="text-xs text-white/40 font-[var(--font-body)]">{subcat.markup_enabled[mt.key] ? 'On' : 'Off'}</span>
 								</div>
 								<input
 									type="number"
@@ -222,38 +222,38 @@
 									step="1"
 									min="0"
 									disabled={!subcat.markup_enabled[mt.key]}
-									class="w-full text-center text-xs font-mono px-1 py-1 border border-slate-200 rounded
-										focus:ring-1 focus:ring-blue-400 focus:border-blue-400
-										{!subcat.markup_enabled[mt.key] ? 'bg-slate-100 text-slate-400' : 'bg-white'}
-										{m?.isOverride ? 'border-amber-300 bg-amber-50' : ''}"
+									class="w-full text-center text-xs font-mono px-1 py-1 border border-white/[0.08] rounded
+										focus:ring-1 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)]
+										{!subcat.markup_enabled[mt.key] ? 'bg-white/[0.02] text-white/20' : 'bg-white/[0.04] text-[var(--color-white)]'}
+										{m?.isOverride ? 'border-amber-500/50 bg-amber-900/20' : ''}"
 								/>
-								<div class="text-xs text-slate-400 mt-0.5">
+								<div class="text-xs text-white/40 mt-0.5 font-mono">
 									eff: {formatPercent(m?.value ?? 0)}
 								</div>
 							</div>
 						{/each}
 					</div>
 					<!-- Lump sum -->
-					<div class="mt-3 pt-2 border-t border-slate-200 flex items-center gap-2">
-						<span class="text-xs font-medium text-slate-600">Lump Sum:</span>
-						<span class="text-xs text-slate-400">$</span>
+					<div class="mt-3 pt-2 border-t border-white/[0.08] flex items-center gap-2">
+						<span class="text-xs font-medium text-[var(--color-concrete)] font-[var(--font-ui)]">Lump Sum:</span>
+						<span class="text-xs text-white/40">$</span>
 						<input
 							type="number"
 							value={subcat.lump_sum}
 							oninput={handleLumpSum}
 							step="0.01"
 							min="0"
-							class="w-28 text-right text-xs font-mono px-2 py-1 border border-slate-200 rounded
-								focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
+							class="w-28 text-right text-xs font-mono px-2 py-1 border border-white/[0.08] rounded bg-white/[0.04] text-[var(--color-white)]
+								focus:ring-1 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)]"
 						/>
-						<span class="text-xs text-slate-400">added post-markup</span>
+						<span class="text-xs text-white/40 font-[var(--font-body)]">added post-markup</span>
 					</div>
 				</div>
 			{:else if hasOverrides}
-				<div class="flex items-center gap-3 py-1.5 px-2 bg-amber-50 rounded text-xs mb-2 cursor-pointer hover:bg-amber-100 transition-colors" onclick={() => showMarkupPanel = true} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') showMarkupPanel = true; }} role="button" tabindex="0">
-					<span class="font-medium text-amber-700">Markup:</span>
+				<div class="flex items-center gap-3 py-1.5 px-2 bg-amber-900/20 rounded text-xs mb-2 cursor-pointer hover:bg-amber-900/30 transition-colors" onclick={() => showMarkupPanel = true} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') showMarkupPanel = true; }} role="button" tabindex="0">
+					<span class="font-medium text-amber-400 font-[var(--font-ui)]">Markup:</span>
 					{#each markupSummary as m}
-						<span class={m.isDisabled ? 'text-slate-400 line-through' : m.isOverride ? 'text-amber-700 font-medium' : 'text-slate-500'}>
+						<span class="{m.isDisabled ? 'text-white/20 line-through' : m.isOverride ? 'text-amber-400 font-medium' : 'text-white/40'} font-[var(--font-body)]">
 							{m.type} {formatPercent(m.value)}
 						</span>
 					{/each}
@@ -263,7 +263,7 @@
 			{#if totalItems > 0 || subcat.line_items.length > 0}
 				<table class="w-full">
 					<thead>
-						<tr class="text-xs text-slate-400 uppercase tracking-wide border-b border-slate-100">
+						<tr class="text-xs text-white/40 uppercase tracking-wide border-b border-white/[0.06] font-[var(--font-ui)]">
 							<th class="px-1 py-1 text-left w-24">Type</th>
 							<th class="px-1 py-1 text-left">Name</th>
 							<th class="px-1 py-1 text-right w-20">Qty</th>
@@ -272,7 +272,7 @@
 							<th class="px-2 py-1 text-right w-16">Markup</th>
 							<th class="px-2 py-1 text-right w-24">w/ Markup</th>
 							<th class="px-2 py-1 text-right w-24">Total</th>
-							<th class="w-8"></th>
+							<th class="w-16"></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -311,16 +311,16 @@
 						type="text"
 						bind:value={newGroupName}
 						placeholder="Group name"
-						class="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+						class="flex-1 px-2 py-1 bg-transparent border-0 border-b-2 border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/30"
 						onkeydown={(e) => { if (e.key === 'Enter') addComponentGroup(); if (e.key === 'Escape') showAddGroup = false; }}
 					/>
-					<button onclick={addComponentGroup} class="px-2 py-1 bg-slate-800 text-white text-xs rounded hover:bg-slate-700">Add</button>
-					<button onclick={() => showAddGroup = false} class="px-2 py-1 text-slate-500 text-xs hover:text-slate-700">Cancel</button>
+					<button onclick={addComponentGroup} class="px-2 py-1 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-xs rounded font-[var(--font-ui)] font-semibold hover:brightness-110">Add</button>
+					<button onclick={() => showAddGroup = false} class="px-2 py-1 text-[var(--color-muted-text)] text-xs hover:text-[var(--color-white)] font-[var(--font-ui)]">Cancel</button>
 				</div>
 			{:else}
 				<button
 					onclick={() => showAddGroup = true}
-					class="ml-4 mt-2 text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1"
+					class="ml-4 mt-2 text-xs text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]"
 				>
 					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -343,7 +343,7 @@
 			{:else}
 				<button
 					onclick={() => showAddForm = true}
-					class="mt-2 text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1"
+					class="mt-2 text-sm text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -352,14 +352,14 @@
 				</button>
 			{/if}
 
-			<div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-100 text-sm">
-				<span class="text-slate-500">
+			<div class="flex justify-between items-center mt-2 pt-2 border-t border-white/[0.06] text-sm">
+				<span class="text-[var(--color-muted-text)] font-[var(--font-body)]">
 					Subtotal: {formatMoney(totals.base)}
 					{#if subcat.lump_sum > 0}
-						<span class="text-green-600"> + {formatMoney(subcat.lump_sum)} lump sum</span>
+						<span class="text-green-400"> + {formatMoney(subcat.lump_sum)} lump sum</span>
 					{/if}
 				</span>
-				<span class="font-mono font-semibold text-slate-700">{formatMoney(totals.withMarkup)}</span>
+				<span class="font-mono font-semibold text-[var(--color-white)]">{formatMoney(totals.withMarkup)}</span>
 			</div>
 		</div>
 	{/if}

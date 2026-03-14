@@ -62,13 +62,13 @@
 	}
 </script>
 
-<div class="mb-4 border border-slate-200 rounded-lg overflow-hidden bg-white">
-	<div class="flex items-center justify-between px-4 py-3 bg-slate-800 text-white">
+<div class="mb-4 border border-white/[0.06] rounded-lg overflow-hidden bg-[var(--color-ink)]">
+	<div class="flex items-center justify-between px-4 py-3 bg-[var(--color-granite)] text-[var(--color-white)]">
 		<button
-			class="flex items-center gap-3 hover:bg-slate-700 -ml-2 px-2 py-1 rounded transition-colors text-left flex-1 min-w-0"
+			class="flex items-center gap-3 hover:bg-white/[0.06] -ml-2 px-2 py-1 rounded transition-colors text-left flex-1 min-w-0"
 			onclick={() => isCollapsed = !isCollapsed}
 		>
-			<svg class="w-4 h-4 text-slate-400 transition-transform {isCollapsed ? '' : 'rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-4 h-4 text-white/40 transition-transform {isCollapsed ? '' : 'rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
 			</svg>
 			{#if isEditing}
@@ -77,15 +77,15 @@
 					type="text"
 					bind:value={editName}
 					autofocus
-					class="bg-slate-700 text-white px-2 py-0.5 rounded text-sm font-semibold border border-slate-500 focus:ring-2 focus:ring-blue-400"
+					class="bg-white/[0.06] text-[var(--color-white)] px-2 py-0.5 rounded text-sm font-semibold border border-white/[0.08] focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] font-[var(--font-ui)]"
 					onclick={(e) => e.stopPropagation()}
 					onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') isEditing = false; }}
 					onblur={commitRename}
 				/>
 			{:else}
-				<span role="button" tabindex="0" class="font-semibold" ondblclick={(e) => { e.stopPropagation(); startRename(); }}>{section.name}</span>
+				<span role="button" tabindex="0" class="font-semibold font-[var(--font-ui)] uppercase tracking-wide" ondblclick={(e) => { e.stopPropagation(); startRename(); }}>{section.name}</span>
 			{/if}
-			<span class="text-xs text-slate-400">
+			<span class="text-xs text-white/40 font-[var(--font-body)]">
 				{section.subcategories.length} subcategor{section.subcategories.length !== 1 ? 'ies' : 'y'}
 				&middot; {totalItems} item{totalItems !== 1 ? 's' : ''}
 			</span>
@@ -94,7 +94,7 @@
 			<span class="font-mono font-semibold">{formatMoney(totals.withMarkup)}</span>
 			<button
 				onclick={() => ondelete?.(section.id)}
-				class="text-slate-500 hover:text-red-400 transition-colors p-1"
+				class="text-white/30 hover:text-red-400 transition-colors p-1"
 				title="Delete section"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,7 +106,7 @@
 
 	{#if !isCollapsed}
 		{#if section.subcategories.length === 0 && !showAddSubcat}
-			<div class="px-4 py-8 text-center text-slate-400 text-sm">
+			<div class="px-4 py-8 text-center text-[var(--color-muted-text)] text-sm font-[var(--font-body)]">
 				No subcategories yet
 			</div>
 		{:else}
@@ -122,16 +122,16 @@
 						type="text"
 						bind:value={newSubcatName}
 						placeholder="Subcategory name"
-						class="flex-1 px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+						class="flex-1 px-2 py-1.5 bg-transparent border-0 border-b-2 border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/30"
 						onkeydown={(e) => { if (e.key === 'Enter') addSubcategory(); if (e.key === 'Escape') showAddSubcat = false; }}
 					/>
-					<button onclick={addSubcategory} class="px-2 py-1.5 bg-slate-800 text-white text-xs rounded hover:bg-slate-700">Add</button>
-					<button onclick={() => showAddSubcat = false} class="px-2 py-1.5 text-slate-500 text-xs hover:text-slate-700">Cancel</button>
+					<button onclick={addSubcategory} class="px-2 py-1.5 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-xs rounded font-[var(--font-ui)] font-semibold hover:brightness-110">Add</button>
+					<button onclick={() => showAddSubcat = false} class="px-2 py-1.5 text-[var(--color-muted-text)] text-xs hover:text-[var(--color-white)] font-[var(--font-ui)]">Cancel</button>
 				</div>
 			{:else}
 				<button
 					onclick={() => showAddSubcat = true}
-					class="mt-2 text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1"
+					class="mt-2 text-sm text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>

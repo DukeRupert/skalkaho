@@ -1846,43 +1846,25 @@ function Nr(e, t, n) {
 	t === null ? e.effect.first = n : t.next = n, n === null ? e.effect.last = t : n.prev = t;
 }
 //#endregion
-//#region node_modules/clsx/dist/clsx.mjs
-function Pr(e) {
-	var t, n, r = "";
-	if (typeof e == "string" || typeof e == "number") r += e;
-	else if (typeof e == "object") if (Array.isArray(e)) {
-		var i = e.length;
-		for (t = 0; t < i; t++) e[t] && (n = Pr(e[t])) && (r && (r += " "), r += n);
-	} else for (n in e) e[n] && (r && (r += " "), r += n);
-	return r;
-}
-function Fr() {
-	for (var e, t, n = 0, r = "", i = arguments.length; n < i; n++) (e = arguments[n]) && (t = Pr(e)) && (r && (r += " "), r += t);
-	return r;
-}
-//#endregion
 //#region node_modules/svelte/src/internal/shared/attributes.js
-function Ir(e) {
-	return typeof e == "object" ? Fr(e) : e ?? "";
-}
-var Lr = [..." 	\n\r\f\xA0\v﻿"];
-function Rr(e, t, n) {
+var Pr = [..." 	\n\r\f\xA0\v﻿"];
+function Fr(e, t, n) {
 	var r = e == null ? "" : "" + e;
 	if (t && (r = r ? r + " " + t : t), n) {
 		for (var i of Object.keys(n)) if (n[i]) r = r ? r + " " + i : i;
 		else if (r.length) for (var a = i.length, o = 0; (o = r.indexOf(i, o)) >= 0;) {
 			var s = o + a;
-			(o === 0 || Lr.includes(r[o - 1])) && (s === r.length || Lr.includes(r[s])) ? r = (o === 0 ? "" : r.substring(0, o)) + r.substring(s + 1) : o = s;
+			(o === 0 || Pr.includes(r[o - 1])) && (s === r.length || Pr.includes(r[s])) ? r = (o === 0 ? "" : r.substring(0, o)) + r.substring(s + 1) : o = s;
 		}
 	}
 	return r === "" ? null : r;
 }
 //#endregion
 //#region node_modules/svelte/src/internal/client/dom/elements/class.js
-function zr(e, t, n, r, i, a) {
+function Ir(e, t, n, r, i, a) {
 	var o = e.__className;
 	if (A || o !== n || o === void 0) {
-		var s = Rr(n, r, a);
+		var s = Fr(n, r, a);
 		(!A || s !== e.getAttribute("class")) && (s == null ? e.removeAttribute("class") : t ? e.className = s : e.setAttribute("class", s)), e.__className = n;
 	} else if (a && i !== a) for (var c in a) {
 		var l = !!a[c];
@@ -1892,22 +1874,22 @@ function zr(e, t, n, r, i, a) {
 }
 //#endregion
 //#region node_modules/svelte/src/internal/client/dom/elements/bindings/select.js
-function Br(t, n, r = !1) {
+function Lr(t, n, r = !1) {
 	if (t.multiple) {
 		if (n == null) return;
 		if (!e(n)) return ye();
-		for (var i of t.options) i.selected = n.includes(Hr(i));
+		for (var i of t.options) i.selected = n.includes(zr(i));
 		return;
 	}
-	for (i of t.options) if (Ht(Hr(i), n)) {
+	for (i of t.options) if (Ht(zr(i), n)) {
 		i.selected = !0;
 		return;
 	}
 	(!r || n !== void 0) && (t.selectedIndex = -1);
 }
-function Vr(e) {
+function Rr(e) {
 	var t = new MutationObserver(() => {
-		Br(e, e.__value);
+		Lr(e, e.__value);
 	});
 	t.observe(e, {
 		childList: !0,
@@ -1918,52 +1900,52 @@ function Vr(e) {
 		t.disconnect();
 	});
 }
-function Hr(e) {
+function zr(e) {
 	return "__value" in e ? e.__value : e.value;
 }
 //#endregion
 //#region node_modules/svelte/src/internal/client/dom/elements/attributes.js
-var Ur = Symbol("is custom element"), Wr = Symbol("is html"), Gr = ie ? "link" : "LINK", Kr = ie ? "progress" : "PROGRESS";
+var Br = Symbol("is custom element"), Vr = Symbol("is html"), Hr = ie ? "link" : "LINK", Ur = ie ? "progress" : "PROGRESS";
 function $(e) {
 	if (A) {
 		var t = !1, n = () => {
 			if (!t) {
 				if (t = !0, e.hasAttribute("value")) {
 					var n = e.value;
-					Yr(e, "value", null), e.value = n;
+					Kr(e, "value", null), e.value = n;
 				}
 				if (e.hasAttribute("checked")) {
 					var r = e.checked;
-					Yr(e, "checked", null), e.checked = r;
+					Kr(e, "checked", null), e.checked = r;
 				}
 			}
 		};
 		e.__on_r = n, Re(n), an();
 	}
 }
-function qr(e, t) {
-	var n = Xr(e);
-	n.value === (n.value = t ?? void 0) || e.value === t && (t !== 0 || e.nodeName !== Kr) || (e.value = t ?? "");
+function Wr(e, t) {
+	var n = qr(e);
+	n.value === (n.value = t ?? void 0) || e.value === t && (t !== 0 || e.nodeName !== Ur) || (e.value = t ?? "");
 }
-function Jr(e, t) {
-	var n = Xr(e);
+function Gr(e, t) {
+	var n = qr(e);
 	n.checked !== (n.checked = t ?? void 0) && (e.checked = t);
 }
-function Yr(e, t, n, r) {
-	var i = Xr(e);
-	A && (i[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === Gr) || i[t] !== (i[t] = n) && (t === "loading" && (e[re] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && Qr(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
+function Kr(e, t, n, r) {
+	var i = qr(e);
+	A && (i[t] = e.getAttribute(t), t === "src" || t === "srcset" || t === "href" && e.nodeName === Hr) || i[t] !== (i[t] = n) && (t === "loading" && (e[re] = n), n == null ? e.removeAttribute(t) : typeof n != "string" && Yr(e).includes(t) ? e[t] = n : e.setAttribute(t, n));
 }
-function Xr(e) {
+function qr(e) {
 	return e.__attributes ??= {
-		[Ur]: e.nodeName.includes("-"),
-		[Wr]: e.namespaceURI === _e
+		[Br]: e.nodeName.includes("-"),
+		[Vr]: e.namespaceURI === _e
 	};
 }
-var Zr = /* @__PURE__ */ new Map();
-function Qr(e) {
-	var t = e.getAttribute("is") || e.nodeName, n = Zr.get(t);
+var Jr = /* @__PURE__ */ new Map();
+function Yr(e) {
+	var t = e.getAttribute("is") || e.nodeName, n = Jr.get(t);
 	if (n) return n;
-	Zr.set(t, n = []);
+	Jr.set(t, n = []);
 	for (var r, i = e, a = Element.prototype; a !== i;) {
 		for (var s in r = o(i), r) r[s].set && n.push(s);
 		i = l(i);
@@ -1972,51 +1954,51 @@ function Qr(e) {
 }
 //#endregion
 //#region node_modules/svelte/src/internal/client/dom/elements/bindings/input.js
-function $r(e, t, n = t) {
+function Xr(e, t, n = t) {
 	var r = /* @__PURE__ */ new WeakSet();
 	sn(e, "input", async (i) => {
 		var a = i ? e.defaultValue : e.value;
-		if (a = ei(e) ? ti(a) : a, n(a), F !== null && r.add(F), await er(), a !== (a = t())) {
+		if (a = Zr(e) ? Qr(a) : a, n(a), F !== null && r.add(F), await er(), a !== (a = t())) {
 			var o = e.selectionStart, s = e.selectionEnd, c = e.value.length;
 			if (e.value = a ?? "", s !== null) {
 				var l = e.value.length;
 				o === s && s === c && l > c ? (e.selectionStart = l, e.selectionEnd = l) : (e.selectionStart = o, e.selectionEnd = Math.min(s, l));
 			}
 		}
-	}), (A && e.defaultValue !== e.value || rr(t) == null && e.value) && (n(ei(e) ? ti(e.value) : e.value), F !== null && r.add(F)), vn(() => {
+	}), (A && e.defaultValue !== e.value || rr(t) == null && e.value) && (n(Zr(e) ? Qr(e.value) : e.value), F !== null && r.add(F)), vn(() => {
 		var n = t();
 		if (e === document.activeElement) {
 			var i = Ae ? Xe : F;
 			if (r.has(i)) return;
 		}
-		ei(e) && n === ti(e.value) || e.type === "date" && !n && !e.value || n !== e.value && (e.value = n ?? "");
+		Zr(e) && n === Qr(e.value) || e.type === "date" && !n && !e.value || n !== e.value && (e.value = n ?? "");
 	});
 }
-function ei(e) {
+function Zr(e) {
 	var t = e.type;
 	return t === "number" || t === "range";
 }
-function ti(e) {
+function Qr(e) {
 	return e === "" ? null : +e;
 }
 //#endregion
 //#region node_modules/svelte/src/internal/client/dom/elements/bindings/this.js
-function ni(e, t) {
+function $r(e, t) {
 	return e === t || e?.[D] === t;
 }
-function ri(e = {}, t, n, r) {
+function ei(e = {}, t, n, r) {
 	var i = N.r, a = G;
 	return gn(() => {
 		var o, s;
 		return vn(() => {
 			o = s, s = r?.() || [], rr(() => {
-				e !== n(...s) && (t(e, ...s), o && ni(n(...o), e) && t(null, ...o));
+				e !== n(...s) && (t(e, ...s), o && $r(n(...o), e) && t(null, ...o));
 			});
 		}), () => {
 			let r = a;
 			for (; r !== i && r.parent !== null && r.parent.f & 33554432;) r = r.parent;
 			let o = () => {
-				s && ni(n(...s), e) && t(null, ...s);
+				s && $r(n(...s), e) && t(null, ...s);
 			}, c = r.teardown;
 			r.teardown = () => {
 				o(), c?.();
@@ -2026,7 +2008,7 @@ function ri(e = {}, t, n, r) {
 }
 //#endregion
 //#region node_modules/svelte/src/internal/client/reactivity/props.js
-function ii(e, t, n, r) {
+function ti(e, t, n, r) {
 	var i = !je || (n & 2) != 0, o = (n & 8) != 0, s = (n & 16) != 0, c = r, l = !0, u = () => (l && (l = !1, c = s ? rr(r) : r), c);
 	let d;
 	if (o) {
@@ -2065,7 +2047,7 @@ function ii(e, t, n, r) {
 typeof window < "u" && ((window.__svelte ??= {}).v ??= /* @__PURE__ */ new Set()).add("5");
 //#endregion
 //#region src/lib/markup.js
-function ai(e, t, n, r) {
+function ni(e, t, n, r) {
 	let i = {
 		materials: {
 			global: "materials_markup",
@@ -2095,13 +2077,13 @@ function ai(e, t, n, r) {
 	}[e];
 	return !i || !r[i.enabled] ? 0 : n[i.override] ?? t[i.global];
 }
-function oi(e, t) {
+function ri(e, t) {
 	return e * (1 + t / 100);
 }
-function si(e, t, n) {
-	return e * oi(t, n);
+function ii(e, t, n) {
+	return e * ri(t, n);
 }
-function ci(e, t) {
+function ai(e, t) {
 	let n = {
 		materials: 0,
 		labor: 0,
@@ -2109,7 +2091,7 @@ function ci(e, t) {
 		subs: 0,
 		other: 0
 	}, r = 0, i = 0, a = (a) => {
-		let o = ai(a.category_type, t, e.markup_overrides, e.markup_enabled), s = a.quantity * a.unit_price, c = si(a.quantity, a.unit_price, o);
+		let o = ni(a.category_type, t, e.markup_overrides, e.markup_enabled), s = a.quantity * a.unit_price, c = ii(a.quantity, a.unit_price, o);
 		r += s, i += c, n[a.category_type] !== void 0 && (n[a.category_type] += c);
 	};
 	for (let t of e.line_items) a(t);
@@ -2120,7 +2102,7 @@ function ci(e, t) {
 		byType: n
 	};
 }
-function li(e, t) {
+function oi(e, t) {
 	let n = {
 		materials: 0,
 		labor: 0,
@@ -2129,7 +2111,7 @@ function li(e, t) {
 		other: 0
 	}, r = 0, i = 0;
 	for (let a of e.subcategories) {
-		let e = ci(a, t);
+		let e = ai(a, t);
 		r += e.base, i += e.withMarkup;
 		for (let t of Object.keys(n)) n[t] += e.byType[t];
 	}
@@ -2139,7 +2121,7 @@ function li(e, t) {
 		byType: n
 	};
 }
-function ui(e) {
+function si(e) {
 	let t = {
 		materials: 0,
 		labor: 0,
@@ -2148,7 +2130,7 @@ function ui(e) {
 		other: 0
 	}, n = 0, r = 0;
 	for (let i of e.sections) {
-		let a = li(i, e.globals);
+		let a = oi(i, e.globals);
 		n += a.base, r += a.withMarkup;
 		for (let e of Object.keys(t)) t[e] += a.byType[e];
 	}
@@ -2158,94 +2140,101 @@ function ui(e) {
 		byType: t
 	};
 }
-function di(e) {
+function ci(e) {
 	return new Intl.NumberFormat("en-US", {
 		style: "currency",
 		currency: "USD",
 		minimumFractionDigits: 2
 	}).format(e);
 }
-function fi(e) {
+function li(e) {
 	return `${e}%`;
 }
 //#endregion
 //#region src/lib/LineItemRow.svelte
-var pi = /* @__PURE__ */ Y("<option> </option>"), mi = /* @__PURE__ */ Y("<span class=\"block text-xs text-slate-400 mt-0.5 px-1\"> </span>"), hi = /* @__PURE__ */ Y("<tr class=\"border-b border-slate-100 hover:bg-slate-50 text-sm group\"><td class=\"px-1 py-1 w-24\"><select></select></td><td class=\"px-1 py-1\"><input type=\"text\" class=\"w-full px-1 py-0.5 text-slate-800 bg-transparent border-0 rounded\n				focus:ring-2 focus:ring-blue-400 focus:bg-white\" placeholder=\"Item name\"/> <!></td><td class=\"px-1 py-1 w-20\"><input type=\"number\" step=\"any\" min=\"0\" class=\"w-full text-right font-mono px-1 py-0.5 bg-transparent border-0 rounded\n				focus:ring-2 focus:ring-blue-400 focus:bg-white\"/></td><td class=\"px-1 py-1 w-16\"><input type=\"text\" class=\"w-full text-center text-slate-500 px-1 py-0.5 bg-transparent border-0 rounded\n				focus:ring-2 focus:ring-blue-400 focus:bg-white text-sm\" placeholder=\"ea\"/></td><td class=\"px-1 py-1 w-24\"><input type=\"number\" step=\"0.01\" min=\"0\" class=\"w-full text-right font-mono px-1 py-0.5 bg-transparent border-0 rounded\n				focus:ring-2 focus:ring-blue-400 focus:bg-white\"/></td><td class=\"px-2 py-1.5 text-right font-mono text-slate-400 w-16 text-xs\"> </td><td class=\"px-2 py-1.5 text-right font-mono text-slate-500 w-24 text-xs\"> </td><td class=\"px-2 py-1.5 text-right font-mono font-medium w-24\"> </td><td class=\"px-1 py-1 w-8\"><button class=\"opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-0.5\" title=\"Delete item\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></td></tr>");
-function gi(e, t) {
+var ui = /* @__PURE__ */ Y("<option> </option>"), di = /* @__PURE__ */ Y("<tr class=\"border-b border-white/[0.06]\"><td colspan=\"9\" class=\"px-2 py-1.5\"><div class=\"flex items-center gap-2 pl-6\"><svg class=\"w-3 h-3 text-white/20 shrink-0\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 10h10a3 3 0 013 3v1\"></path></svg> <input type=\"text\" placeholder=\"Add a description or note...\" class=\"w-full px-2 py-1 text-xs bg-transparent border-0 border-b border-white/[0.06] text-[var(--color-concrete)]\n						focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/20 font-[var(--font-body)]\"/></div></td></tr>"), fi = /* @__PURE__ */ Y("<tr class=\"border-b border-white/[0.06] hover:bg-white/[0.03] text-sm group\"><td class=\"px-1 py-1 w-24\"><select></select></td><td class=\"px-1 py-1\"><input type=\"text\" class=\"w-full px-1 py-0.5 text-[var(--color-white)] bg-transparent border-0 rounded\n				focus:ring-2 focus:ring-[var(--color-sunburst)] font-[var(--font-body)]\" placeholder=\"Item name\"/></td><td class=\"px-1 py-1 w-20\"><input type=\"number\" step=\"any\" min=\"0\" class=\"w-full text-right font-mono px-1 py-0.5 bg-transparent border-0 rounded text-[var(--color-white)]\n				focus:ring-2 focus:ring-[var(--color-sunburst)]\"/></td><td class=\"px-1 py-1 w-16\"><input type=\"text\" class=\"w-full text-center text-[var(--color-muted-text)] px-1 py-0.5 bg-transparent border-0 rounded\n				focus:ring-2 focus:ring-[var(--color-sunburst)] text-sm font-[var(--font-body)]\" placeholder=\"ea\"/></td><td class=\"px-1 py-1 w-24\"><input type=\"number\" step=\"0.01\" min=\"0\" class=\"w-full text-right font-mono px-1 py-0.5 bg-transparent border-0 rounded text-[var(--color-white)]\n				focus:ring-2 focus:ring-[var(--color-sunburst)]\"/></td><td class=\"px-2 py-1.5 text-right font-mono text-white/40 w-16 text-xs\"> </td><td class=\"px-2 py-1.5 text-right font-mono text-[var(--color-muted-text)] w-24 text-xs\"> </td><td class=\"px-2 py-1.5 text-right font-mono font-medium text-[var(--color-white)] w-24\"> </td><td class=\"px-1 py-1 w-16\"><div class=\"flex items-center gap-0.5\"><button title=\"Toggle description\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z\"></path></svg></button> <button class=\"opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-opacity p-0.5\" title=\"Delete item\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></div></td></tr> <!>", 1);
+function pi(e, t) {
 	Ne(t, !0);
-	let n = ii(t, "item", 7), r = [
+	let n = ti(t, "item", 7), r = [
 		"materials",
 		"labor",
 		"equipment",
 		"subs",
 		"other"
 	], i = {
-		materials: "bg-blue-100 text-blue-700",
-		labor: "bg-amber-100 text-amber-700",
-		equipment: "bg-purple-100 text-purple-700",
-		subs: "bg-green-100 text-green-700",
-		other: "bg-slate-100 text-slate-600"
-	}, a = /* @__PURE__ */ L(() => ai(n().category_type, t.globals, t.markupOverrides, t.markupEnabled)), o = /* @__PURE__ */ L(() => oi(n().unit_price, q(a))), s = /* @__PURE__ */ L(() => si(n().quantity, n().unit_price, q(a))), c = /* @__PURE__ */ L(() => i[n().category_type] || i.other);
-	function l() {
+		materials: "bg-blue-900/30 text-blue-400",
+		labor: "bg-amber-900/30 text-amber-400",
+		equipment: "bg-purple-900/30 text-purple-400",
+		subs: "bg-green-900/30 text-green-400",
+		other: "bg-white/[0.06] text-[var(--color-concrete)]"
+	}, a = /* @__PURE__ */ L(() => ni(n().category_type, t.globals, t.markupOverrides, t.markupEnabled)), o = /* @__PURE__ */ L(() => ri(n().unit_price, q(a))), s = /* @__PURE__ */ L(() => ii(n().quantity, n().unit_price, q(a))), c = /* @__PURE__ */ L(() => i[n().category_type] || i.other), l = /* @__PURE__ */ R(!!n().description);
+	function u() {
 		t.onchange?.();
-	}
-	function u(e) {
-		let t = parseFloat(e.target.value);
-		isNaN(t) || (n().quantity = t, l());
 	}
 	function d(e) {
 		let t = parseFloat(e.target.value);
-		isNaN(t) || (n().unit_price = t, n().price_override = !0, l());
+		isNaN(t) || (n().quantity = t, u());
 	}
 	function f(e) {
-		n().item_name = e.target.value, l();
+		let t = parseFloat(e.target.value);
+		isNaN(t) || (n().unit_price = t, n().price_override = !0, u());
 	}
 	function p(e) {
-		n().unit = e.target.value, l();
+		n().item_name = e.target.value, u();
 	}
 	function m(e) {
-		n().category_type = e.target.value, l();
+		n().unit = e.target.value, u();
 	}
-	function h() {
+	function h(e) {
+		n().category_type = e.target.value, u();
+	}
+	function g(e) {
+		n().description = e.target.value || null, u();
+	}
+	function _() {
+		z(l, !q(l)), q(l);
+	}
+	function v() {
 		t.ondelete?.(n().id);
 	}
-	var g = hi(), _ = B(g), v = B(_);
-	Or(v, 21, () => r, wr, (e, t) => {
-		var n = pi(), r = B(n, !0);
+	var y = fi(), b = Zt(y), x = B(b), S = B(x);
+	Or(S, 21, () => r, wr, (e, t) => {
+		var n = ui(), r = B(n, !0);
 		M(n);
 		var i = {};
 		H(() => {
 			Z(r, q(t)), i !== (i = q(t)) && (n.value = (n.__value = q(t)) ?? "");
 		}), X(e, n);
-	}), M(v);
-	var y;
-	Vr(v), M(_);
-	var b = V(_), x = B(b);
-	$(x);
-	var S = V(x, 2), ee = (e) => {
-		var t = mi(), r = B(t, !0);
-		M(t), H(() => Z(r, n().description)), X(e, t);
-	};
-	Q(S, (e) => {
-		n().description && e(ee);
-	}), M(b);
-	var C = V(b), w = B(C);
+	}), M(S);
+	var ee;
+	Rr(S), M(x);
+	var C = V(x), w = B(C);
 	$(w), M(C);
 	var te = V(C), T = B(te);
 	$(T), M(te);
 	var E = V(te), D = B(E);
 	$(D), M(E);
 	var ne = V(E), re = B(ne);
-	M(ne);
-	var O = V(ne), ie = B(O, !0);
+	$(re), M(ne);
+	var O = V(ne), ie = B(O);
 	M(O);
 	var ae = V(O), oe = B(ae, !0);
 	M(ae);
-	var se = V(ae), ce = B(se);
-	M(se), M(g), H((e, t) => {
-		zr(v, 1, `w-full text-xs px-1 py-1 rounded border-0 bg-transparent font-medium cursor-pointer
-				focus:ring-2 focus:ring-blue-400 focus:bg-white ${q(c) ?? ""}`), y !== (y = n().category_type) && (v.value = (v.__value = n().category_type) ?? "", Br(v, n().category_type)), qr(x, n().item_name), qr(w, n().quantity), qr(T, n().unit), qr(D, n().unit_price), Z(re, `${q(a) ?? ""}%`), Z(ie, e), Z(oe, t);
-	}, [() => di(q(o)), () => di(q(s))]), J("change", v, m), J("input", x, f), J("input", w, u), J("input", T, p), J("input", D, d), J("click", ce, h), X(e, g), Pe();
+	var se = V(ae), ce = B(se, !0);
+	M(se);
+	var le = V(se), ue = B(le), de = B(ue), fe = V(de, 2);
+	M(ue), M(le), M(b);
+	var pe = V(b, 2), me = (e) => {
+		var t = di(), r = B(t), i = B(r), a = V(B(i), 2);
+		$(a), M(i), M(r), M(t), H(() => Wr(a, n().description ?? "")), J("input", a, g), X(e, t);
+	};
+	Q(pe, (e) => {
+		q(l) && e(me);
+	}), H((e, t) => {
+		Ir(S, 1, `w-full text-xs px-1 py-1 rounded border-0 bg-transparent font-medium cursor-pointer
+				focus:ring-2 focus:ring-[var(--color-sunburst)] ${q(c) ?? ""} font-[var(--font-ui)]`), ee !== (ee = n().category_type) && (S.value = (S.__value = n().category_type) ?? "", Lr(S, n().category_type)), Wr(w, n().item_name), Wr(T, n().quantity), Wr(D, n().unit), Wr(re, n().unit_price), Z(ie, `${q(a) ?? ""}%`), Z(oe, e), Z(ce, t), Ir(de, 1, `opacity-0 group-hover:opacity-100 p-0.5 transition-opacity rounded
+					${q(l) || n().description ? "opacity-100 text-[var(--color-sunburst)]" : "text-white/30 hover:text-[var(--color-concrete)]"}`);
+	}, [() => ci(q(o)), () => ci(q(s))]), J("change", S, h), J("input", w, p), J("input", T, d), J("input", D, m), J("input", re, f), J("click", de, _), J("click", fe, v), X(e, y), Pe();
 }
 dr([
 	"change",
@@ -2254,10 +2243,10 @@ dr([
 ]);
 //#endregion
 //#region src/lib/Autocomplete.svelte
-var _i = /* @__PURE__ */ Y("<button><div><span class=\"text-slate-800\"> </span> <span class=\"text-xs text-slate-400 ml-2\"> </span></div> <div class=\"flex items-center gap-2 text-xs\"><span class=\"font-mono text-slate-500\"> </span> <span class=\"text-slate-400\"> </span></div></button>"), vi = /* @__PURE__ */ Y("<div class=\"absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto\"></div>"), yi = /* @__PURE__ */ Y("<div class=\"absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50\"><button class=\"w-full text-left px-3 py-2 text-sm text-slate-500 hover:bg-slate-50\">Add custom item: <span class=\"font-medium text-slate-700\"> </span></button></div>"), bi = /* @__PURE__ */ Y("<div class=\"relative\"><input type=\"text\" placeholder=\"Search items or type a name...\" class=\"w-full px-3 py-2 text-sm border border-slate-300 rounded-lg\n			focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none\"/> <!></div>");
-function xi(e, t) {
+var mi = /* @__PURE__ */ Y("<button><div><span class=\"text-[var(--color-white)] font-[var(--font-body)]\"> </span> <span class=\"text-xs text-white/40 ml-2 font-[var(--font-body)]\"> </span></div> <div class=\"flex items-center gap-2 text-xs\"><span class=\"font-mono text-[var(--color-muted-text)]\"> </span> <span class=\"text-white/40\"> </span></div></button>"), hi = /* @__PURE__ */ Y("<div class=\"absolute top-full left-0 right-0 mt-1 bg-[var(--color-granite)] border border-white/[0.08] rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto\"></div>"), gi = /* @__PURE__ */ Y("<div class=\"absolute top-full left-0 right-0 mt-1 bg-[var(--color-granite)] border border-white/[0.08] rounded-lg shadow-lg z-50\"><button class=\"w-full text-left px-3 py-2 text-sm text-[var(--color-muted-text)] hover:bg-white/[0.06] font-[var(--font-body)]\">Add custom item: <span class=\"font-medium text-[var(--color-white)]\"> </span></button></div>"), _i = /* @__PURE__ */ Y("<div class=\"relative\"><input type=\"text\" placeholder=\"Search items or type a name...\" class=\"w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-[var(--color-white)]\n			focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] outline-none placeholder-white/30 font-[var(--font-body)]\"/> <!></div>");
+function vi(e, t) {
 	Ne(t, !0);
-	let n = ii(t, "materialsDb", 19, () => []), r = ii(t, "ratesDb", 19, () => []), i = ii(t, "categoryType", 3, "materials"), a = /* @__PURE__ */ R(""), o = /* @__PURE__ */ R(0), s, c = /* @__PURE__ */ L(() => {
+	let n = ti(t, "materialsDb", 19, () => []), r = ti(t, "ratesDb", 19, () => []), i = ti(t, "categoryType", 3, "materials"), a = /* @__PURE__ */ R(""), o = /* @__PURE__ */ R(0), s, c = /* @__PURE__ */ L(() => {
 		if (q(a).length < 1) return [];
 		let e = q(a).toLowerCase(), t;
 		return t = i() === "materials" ? n().map((e) => ({
@@ -2306,12 +2295,12 @@ function xi(e, t) {
 	}), pn(() => {
 		s?.focus();
 	});
-	var f = bi(), p = B(f);
-	$(p), ri(p, (e) => s = e, () => s);
+	var f = _i(), p = B(f);
+	$(p), ei(p, (e) => s = e, () => s);
 	var m = V(p, 2), h = (e) => {
-		var t = vi();
+		var t = hi();
 		Or(t, 21, () => q(c), wr, (e, t, n) => {
-			var r = _i(), i = B(r), a = B(i), s = B(a, !0);
+			var r = mi(), i = B(r), a = B(i), s = B(a, !0);
 			M(a);
 			var c = V(a, 2), l = B(c, !0);
 			M(c), M(i);
@@ -2319,32 +2308,32 @@ function xi(e, t) {
 			M(f);
 			var m = V(f, 2), h = B(m);
 			M(m), M(d), M(r), H((e) => {
-				zr(r, 1, `w-full text-left px-3 py-2 text-sm flex items-center justify-between
-						hover:bg-slate-50 ${n === q(o) ? "bg-blue-50" : ""}`), Z(s, q(t).name), Z(l, q(t).category), Z(p, `$${e ?? ""}`), Z(h, `/ ${q(t).unit ?? ""}`);
+				Ir(r, 1, `w-full text-left px-3 py-2 text-sm flex items-center justify-between
+						hover:bg-white/[0.06] ${n === q(o) ? "bg-[var(--color-sunburst)]/10" : ""}`), Z(s, q(t).name), Z(l, q(t).category), Z(p, `$${e ?? ""}`), Z(h, `/ ${q(t).unit ?? ""}`);
 			}, [() => q(t).price.toFixed(2)]), J("click", r, () => u(q(t))), ur("mouseenter", r, () => z(o, n, !0)), X(e, r);
 		}), M(t), X(e, t);
 	}, g = (e) => {
-		var t = yi(), n = B(t), r = V(B(n)), i = B(r);
+		var t = gi(), n = B(t), r = V(B(n)), i = B(r);
 		M(r), M(n), M(t), H(() => Z(i, `"${q(a) ?? ""}"`)), J("click", n, d), X(e, t);
 	};
 	Q(m, (e) => {
 		q(c).length > 0 ? e(h) : q(a).length > 0 && e(g, 1);
-	}), M(f), J("keydown", p, l), $r(p, () => q(a), (e) => z(a, e)), X(e, f), Pe();
+	}), M(f), J("keydown", p, l), Xr(p, () => q(a), (e) => z(a, e)), X(e, f), Pe();
 }
 dr(["keydown", "click"]);
 //#endregion
 //#region node_modules/nanoid/url-alphabet/index.js
-var Si = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict", Ci = (e = 21) => {
+var yi = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict", bi = (e = 21) => {
 	let t = "", n = crypto.getRandomValues(new Uint8Array(e |= 0));
-	for (; e--;) t += Si[n[e] & 63];
+	for (; e--;) t += yi[n[e] & 63];
 	return t;
-}, wi = /* @__PURE__ */ Y("<input type=\"text\" class=\"text-xs font-semibold text-slate-500 uppercase tracking-wide px-1 py-0.5 border border-slate-300 rounded focus:ring-2 focus:ring-blue-400\"/>"), Ti = /* @__PURE__ */ Y("<span role=\"button\" tabindex=\"0\" class=\"text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer\"> </span>"), Ei = /* @__PURE__ */ Y("<div class=\"mb-2\"><!></div>"), Di = /* @__PURE__ */ Y("<table class=\"w-full\"><tbody></tbody></table>"), Oi = /* @__PURE__ */ Y("<div class=\"ml-4 mt-2\"><div class=\"flex items-center gap-2 mb-1 group/cg\"><!> <span class=\"text-xs text-slate-400\"> </span> <button class=\"opacity-0 group-hover/cg:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-0.5\" title=\"Delete group\"><svg class=\"w-3 h-3\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button> <button class=\"text-xs text-blue-500 hover:text-blue-700 ml-auto\">+ Add Item</button></div> <!> <!></div>");
-function ki(e, t) {
+}, xi = /* @__PURE__ */ Y("<input type=\"text\" class=\"text-xs font-semibold text-[var(--color-concrete)] uppercase tracking-wide px-1 py-0.5 border border-white/[0.08] rounded bg-white/[0.04] focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] font-[var(--font-ui)]\"/>"), Si = /* @__PURE__ */ Y("<span role=\"button\" tabindex=\"0\" class=\"text-xs font-semibold text-[var(--color-muted-text)] uppercase tracking-wide cursor-pointer font-[var(--font-ui)]\"> </span>"), Ci = /* @__PURE__ */ Y("<div class=\"mb-2\"><!></div>"), wi = /* @__PURE__ */ Y("<table class=\"w-full\"><tbody></tbody></table>"), Ti = /* @__PURE__ */ Y("<div class=\"ml-4 mt-2\"><div class=\"flex items-center gap-2 mb-1 group/cg\"><!> <span class=\"text-xs text-white/40 font-[var(--font-body)]\"> </span> <button class=\"opacity-0 group-hover/cg:opacity-100 text-white/30 hover:text-red-400 transition-opacity p-0.5\" title=\"Delete group\"><svg class=\"w-3 h-3\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button> <button class=\"text-xs text-[var(--color-sunburst)] hover:brightness-110 ml-auto font-[var(--font-ui)]\">+ Add Item</button></div> <!> <!></div>");
+function Ei(e, t) {
 	Ne(t, !0);
-	let n = ii(t, "group", 7), r = /* @__PURE__ */ R(!1), i = /* @__PURE__ */ R(!1), a = /* @__PURE__ */ R(Bt(n().name));
+	let n = ti(t, "group", 7), r = /* @__PURE__ */ R(!1), i = /* @__PURE__ */ R(!1), a = /* @__PURE__ */ R(Bt(n().name));
 	function o(e) {
 		t.onsnapshot?.(), n().line_items.push({
-			id: Ci(),
+			id: bi(),
 			category_type: e.category_type,
 			item_name: e.item_name,
 			quantity: 1,
@@ -2370,13 +2359,13 @@ function ki(e, t) {
 		let e = q(a).trim();
 		e && e !== n().name && (t.onsnapshot?.(), n().name = e, t.onchange?.()), z(i, !1);
 	}
-	var u = Oi(), d = B(u), f = B(d), p = (e) => {
-		var t = wi();
+	var u = Ti(), d = B(u), f = B(d), p = (e) => {
+		var t = xi();
 		$(t), nn(t, !0), J("keydown", t, (e) => {
 			e.key === "Enter" && l(), e.key === "Escape" && z(i, !1);
-		}), ur("blur", t, l), $r(t, () => q(a), (e) => z(a, e)), X(e, t);
+		}), ur("blur", t, l), Xr(t, () => q(a), (e) => z(a, e)), X(e, t);
 	}, m = (e) => {
-		var t = Ti(), r = B(t, !0);
+		var t = Si(), r = B(t, !0);
 		M(t), H(() => Z(r, n().name)), J("dblclick", t, c), X(e, t);
 	};
 	Q(f, (e) => {
@@ -2387,8 +2376,8 @@ function ki(e, t) {
 	var _ = V(h, 2), v = V(_, 2);
 	M(d);
 	var y = V(d, 2), b = (e) => {
-		var n = Ei();
-		xi(B(n), {
+		var n = Ci();
+		vi(B(n), {
 			get materialsDb() {
 				return t.materialsDb;
 			},
@@ -2404,9 +2393,9 @@ function ki(e, t) {
 		q(r) && e(b);
 	});
 	var x = V(y, 2), S = (e) => {
-		var r = Di(), i = B(r);
+		var r = wi(), i = B(r);
 		Or(i, 21, () => n().line_items, (e) => e.id, (e, n) => {
-			gi(e, {
+			pi(e, {
 				get item() {
 					return q(n);
 				},
@@ -2437,10 +2426,10 @@ dr([
 ]);
 //#endregion
 //#region src/lib/SubcategoryBlock.svelte
-var Ai = /* @__PURE__ */ Y("<input type=\"text\" class=\"px-2 py-0.5 border border-slate-300 rounded text-sm font-medium text-slate-600 focus:ring-2 focus:ring-blue-400\"/>"), ji = /* @__PURE__ */ Y("<span role=\"button\" tabindex=\"0\" class=\"font-medium text-slate-600 text-sm\"> </span>"), Mi = /* @__PURE__ */ Y("<span class=\"text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-medium\">overrides</span>"), Ni = /* @__PURE__ */ Y("<span class=\"text-xs px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium\"> </span>"), Pi = /* @__PURE__ */ Y("<div class=\"text-center\"><span> </span> <div class=\"flex items-center justify-center gap-1 mb-1\"><input type=\"checkbox\" class=\"w-3 h-3 rounded border-slate-300 text-blue-600 focus:ring-blue-400\"/> <span class=\"text-xs text-slate-400\"> </span></div> <input type=\"number\" step=\"1\" min=\"0\"/> <div class=\"text-xs text-slate-400 mt-0.5\"> </div></div>"), Fi = /* @__PURE__ */ Y("<div class=\"bg-slate-50 rounded-lg border border-slate-200 p-3 mb-3\"><div class=\"flex items-center justify-between mb-2\"><span class=\"text-xs font-semibold text-slate-600 uppercase tracking-wide\">Markup Overrides</span> <button class=\"text-xs text-slate-400 hover:text-slate-600\">Close</button></div> <div class=\"grid grid-cols-5 gap-2\"></div> <div class=\"mt-3 pt-2 border-t border-slate-200 flex items-center gap-2\"><span class=\"text-xs font-medium text-slate-600\">Lump Sum:</span> <span class=\"text-xs text-slate-400\">$</span> <input type=\"number\" step=\"0.01\" min=\"0\" class=\"w-28 text-right text-xs font-mono px-2 py-1 border border-slate-200 rounded\n								focus:ring-1 focus:ring-blue-400 focus:border-blue-400\"/> <span class=\"text-xs text-slate-400\">added post-markup</span></div></div>"), Ii = /* @__PURE__ */ Y("<span> </span>"), Li = /* @__PURE__ */ Y("<div class=\"flex items-center gap-3 py-1.5 px-2 bg-amber-50 rounded text-xs mb-2 cursor-pointer hover:bg-amber-100 transition-colors\" role=\"button\" tabindex=\"0\"><span class=\"font-medium text-amber-700\">Markup:</span> <!></div>"), Ri = /* @__PURE__ */ Y("<table class=\"w-full\"><thead><tr class=\"text-xs text-slate-400 uppercase tracking-wide border-b border-slate-100\"><th class=\"px-1 py-1 text-left w-24\">Type</th><th class=\"px-1 py-1 text-left\">Name</th><th class=\"px-1 py-1 text-right w-20\">Qty</th><th class=\"px-1 py-1 text-center w-16\">Unit</th><th class=\"px-1 py-1 text-right w-24\">Price</th><th class=\"px-2 py-1 text-right w-16\">Markup</th><th class=\"px-2 py-1 text-right w-24\">w/ Markup</th><th class=\"px-2 py-1 text-right w-24\">Total</th><th class=\"w-8\"></th></tr></thead><tbody></tbody></table>"), zi = /* @__PURE__ */ Y("<div class=\"flex items-center gap-2 ml-4 mt-2\"><input type=\"text\" placeholder=\"Group name\" class=\"flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400\"/> <button class=\"px-2 py-1 bg-slate-800 text-white text-xs rounded hover:bg-slate-700\">Add</button> <button class=\"px-2 py-1 text-slate-500 text-xs hover:text-slate-700\">Cancel</button></div>"), Bi = /* @__PURE__ */ Y("<button class=\"ml-4 mt-2 text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1\"><svg class=\"w-3 h-3\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Add Group</button>"), Vi = /* @__PURE__ */ Y("<div class=\"mt-2\"><!></div>"), Hi = /* @__PURE__ */ Y("<button class=\"mt-2 text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Add Item</button>"), Ui = /* @__PURE__ */ Y("<span class=\"text-green-600\"> </span>"), Wi = /* @__PURE__ */ Y("<div class=\"px-4 pb-3\"><!> <!> <!> <!> <!> <div class=\"flex justify-between items-center mt-2 pt-2 border-t border-slate-100 text-sm\"><span class=\"text-slate-500\"> <!></span> <span class=\"font-mono font-semibold text-slate-700\"> </span></div></div>"), Gi = /* @__PURE__ */ Y("<div class=\"border-t border-slate-200\"><div class=\"flex items-center justify-between px-4 py-2 hover:bg-slate-50 transition-colors group/subcat\"><button class=\"flex items-center gap-2 text-left flex-1 min-w-0\"><svg fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 5l7 7-7 7\"></path></svg> <!> <span class=\"text-xs text-slate-400\"> </span> <!> <!></button> <div class=\"flex items-center gap-2\"><button class=\"text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors\" title=\"Configure markup\"><svg class=\"w-3 h-3 inline\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4\"></path></svg></button> <span class=\"font-mono text-sm font-semibold text-slate-700\"> </span> <button class=\"opacity-0 group-hover/subcat:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-0.5\" title=\"Delete subcategory\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></div></div> <!></div>");
-function Ki(e, t) {
+var Di = /* @__PURE__ */ Y("<input type=\"text\" class=\"px-2 py-0.5 border border-white/[0.08] rounded text-sm font-medium text-[var(--color-white)] bg-white/[0.04] focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] font-[var(--font-ui)]\"/>"), Oi = /* @__PURE__ */ Y("<span role=\"button\" tabindex=\"0\" class=\"font-medium text-[var(--color-concrete)] text-sm font-[var(--font-ui)]\"> </span>"), ki = /* @__PURE__ */ Y("<span class=\"text-xs px-1.5 py-0.5 rounded bg-amber-900/30 text-amber-400 font-medium font-[var(--font-ui)]\">overrides</span>"), Ai = /* @__PURE__ */ Y("<span class=\"text-xs px-1.5 py-0.5 rounded bg-green-900/30 text-green-400 font-medium font-[var(--font-ui)]\"> </span>"), ji = /* @__PURE__ */ Y("<div class=\"text-center\"><span> </span> <div class=\"flex items-center justify-center gap-1 mb-1\"><input type=\"checkbox\" class=\"w-3 h-3 rounded border-white/[0.08] bg-white/[0.04] text-[var(--color-sunburst)] focus:ring-[var(--color-sunburst)]\"/> <span class=\"text-xs text-white/40 font-[var(--font-body)]\"> </span></div> <input type=\"number\" step=\"1\" min=\"0\"/> <div class=\"text-xs text-white/40 mt-0.5 font-mono\"> </div></div>"), Mi = /* @__PURE__ */ Y("<div class=\"bg-[var(--color-granite)] rounded-lg border border-white/[0.08] p-3 mb-3\"><div class=\"flex items-center justify-between mb-2\"><span class=\"text-xs font-semibold text-[var(--color-concrete)] uppercase tracking-wide font-[var(--font-ui)]\">Markup Overrides</span> <button class=\"text-xs text-white/40 hover:text-[var(--color-white)] font-[var(--font-ui)]\">Close</button></div> <div class=\"grid grid-cols-5 gap-2\"></div> <div class=\"mt-3 pt-2 border-t border-white/[0.08] flex items-center gap-2\"><span class=\"text-xs font-medium text-[var(--color-concrete)] font-[var(--font-ui)]\">Lump Sum:</span> <span class=\"text-xs text-white/40\">$</span> <input type=\"number\" step=\"0.01\" min=\"0\" class=\"w-28 text-right text-xs font-mono px-2 py-1 border border-white/[0.08] rounded bg-white/[0.04] text-[var(--color-white)]\n								focus:ring-1 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)]\"/> <span class=\"text-xs text-white/40 font-[var(--font-body)]\">added post-markup</span></div></div>"), Ni = /* @__PURE__ */ Y("<span> </span>"), Pi = /* @__PURE__ */ Y("<div class=\"flex items-center gap-3 py-1.5 px-2 bg-amber-900/20 rounded text-xs mb-2 cursor-pointer hover:bg-amber-900/30 transition-colors\" role=\"button\" tabindex=\"0\"><span class=\"font-medium text-amber-400 font-[var(--font-ui)]\">Markup:</span> <!></div>"), Fi = /* @__PURE__ */ Y("<table class=\"w-full\"><thead><tr class=\"text-xs text-white/40 uppercase tracking-wide border-b border-white/[0.06] font-[var(--font-ui)]\"><th class=\"px-1 py-1 text-left w-24\">Type</th><th class=\"px-1 py-1 text-left\">Name</th><th class=\"px-1 py-1 text-right w-20\">Qty</th><th class=\"px-1 py-1 text-center w-16\">Unit</th><th class=\"px-1 py-1 text-right w-24\">Price</th><th class=\"px-2 py-1 text-right w-16\">Markup</th><th class=\"px-2 py-1 text-right w-24\">w/ Markup</th><th class=\"px-2 py-1 text-right w-24\">Total</th><th class=\"w-16\"></th></tr></thead><tbody></tbody></table>"), Ii = /* @__PURE__ */ Y("<div class=\"flex items-center gap-2 ml-4 mt-2\"><input type=\"text\" placeholder=\"Group name\" class=\"flex-1 px-2 py-1 bg-transparent border-0 border-b-2 border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/30\"/> <button class=\"px-2 py-1 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-xs rounded font-[var(--font-ui)] font-semibold hover:brightness-110\">Add</button> <button class=\"px-2 py-1 text-[var(--color-muted-text)] text-xs hover:text-[var(--color-white)] font-[var(--font-ui)]\">Cancel</button></div>"), Li = /* @__PURE__ */ Y("<button class=\"ml-4 mt-2 text-xs text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]\"><svg class=\"w-3 h-3\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Add Group</button>"), Ri = /* @__PURE__ */ Y("<div class=\"mt-2\"><!></div>"), zi = /* @__PURE__ */ Y("<button class=\"mt-2 text-sm text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Add Item</button>"), Bi = /* @__PURE__ */ Y("<span class=\"text-green-400\"> </span>"), Vi = /* @__PURE__ */ Y("<div class=\"px-4 pb-3\"><!> <!> <!> <!> <!> <div class=\"flex justify-between items-center mt-2 pt-2 border-t border-white/[0.06] text-sm\"><span class=\"text-[var(--color-muted-text)] font-[var(--font-body)]\"> <!></span> <span class=\"font-mono font-semibold text-[var(--color-white)]\"> </span></div></div>"), Hi = /* @__PURE__ */ Y("<div class=\"border-t border-white/[0.06]\"><div class=\"flex items-center justify-between px-4 py-2 hover:bg-white/[0.03] transition-colors group/subcat\"><button class=\"flex items-center gap-2 text-left flex-1 min-w-0\"><svg fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 5l7 7-7 7\"></path></svg> <!> <span class=\"text-xs text-white/40 font-[var(--font-body)]\"> </span> <!> <!></button> <div class=\"flex items-center gap-2\"><button class=\"text-xs px-1.5 py-0.5 rounded bg-white/[0.06] text-[var(--color-muted-text)] hover:bg-white/[0.1] transition-colors\" title=\"Configure markup\"><svg class=\"w-3 h-3 inline\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4\"></path></svg></button> <span class=\"font-mono text-sm font-semibold text-[var(--color-white)]\"> </span> <button class=\"opacity-0 group-hover/subcat:opacity-100 text-white/30 hover:text-red-400 transition-opacity p-0.5\" title=\"Delete subcategory\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M6 18L18 6M6 6l12 12\"></path></svg></button></div></div> <!></div>");
+function Ui(e, t) {
 	Ne(t, !0);
-	let n = ii(t, "subcat", 7), r = ii(t, "collapsed", 3, !1), i = ii(t, "materialsDb", 19, () => []), a = ii(t, "ratesDb", 19, () => []), o = /* @__PURE__ */ R(Bt(r())), s = /* @__PURE__ */ R(!1), c = /* @__PURE__ */ R(!1), l = /* @__PURE__ */ R(Bt(n().name)), u = /* @__PURE__ */ R(!1), d = /* @__PURE__ */ R(""), f = /* @__PURE__ */ L(() => ci(n(), t.globals)), p = /* @__PURE__ */ L(() => [
+	let n = ti(t, "subcat", 7), r = ti(t, "collapsed", 3, !1), i = ti(t, "materialsDb", 19, () => []), a = ti(t, "ratesDb", 19, () => []), o = /* @__PURE__ */ R(Bt(r())), s = /* @__PURE__ */ R(!1), c = /* @__PURE__ */ R(!1), l = /* @__PURE__ */ R(Bt(n().name)), u = /* @__PURE__ */ R(!1), d = /* @__PURE__ */ R(""), f = /* @__PURE__ */ L(() => ai(n(), t.globals)), p = /* @__PURE__ */ L(() => [
 		"materials",
 		"labor",
 		"equipment",
@@ -2448,13 +2437,13 @@ function Ki(e, t) {
 		"other"
 	].map((e) => ({
 		type: e,
-		value: ai(e, t.globals, n().markup_overrides, n().markup_enabled),
+		value: ni(e, t.globals, n().markup_overrides, n().markup_enabled),
 		isOverride: n().markup_overrides[e] != null,
 		isDisabled: !n().markup_enabled[e]
 	}))), m = /* @__PURE__ */ R(!1), h = /* @__PURE__ */ L(() => q(p).some((e) => e.isOverride || e.isDisabled)), g = /* @__PURE__ */ L(() => n().line_items.length + n().component_groups.reduce((e, t) => e + t.line_items.length, 0));
 	function _(e) {
 		t.onsnapshot?.(), n().line_items.push({
-			id: Ci(),
+			id: bi(),
 			category_type: e.category_type,
 			item_name: e.item_name,
 			quantity: 1,
@@ -2484,7 +2473,7 @@ function Ki(e, t) {
 		t.onsnapshot?.();
 		let e = q(d).trim() || "New Group";
 		n().component_groups.push({
-			id: Ci(),
+			id: bi(),
 			name: e,
 			sort_order: n().component_groups.length,
 			line_items: []
@@ -2515,36 +2504,36 @@ function Ki(e, t) {
 		{
 			key: "materials",
 			label: "Mat",
-			color: "text-blue-700"
+			color: "text-blue-400"
 		},
 		{
 			key: "labor",
 			label: "Lab",
-			color: "text-amber-700"
+			color: "text-amber-400"
 		},
 		{
 			key: "equipment",
 			label: "Equip",
-			color: "text-purple-700"
+			color: "text-purple-400"
 		},
 		{
 			key: "subs",
 			label: "Subs",
-			color: "text-green-700"
+			color: "text-green-400"
 		},
 		{
 			key: "other",
 			label: "Other",
-			color: "text-slate-600"
+			color: "text-[var(--color-concrete)]"
 		}
 	];
-	var T = Gi(), E = B(T), D = B(E), ne = B(D), re = V(ne, 2), O = (e) => {
-		var t = Ai();
+	var T = Hi(), E = B(T), D = B(E), ne = B(D), re = V(ne, 2), O = (e) => {
+		var t = Di();
 		$(t), nn(t, !0), J("click", t, (e) => e.stopPropagation()), J("keydown", t, (e) => {
 			e.key === "Enter" && b(), e.key === "Escape" && z(c, !1);
-		}), ur("blur", t, b), $r(t, () => q(l), (e) => z(l, e)), X(e, t);
+		}), ur("blur", t, b), Xr(t, () => q(l), (e) => z(l, e)), X(e, t);
 	}, ie = (e) => {
-		var t = ji(), r = B(t, !0);
+		var t = Oi(), r = B(t, !0);
 		M(t), H(() => Z(r, n().name)), J("dblclick", t, (e) => {
 			e.stopPropagation(), y();
 		}), X(e, t);
@@ -2555,14 +2544,14 @@ function Ki(e, t) {
 	var ae = V(re, 2), oe = B(ae);
 	M(ae);
 	var se = V(ae, 2), ce = (e) => {
-		X(e, Mi());
+		X(e, ki());
 	};
 	Q(se, (e) => {
 		q(h) && e(ce);
 	});
 	var le = V(se, 2), ue = (e) => {
-		var t = Ni(), r = B(t);
-		M(t), H((e) => Z(r, `+${e ?? ""} lump sum`), [() => di(n().lump_sum)]), X(e, t);
+		var t = Ai(), r = B(t);
+		M(t), H((e) => Z(r, `+${e ?? ""} lump sum`), [() => ci(n().lump_sum)]), X(e, t);
 	};
 	Q(le, (e) => {
 		n().lump_sum > 0 && e(ue);
@@ -2572,13 +2561,13 @@ function Ki(e, t) {
 	var he = V(pe, 2);
 	M(de), M(E);
 	var ge = V(E, 2), k = (e) => {
-		var r = Wi(), o = B(r), c = (e) => {
-			var r = Fi(), i = B(r), a = V(B(i), 2);
+		var r = Vi(), o = B(r), c = (e) => {
+			var r = Mi(), i = B(r), a = V(B(i), 2);
 			M(i);
 			var o = V(i, 2);
 			Or(o, 21, () => te, wr, (e, r) => {
 				let i = /* @__PURE__ */ L(() => q(p).find((e) => e.type === q(r).key));
-				var a = Pi(), o = B(a), s = B(o, !0);
+				var a = ji(), o = B(a), s = B(o, !0);
 				M(o);
 				var c = V(o, 2), l = B(c);
 				$(l);
@@ -2588,21 +2577,21 @@ function Ki(e, t) {
 				$(f);
 				var m = V(f, 2), h = B(m);
 				M(m), M(a), H((e) => {
-					zr(o, 1, `block text-xs font-medium ${q(r).color ?? ""} mb-1`), Z(s, q(r).label), Jr(l, n().markup_enabled[q(r).key]), Z(d, n().markup_enabled[q(r).key] ? "On" : "Off"), qr(f, n().markup_overrides[q(r).key] ?? ""), Yr(f, "placeholder", `${t.globals[`${q(r).key}_markup`]}%`), f.disabled = !n().markup_enabled[q(r).key], zr(f, 1, `w-full text-center text-xs font-mono px-1 py-1 border border-slate-200 rounded
-										focus:ring-1 focus:ring-blue-400 focus:border-blue-400
-										${n().markup_enabled[q(r).key] ? "bg-white" : "bg-slate-100 text-slate-400"}
-										${q(i)?.isOverride ? "border-amber-300 bg-amber-50" : ""}`), Z(h, `eff: ${e ?? ""}`);
-				}, [() => fi(q(i)?.value ?? 0)]), J("change", l, () => C(q(r).key)), J("input", f, (e) => ee(q(r).key, e)), X(e, a);
+					Ir(o, 1, `block text-xs font-medium ${q(r).color ?? ""} mb-1 font-[var(--font-ui)]`), Z(s, q(r).label), Gr(l, n().markup_enabled[q(r).key]), Z(d, n().markup_enabled[q(r).key] ? "On" : "Off"), Wr(f, n().markup_overrides[q(r).key] ?? ""), Kr(f, "placeholder", `${t.globals[`${q(r).key}_markup`]}%`), f.disabled = !n().markup_enabled[q(r).key], Ir(f, 1, `w-full text-center text-xs font-mono px-1 py-1 border border-white/[0.08] rounded
+										focus:ring-1 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)]
+										${n().markup_enabled[q(r).key] ? "bg-white/[0.04] text-[var(--color-white)]" : "bg-white/[0.02] text-white/20"}
+										${q(i)?.isOverride ? "border-amber-500/50 bg-amber-900/20" : ""}`), Z(h, `eff: ${e ?? ""}`);
+				}, [() => li(q(i)?.value ?? 0)]), J("change", l, () => C(q(r).key)), J("input", f, (e) => ee(q(r).key, e)), X(e, a);
 			}), M(o);
 			var s = V(o, 2), c = V(B(s), 4);
-			$(c), we(2), M(s), M(r), H(() => qr(c, n().lump_sum)), J("click", a, () => z(m, !1)), J("input", c, w), X(e, r);
+			$(c), we(2), M(s), M(r), H(() => Wr(c, n().lump_sum)), J("click", a, () => z(m, !1)), J("input", c, w), X(e, r);
 		}, l = (e) => {
-			var t = Li();
+			var t = Pi();
 			Or(V(B(t), 2), 17, () => q(p), wr, (e, t) => {
-				var n = Ii(), r = B(n);
+				var n = Ni(), r = B(n);
 				M(n), H((e) => {
-					zr(n, 1, Ir(q(t).isDisabled ? "text-slate-400 line-through" : q(t).isOverride ? "text-amber-700 font-medium" : "text-slate-500")), Z(r, `${q(t).type ?? ""} ${e ?? ""}`);
-				}, [() => fi(q(t).value)]), X(e, n);
+					Ir(n, 1, `${q(t).isDisabled ? "text-white/20 line-through" : q(t).isOverride ? "text-amber-400 font-medium" : "text-white/40"} font-[var(--font-body)]`), Z(r, `${q(t).type ?? ""} ${e ?? ""}`);
+				}, [() => li(q(t).value)]), X(e, n);
 			}), M(t), J("click", t, () => z(m, !0)), J("keydown", t, (e) => {
 				(e.key === "Enter" || e.key === " ") && z(m, !0);
 			}), X(e, t);
@@ -2611,9 +2600,9 @@ function Ki(e, t) {
 			q(m) ? e(c) : q(h) && e(l, 1);
 		});
 		var y = V(o, 2), b = (e) => {
-			var r = Ri(), i = V(B(r));
+			var r = Fi(), i = V(B(r));
 			Or(i, 21, () => n().line_items, (e) => e.id, (e, r) => {
-				gi(e, {
+				pi(e, {
 					get item() {
 						return q(r);
 					},
@@ -2638,7 +2627,7 @@ function Ki(e, t) {
 		});
 		var T = V(y, 2);
 		Or(T, 17, () => n().component_groups, (e) => e.id, (e, r) => {
-			ki(e, {
+			Ei(e, {
 				get group() {
 					return q(r);
 				},
@@ -2667,22 +2656,22 @@ function Ki(e, t) {
 			});
 		});
 		var E = V(T, 2), D = (e) => {
-			var t = zi(), n = B(t);
+			var t = Ii(), n = B(t);
 			$(n);
 			var r = V(n, 2), i = V(r, 2);
 			M(t), J("keydown", n, (e) => {
 				e.key === "Enter" && x(), e.key === "Escape" && z(u, !1);
-			}), $r(n, () => q(d), (e) => z(d, e)), J("click", r, x), J("click", i, () => z(u, !1)), X(e, t);
+			}), Xr(n, () => q(d), (e) => z(d, e)), J("click", r, x), J("click", i, () => z(u, !1)), X(e, t);
 		}, ne = (e) => {
-			var t = Bi();
+			var t = Li();
 			J("click", t, () => z(u, !0)), X(e, t);
 		};
 		Q(E, (e) => {
 			q(u) ? e(D) : e(ne, -1);
 		});
 		var re = V(E, 2), O = (e) => {
-			var t = Vi();
-			xi(B(t), {
+			var t = Ri();
+			vi(B(t), {
 				get materialsDb() {
 					return i();
 				},
@@ -2694,15 +2683,15 @@ function Ki(e, t) {
 				oncancel: () => z(s, !1)
 			}), M(t), X(e, t);
 		}, ie = (e) => {
-			var t = Hi();
+			var t = zi();
 			J("click", t, () => z(s, !0)), X(e, t);
 		};
 		Q(re, (e) => {
 			q(s) ? e(O) : e(ie, -1);
 		});
 		var ae = V(re, 2), oe = B(ae), se = B(oe), ce = V(se), le = (e) => {
-			var t = Ui(), r = B(t);
-			M(t), H((e) => Z(r, `+ ${e ?? ""} lump sum`), [() => di(n().lump_sum)]), X(e, t);
+			var t = Bi(), r = B(t);
+			M(t), H((e) => Z(r, `+ ${e ?? ""} lump sum`), [() => ci(n().lump_sum)]), X(e, t);
 		};
 		Q(ce, (e) => {
 			n().lump_sum > 0 && e(le);
@@ -2710,13 +2699,13 @@ function Ki(e, t) {
 		var ue = V(oe, 2), de = B(ue, !0);
 		M(ue), M(ae), M(r), H((e, t) => {
 			Z(se, `Subtotal: ${e ?? ""} `), Z(de, t);
-		}, [() => di(q(f).base), () => di(q(f).withMarkup)]), X(e, r);
+		}, [() => ci(q(f).base), () => ci(q(f).withMarkup)]), X(e, r);
 	};
 	Q(ge, (e) => {
 		q(o) || e(k);
 	}), M(T), H((e) => {
-		zr(ne, 0, `w-4 h-4 text-slate-400 transition-transform ${q(o) ? "" : "rotate-90"}`), Z(oe, `${q(g) ?? ""} item${q(g) === 1 ? "" : "s"}`), Z(me, e);
-	}, [() => di(q(f).withMarkup)]), J("click", D, () => z(o, !q(o))), J("click", fe, () => z(m, !q(m))), J("click", he, () => t.ondelete?.(n().id)), X(e, T), Pe();
+		Ir(ne, 0, `w-4 h-4 text-white/40 transition-transform ${q(o) ? "" : "rotate-90"}`), Z(oe, `${q(g) ?? ""} item${q(g) === 1 ? "" : "s"}`), Z(me, e);
+	}, [() => ci(q(f).withMarkup)]), J("click", D, () => z(o, !q(o))), J("click", fe, () => z(m, !q(m))), J("click", he, () => t.ondelete?.(n().id)), X(e, T), Pe();
 }
 dr([
 	"click",
@@ -2727,10 +2716,10 @@ dr([
 ]);
 //#endregion
 //#region src/lib/SectionBlock.svelte
-var qi = /* @__PURE__ */ Y("<input type=\"text\" class=\"bg-slate-700 text-white px-2 py-0.5 rounded text-sm font-semibold border border-slate-500 focus:ring-2 focus:ring-blue-400\"/>"), Ji = /* @__PURE__ */ Y("<span role=\"button\" tabindex=\"0\" class=\"font-semibold\"> </span>"), Yi = /* @__PURE__ */ Y("<div class=\"px-4 py-8 text-center text-slate-400 text-sm\">No subcategories yet</div>"), Xi = /* @__PURE__ */ Y("<div class=\"flex items-center gap-2 mt-2\"><input type=\"text\" placeholder=\"Subcategory name\" class=\"flex-1 px-2 py-1.5 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400\"/> <button class=\"px-2 py-1.5 bg-slate-800 text-white text-xs rounded hover:bg-slate-700\">Add</button> <button class=\"px-2 py-1.5 text-slate-500 text-xs hover:text-slate-700\">Cancel</button></div>"), Zi = /* @__PURE__ */ Y("<button class=\"mt-2 text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Add Subcategory</button>"), Qi = /* @__PURE__ */ Y("<!> <div class=\"px-4 pb-3\"><!></div>", 1), $i = /* @__PURE__ */ Y("<div class=\"mb-4 border border-slate-200 rounded-lg overflow-hidden bg-white\"><div class=\"flex items-center justify-between px-4 py-3 bg-slate-800 text-white\"><button class=\"flex items-center gap-3 hover:bg-slate-700 -ml-2 px-2 py-1 rounded transition-colors text-left flex-1 min-w-0\"><svg fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 5l7 7-7 7\"></path></svg> <!> <span class=\"text-xs text-slate-400\"> </span></button> <div class=\"flex items-center gap-2\"><span class=\"font-mono font-semibold\"> </span> <button class=\"text-slate-500 hover:text-red-400 transition-colors p-1\" title=\"Delete section\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16\"></path></svg></button></div></div> <!></div>");
-function ea(e, t) {
+var Wi = /* @__PURE__ */ Y("<input type=\"text\" class=\"bg-white/[0.06] text-[var(--color-white)] px-2 py-0.5 rounded text-sm font-semibold border border-white/[0.08] focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] font-[var(--font-ui)]\"/>"), Gi = /* @__PURE__ */ Y("<span role=\"button\" tabindex=\"0\" class=\"font-semibold font-[var(--font-ui)] uppercase tracking-wide\"> </span>"), Ki = /* @__PURE__ */ Y("<div class=\"px-4 py-8 text-center text-[var(--color-muted-text)] text-sm font-[var(--font-body)]\">No subcategories yet</div>"), qi = /* @__PURE__ */ Y("<div class=\"flex items-center gap-2 mt-2\"><input type=\"text\" placeholder=\"Subcategory name\" class=\"flex-1 px-2 py-1.5 bg-transparent border-0 border-b-2 border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/30\"/> <button class=\"px-2 py-1.5 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-xs rounded font-[var(--font-ui)] font-semibold hover:brightness-110\">Add</button> <button class=\"px-2 py-1.5 text-[var(--color-muted-text)] text-xs hover:text-[var(--color-white)] font-[var(--font-ui)]\">Cancel</button></div>"), Ji = /* @__PURE__ */ Y("<button class=\"mt-2 text-sm text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Add Subcategory</button>"), Yi = /* @__PURE__ */ Y("<!> <div class=\"px-4 pb-3\"><!></div>", 1), Xi = /* @__PURE__ */ Y("<div class=\"mb-4 border border-white/[0.06] rounded-lg overflow-hidden bg-[var(--color-ink)]\"><div class=\"flex items-center justify-between px-4 py-3 bg-[var(--color-granite)] text-[var(--color-white)]\"><button class=\"flex items-center gap-3 hover:bg-white/[0.06] -ml-2 px-2 py-1 rounded transition-colors text-left flex-1 min-w-0\"><svg fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 5l7 7-7 7\"></path></svg> <!> <span class=\"text-xs text-white/40 font-[var(--font-body)]\"> </span></button> <div class=\"flex items-center gap-2\"><span class=\"font-mono font-semibold\"> </span> <button class=\"text-white/30 hover:text-red-400 transition-colors p-1\" title=\"Delete section\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16\"></path></svg></button></div></div> <!></div>");
+function Zi(e, t) {
 	Ne(t, !0);
-	let n = ii(t, "section", 7), r = ii(t, "collapsed", 3, !1), i = ii(t, "materialsDb", 19, () => []), a = ii(t, "ratesDb", 19, () => []), o = /* @__PURE__ */ R(Bt(r())), s = /* @__PURE__ */ R(!1), c = /* @__PURE__ */ R(Bt(n().name)), l = /* @__PURE__ */ R(!1), u = /* @__PURE__ */ R(""), d = /* @__PURE__ */ L(() => li(n(), t.globals)), f = /* @__PURE__ */ L(() => n().subcategories.reduce((e, t) => e + t.line_items.length + t.component_groups.reduce((e, t) => e + t.line_items.length, 0), 0));
+	let n = ti(t, "section", 7), r = ti(t, "collapsed", 3, !1), i = ti(t, "materialsDb", 19, () => []), a = ti(t, "ratesDb", 19, () => []), o = /* @__PURE__ */ R(Bt(r())), s = /* @__PURE__ */ R(!1), c = /* @__PURE__ */ R(Bt(n().name)), l = /* @__PURE__ */ R(!1), u = /* @__PURE__ */ R(""), d = /* @__PURE__ */ L(() => oi(n(), t.globals)), f = /* @__PURE__ */ L(() => n().subcategories.reduce((e, t) => e + t.line_items.length + t.component_groups.reduce((e, t) => e + t.line_items.length, 0), 0));
 	function p() {
 		z(c, n().name, !0), z(s, !0);
 	}
@@ -2742,7 +2731,7 @@ function ea(e, t) {
 		t.onsnapshot?.();
 		let e = q(u).trim() || "New Subcategory";
 		n().subcategories.push({
-			id: Ci(),
+			id: bi(),
 			name: e,
 			sort_order: n().subcategories.length,
 			lump_sum: 0,
@@ -2769,13 +2758,13 @@ function ea(e, t) {
 		let r = n().subcategories.findIndex((t) => t.id === e);
 		r !== -1 && (n().subcategories.splice(r, 1), t.onchange?.());
 	}
-	var _ = $i(), v = B(_), y = B(v), b = B(y), x = V(b, 2), S = (e) => {
-		var t = qi();
+	var _ = Xi(), v = B(_), y = B(v), b = B(y), x = V(b, 2), S = (e) => {
+		var t = Wi();
 		$(t), nn(t, !0), J("click", t, (e) => e.stopPropagation()), J("keydown", t, (e) => {
 			e.key === "Enter" && m(), e.key === "Escape" && z(s, !1);
-		}), ur("blur", t, m), $r(t, () => q(c), (e) => z(c, e)), X(e, t);
+		}), ur("blur", t, m), Xr(t, () => q(c), (e) => z(c, e)), X(e, t);
 	}, ee = (e) => {
-		var t = Ji(), r = B(t, !0);
+		var t = Gi(), r = B(t, !0);
 		M(t), H(() => Z(r, n().name)), J("dblclick", t, (e) => {
 			e.stopPropagation(), p();
 		}), X(e, t);
@@ -2790,12 +2779,12 @@ function ea(e, t) {
 	var D = V(T, 2);
 	M(te), M(v);
 	var ne = V(v, 2), re = (e) => {
-		var r = Qi(), o = Zt(r), s = (e) => {
-			X(e, Yi());
+		var r = Yi(), o = Zt(r), s = (e) => {
+			X(e, Ki());
 		}, c = (e) => {
 			var r = vr();
 			Or(Zt(r), 17, () => n().subcategories, (e) => e.id, (e, n) => {
-				Ki(e, {
+				Ui(e, {
 					get subcat() {
 						return q(n);
 					},
@@ -2822,14 +2811,14 @@ function ea(e, t) {
 			n().subcategories.length === 0 && !q(l) ? e(s) : e(c, -1);
 		});
 		var d = V(o, 2), f = B(d), p = (e) => {
-			var t = Xi(), n = B(t);
+			var t = qi(), n = B(t);
 			$(n);
 			var r = V(n, 2), i = V(r, 2);
 			M(t), J("keydown", n, (e) => {
 				e.key === "Enter" && h(), e.key === "Escape" && z(l, !1);
-			}), $r(n, () => q(u), (e) => z(u, e)), J("click", r, h), J("click", i, () => z(l, !1)), X(e, t);
+			}), Xr(n, () => q(u), (e) => z(u, e)), J("click", r, h), J("click", i, () => z(l, !1)), X(e, t);
 		}, m = (e) => {
-			var t = Zi();
+			var t = Ji();
 			J("click", t, () => z(l, !0)), X(e, t);
 		};
 		Q(f, (e) => {
@@ -2839,9 +2828,9 @@ function ea(e, t) {
 	Q(ne, (e) => {
 		q(o) || e(re);
 	}), M(_), H((e) => {
-		zr(b, 0, `w-4 h-4 text-slate-400 transition-transform ${q(o) ? "" : "rotate-90"}`), Z(w, `${n().subcategories.length ?? ""} subcategor${n().subcategories.length === 1 ? "y" : "ies"}
+		Ir(b, 0, `w-4 h-4 text-white/40 transition-transform ${q(o) ? "" : "rotate-90"}`), Z(w, `${n().subcategories.length ?? ""} subcategor${n().subcategories.length === 1 ? "y" : "ies"}
 				· ${q(f) ?? ""} item${q(f) === 1 ? "" : "s"}`), Z(E, e);
-	}, [() => di(q(d).withMarkup)]), J("click", y, () => z(o, !q(o))), J("click", D, () => t.ondelete?.(n().id)), X(e, _), Pe();
+	}, [() => ci(q(d).withMarkup)]), J("click", y, () => z(o, !q(o))), J("click", D, () => t.ondelete?.(n().id)), X(e, _), Pe();
 }
 dr([
 	"click",
@@ -2850,10 +2839,10 @@ dr([
 ]);
 //#endregion
 //#region src/lib/FooterSummary.svelte
-var ta = /* @__PURE__ */ Y("<div class=\"flex flex-col\"><span class=\"text-xs text-slate-400 uppercase tracking-wide\"> </span> <span class=\"font-mono\"> </span></div>"), na = /* @__PURE__ */ Y("<span class=\"text-slate-500 text-xs\">No items yet</span>"), ra = /* @__PURE__ */ Y("<div class=\"fixed bottom-0 left-0 right-0 bg-slate-900 text-white border-t border-slate-700 z-20\"><div class=\"flex items-center justify-between px-4 py-3\"><div class=\"flex items-center gap-6 text-sm\"><div class=\"flex flex-col\"><span class=\"text-xs text-slate-400 uppercase tracking-wide\">Base Cost</span> <span class=\"font-mono\"> </span></div> <div class=\"w-px h-8 bg-slate-700\"></div> <!> <!></div> <div class=\"flex flex-col items-end\"><span class=\"text-xs text-slate-400 uppercase tracking-wide\">Total</span> <span class=\"font-mono text-lg font-bold\"> </span></div></div></div>");
-function ia(e, t) {
+var Qi = /* @__PURE__ */ Y("<div class=\"flex flex-col\"><span class=\"text-xs text-white/40 uppercase tracking-wide font-[var(--font-ui)]\"> </span> <span class=\"font-mono\"> </span></div>"), $i = /* @__PURE__ */ Y("<span class=\"text-[var(--color-muted-text)] text-xs font-[var(--font-body)]\">No items yet</span>"), ea = /* @__PURE__ */ Y("<div class=\"fixed bottom-0 left-0 right-0 bg-[var(--color-ink)] text-[var(--color-white)] border-t border-white/[0.08] z-20\"><div class=\"flex items-center justify-between px-4 py-3\"><div class=\"flex items-center gap-6 text-sm\"><div class=\"flex flex-col\"><span class=\"text-xs text-white/40 uppercase tracking-wide font-[var(--font-ui)]\">Base Cost</span> <span class=\"font-mono\"> </span></div> <div class=\"w-px h-8 bg-white/[0.08]\"></div> <!> <!></div> <div class=\"flex flex-col items-end\"><span class=\"text-xs text-white/40 uppercase tracking-wide font-[var(--font-ui)]\">Total</span> <span class=\"font-mono text-lg font-bold text-[var(--color-sunburst)]\"> </span></div></div></div>");
+function ta(e, t) {
 	Ne(t, !0);
-	let n = /* @__PURE__ */ L(() => ui(t.estimate)), r = /* @__PURE__ */ L(() => Object.entries(q(n).byType).filter(([, e]) => e > 0).map(([e, t]) => ({
+	let n = /* @__PURE__ */ L(() => si(t.estimate)), r = /* @__PURE__ */ L(() => Object.entries(q(n).byType).filter(([, e]) => e > 0).map(([e, t]) => ({
 		type: e,
 		value: t
 	}))), i = {
@@ -2863,20 +2852,20 @@ function ia(e, t) {
 		subs: "Subs",
 		other: "Other"
 	};
-	var a = ra(), o = B(a), s = B(o), c = B(s), l = V(B(c), 2), u = B(l, !0);
+	var a = ea(), o = B(a), s = B(o), c = B(s), l = V(B(c), 2), u = B(l, !0);
 	M(l), M(c);
 	var d = V(c, 4);
 	Or(d, 17, () => q(r), wr, (e, t) => {
 		let n = () => q(t).type, r = () => q(t).value;
-		var a = ta(), o = B(a), s = B(o, !0);
+		var a = Qi(), o = B(a), s = B(o, !0);
 		M(o);
 		var c = V(o, 2), l = B(c, !0);
 		M(c), M(a), H((e) => {
 			Z(s, i[n()]), Z(l, e);
-		}, [() => di(r())]), X(e, a);
+		}, [() => ci(r())]), X(e, a);
 	});
 	var f = V(d, 2), p = (e) => {
-		X(e, na());
+		X(e, $i());
 	};
 	Q(f, (e) => {
 		q(r).length === 0 && e(p);
@@ -2884,12 +2873,12 @@ function ia(e, t) {
 	var m = V(s, 2), h = V(B(m), 2), g = B(h, !0);
 	M(h), M(m), M(o), M(a), H((e, t) => {
 		Z(u, e), Z(g, t);
-	}, [() => di(q(n).base), () => di(q(n).withMarkup)]), X(e, a), Pe();
+	}, [() => ci(q(n).base), () => ci(q(n).withMarkup)]), X(e, a), Pe();
 }
 //#endregion
 //#region src/lib/SaveStatus.svelte
-var aa = /* @__PURE__ */ Y("<button class=\"ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 transition-colors\" title=\"Save now (Ctrl+S)\">Save</button>"), oa = /* @__PURE__ */ Y("<button class=\"ml-1 px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 transition-colors\" title=\"Retry save\">Retry</button>"), sa = /* @__PURE__ */ Y("<div><span></span> <span> </span> <!> <!></div>");
-function ca(e, t) {
+var na = /* @__PURE__ */ Y("<button class=\"ml-1 px-1.5 py-0.5 rounded bg-[var(--color-sunburst)]/20 hover:bg-[var(--color-sunburst)]/30 text-[var(--color-sunburst)] transition-colors\" title=\"Save now (Ctrl+S)\">Save</button>"), ra = /* @__PURE__ */ Y("<button class=\"ml-1 px-1.5 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 transition-colors\" title=\"Retry save\">Retry</button>"), ia = /* @__PURE__ */ Y("<div><span></span> <span> </span> <!> <!></div>");
+function aa(e, t) {
 	Ne(t, !0);
 	let n = /* @__PURE__ */ R(Bt(Date.now()));
 	pn(() => {
@@ -2913,25 +2902,25 @@ function ca(e, t) {
 		}
 	}), i = /* @__PURE__ */ L(() => {
 		switch (t.status) {
-			case "clean": return "text-green-400";
-			case "dirty": return "text-amber-400";
+			case "clean": return "text-[var(--color-sage)]";
+			case "dirty": return "text-[var(--color-sunburst)]";
 			case "saving": return "text-blue-400";
 			case "error": return "text-red-400";
-			default: return "text-slate-400";
+			default: return "text-white/40";
 		}
 	}), a = /* @__PURE__ */ L(() => {
 		switch (t.status) {
-			case "clean": return "bg-green-400";
-			case "dirty": return "bg-amber-400";
+			case "clean": return "bg-[var(--color-sage)]";
+			case "dirty": return "bg-[var(--color-sunburst)]";
 			case "saving": return "bg-blue-400 animate-pulse";
 			case "error": return "bg-red-400 animate-pulse";
-			default: return "bg-slate-400";
+			default: return "bg-white/40";
 		}
 	});
-	var o = sa(), s = B(o), c = V(s, 2), l = B(c, !0);
+	var o = ia(), s = B(o), c = V(s, 2), l = B(c, !0);
 	M(c);
 	var u = V(c, 2), d = (e) => {
-		var n = aa();
+		var n = na();
 		J("click", n, function(...e) {
 			t.onsave?.apply(this, e);
 		}), X(e, n);
@@ -2940,7 +2929,7 @@ function ca(e, t) {
 		t.status === "dirty" && t.onsave && e(d);
 	});
 	var f = V(u, 2), p = (e) => {
-		var n = oa();
+		var n = ra();
 		J("click", n, function(...e) {
 			t.onsave?.apply(this, e);
 		}), X(e, n);
@@ -2948,13 +2937,13 @@ function ca(e, t) {
 	Q(f, (e) => {
 		t.status === "error" && t.onsave && e(p);
 	}), M(o), H(() => {
-		zr(o, 1, `flex items-center gap-1.5 text-xs ${q(i) ?? ""}`), zr(s, 1, `w-2 h-2 rounded-full ${q(a) ?? ""}`), Z(l, q(r));
+		Ir(o, 1, `flex items-center gap-1.5 text-xs font-[var(--font-ui)] ${q(i) ?? ""}`), Ir(s, 1, `w-2 h-2 rounded-full ${q(a) ?? ""}`), Z(l, q(r));
 	}), X(e, o), Pe();
 }
 dr(["click"]);
 //#endregion
 //#region src/lib/autosave.svelte.js
-function la(e, t = 2e3) {
+function oa(e, t = 2e3) {
 	let n = /* @__PURE__ */ R("clean"), r = /* @__PURE__ */ R(null), i = null, a = null;
 	function o(e) {
 		a = e;
@@ -3001,15 +2990,15 @@ function la(e, t = 2e3) {
 }
 //#endregion
 //#region src/lib/undo.svelte.js
-var ua = 20;
-function da() {
+var sa = 20;
+function ca() {
 	let e = Bt([]), t = /* @__PURE__ */ L(() => e.length > 0);
 	function n(t) {
 		let n = JSON.parse(JSON.stringify({
 			globals: t.globals,
 			sections: t.sections
 		}));
-		e.push(n), e.length > ua && e.shift();
+		e.push(n), e.length > sa && e.shift();
 	}
 	function r(t) {
 		if (e.length === 0) return !1;
@@ -3033,10 +3022,10 @@ function da() {
 }
 //#endregion
 //#region src/EstimateBuilder.svelte
-var fa = /* @__PURE__ */ Y("<div class=\"flex items-center justify-center h-64\"><div class=\"text-slate-500\">Loading estimate...</div></div>"), pa = /* @__PURE__ */ Y("<div class=\"flex items-center justify-center h-64\"><div class=\"text-red-500\"> </div></div>"), ma = /* @__PURE__ */ Y("<label><span class=\"font-medium\"> </span> <input type=\"number\" step=\"1\" min=\"0\"/> <span>%</span></label>"), ha = /* @__PURE__ */ Y("<div class=\"text-center py-16 text-slate-400\"><svg class=\"w-12 h-12 mx-auto mb-3 text-slate-300\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z\"></path></svg> <p class=\"text-lg font-medium\">No sections yet</p> <p class=\"text-sm mt-1\">Add a section to start building your estimate.</p></div>"), ga = /* @__PURE__ */ Y("<div class=\"flex items-center gap-2 mt-3\"><input type=\"text\" placeholder=\"Section name\" class=\"flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400\"/> <button class=\"px-3 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700\">Add</button> <button class=\"px-3 py-2 text-slate-500 text-sm hover:text-slate-700\">Cancel</button></div>"), _a = /* @__PURE__ */ Y("<button class=\"mt-3 text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Add Section</button>"), va = /* @__PURE__ */ Y("<div class=\"estimate-builder pb-16\"><div class=\"sticky top-0 z-10 bg-slate-900 text-white px-4 py-3 flex items-center justify-between border-b border-slate-700\"><div><h1 class=\"text-lg font-semibold\"> </h1> <span class=\"text-xs text-slate-400\">Estimate Builder</span></div> <div class=\"flex items-center gap-3\"><button class=\"text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1\" title=\"Undo (Ctrl+Z)\"><svg class=\"w-3.5 h-3.5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4\"></path></svg> Undo</button> <!> <span class=\"text-xs px-2 py-1 rounded bg-slate-700 text-slate-300 uppercase tracking-wide\"> </span></div></div> <div class=\"bg-slate-50 border-b border-slate-200 px-4 py-2\"><div class=\"flex items-center gap-4 text-sm\"><span class=\"font-medium text-slate-600\">Global Markup:</span> <!></div></div> <div class=\"p-4\"><!> <!></div> <!></div>");
-function ya(e, t) {
+var la = /* @__PURE__ */ Y("<div class=\"flex items-center justify-center h-64\"><div class=\"text-[var(--color-muted-text)] font-[var(--font-body)]\">Loading estimate...</div></div>"), ua = /* @__PURE__ */ Y("<div class=\"flex items-center justify-center h-64\"><div class=\"text-red-400 font-[var(--font-body)]\"> </div></div>"), da = /* @__PURE__ */ Y("<label><span class=\"font-medium font-[var(--font-ui)]\"> </span> <input type=\"number\" step=\"1\" min=\"0\"/> <span>%</span></label>"), fa = /* @__PURE__ */ Y("<div class=\"text-center py-16 text-[var(--color-muted-text)]\"><svg class=\"w-12 h-12 mx-auto mb-3 text-white/20\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.5\" d=\"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z\"></path></svg> <p class=\"text-lg font-medium font-[var(--font-ui)]\">No sections yet</p> <p class=\"text-sm mt-1 font-[var(--font-body)]\">Add a section to start building your estimate.</p></div>"), pa = /* @__PURE__ */ Y("<div class=\"flex items-center gap-2 mt-3\"><input type=\"text\" placeholder=\"Section name\" class=\"flex-1 px-3 py-2 bg-transparent border-0 border-b-2 border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/30\"/> <button class=\"px-3 py-2 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-sm rounded font-[var(--font-ui)] font-semibold hover:brightness-110\">Add</button> <button class=\"px-3 py-2 text-[var(--color-muted-text)] text-sm hover:text-[var(--color-white)] font-[var(--font-ui)]\">Cancel</button></div>"), ma = /* @__PURE__ */ Y("<button class=\"mt-3 text-sm text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]\"><svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 4v16m8-8H4\"></path></svg> Add Section</button>"), ha = /* @__PURE__ */ Y("<div class=\"estimate-builder pb-16\"><div class=\"sticky top-0 z-10 bg-[var(--color-ink)] text-[var(--color-white)] px-4 py-3 flex items-center justify-between border-b border-white/[0.08]\"><div><h1 class=\"text-lg font-semibold font-[var(--font-ui)] uppercase tracking-wide\"> </h1> <span class=\"text-xs text-[var(--color-muted-text)] font-[var(--font-ui)]\">Estimate Builder</span></div> <div class=\"flex items-center gap-3\"><button class=\"text-xs px-2 py-1 rounded bg-white/[0.06] hover:bg-white/[0.1] disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex items-center gap-1 font-[var(--font-ui)]\" title=\"Undo (Ctrl+Z)\"><svg class=\"w-3.5 h-3.5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 10h10a5 5 0 015 5v2M3 10l4-4M3 10l4 4\"></path></svg> Undo</button> <!> <span class=\"text-xs px-2 py-1 rounded bg-white/[0.06] text-[var(--color-concrete)] uppercase tracking-wide font-[var(--font-ui)]\"> </span></div></div> <div class=\"bg-[var(--color-granite)] border-b border-white/[0.06] px-4 py-2\"><div class=\"flex items-center gap-4 text-sm\"><span class=\"font-medium text-[var(--color-concrete)] font-[var(--font-ui)] uppercase tracking-wide text-xs\">Global Markup:</span> <!></div></div> <div class=\"p-4\"><!> <!></div> <!></div>");
+function ga(e, t) {
 	Ne(t, !0);
-	let n = /* @__PURE__ */ R(null), r = /* @__PURE__ */ R(null), i = /* @__PURE__ */ R(!0), a = /* @__PURE__ */ R(!1), o = /* @__PURE__ */ R(""), s = la(t.projectId), c = da();
+	let n = /* @__PURE__ */ R(null), r = /* @__PURE__ */ R(null), i = /* @__PURE__ */ R(!0), a = /* @__PURE__ */ R(!1), o = /* @__PURE__ */ R(""), s = oa(t.projectId), c = ca();
 	async function l() {
 		try {
 			let e = await fetch(`/api/estimate/${t.projectId}`);
@@ -3079,7 +3068,7 @@ function ya(e, t) {
 		d();
 		let e = q(o).trim() || "New Section";
 		q(n).sections.push({
-			id: Ci(),
+			id: bi(),
 			name: e,
 			sort_order: q(n).sections.length,
 			subcategories: []
@@ -3098,49 +3087,49 @@ function ya(e, t) {
 		{
 			key: "materials",
 			label: "Materials",
-			bg: "bg-blue-50",
-			text: "text-blue-700",
-			border: "border-blue-200"
+			bg: "bg-blue-900/30",
+			text: "text-blue-400",
+			border: "border-blue-800"
 		},
 		{
 			key: "labor",
 			label: "Labor",
-			bg: "bg-amber-50",
-			text: "text-amber-700",
-			border: "border-amber-200"
+			bg: "bg-amber-900/30",
+			text: "text-amber-400",
+			border: "border-amber-800"
 		},
 		{
 			key: "equipment",
 			label: "Equipment",
-			bg: "bg-purple-50",
-			text: "text-purple-700",
-			border: "border-purple-200"
+			bg: "bg-purple-900/30",
+			text: "text-purple-400",
+			border: "border-purple-800"
 		},
 		{
 			key: "subs",
 			label: "Subs",
-			bg: "bg-green-50",
-			text: "text-green-700",
-			border: "border-green-200"
+			bg: "bg-green-900/30",
+			text: "text-green-400",
+			border: "border-green-800"
 		},
 		{
 			key: "other",
 			label: "Other",
-			bg: "bg-slate-100",
-			text: "text-slate-600",
-			border: "border-slate-300"
+			bg: "bg-white/[0.06]",
+			text: "text-[var(--color-concrete)]",
+			border: "border-white/[0.08]"
 		}
 	];
 	var g = vr(), _ = Zt(g), v = (e) => {
-		X(e, fa());
+		X(e, la());
 	}, y = (e) => {
-		var t = pa(), n = B(t), i = B(n, !0);
+		var t = ua(), n = B(t), i = B(n, !0);
 		M(n), M(t), H(() => Z(i, q(r))), X(e, t);
 	}, b = (e) => {
-		var t = va(), r = B(t), i = B(r), l = B(i), g = B(l, !0);
+		var t = ha(), r = B(t), i = B(r), l = B(i), g = B(l, !0);
 		M(l), we(2), M(i);
 		var _ = V(i, 2), v = B(_), y = V(v, 2);
-		ca(y, {
+		aa(y, {
 			get status() {
 				return s.status;
 			},
@@ -3153,19 +3142,19 @@ function ya(e, t) {
 		M(b), M(_), M(r);
 		var S = V(r, 2), ee = B(S);
 		Or(V(B(ee), 2), 17, () => h, wr, (e, t) => {
-			var r = ma(), i = B(r), a = B(i, !0);
+			var r = da(), i = B(r), a = B(i, !0);
 			M(i);
 			var o = V(i, 2);
 			$(o), we(2), M(r), H(() => {
-				zr(r, 1, `flex items-center gap-1 px-2 py-0.5 rounded ${q(t).bg ?? ""} ${q(t).text ?? ""} font-mono text-xs`), Z(a, q(t).label), qr(o, q(n).globals[`${q(t).key}_markup`]), zr(o, 1, `w-12 text-right bg-transparent border-0 p-0 font-mono text-xs focus:ring-1 focus:ring-blue-400 rounded ${q(t).text ?? ""}`);
+				Ir(r, 1, `flex items-center gap-1 px-2 py-0.5 rounded ${q(t).bg ?? ""} ${q(t).text ?? ""} font-mono text-xs`), Z(a, q(t).label), Wr(o, q(n).globals[`${q(t).key}_markup`]), Ir(o, 1, `w-12 text-right bg-transparent border-0 p-0 font-mono text-xs focus:ring-1 focus:ring-[var(--color-sunburst)] rounded ${q(t).text ?? ""}`);
 			}), J("input", o, (e) => m(q(t).key, e)), X(e, r);
 		}), M(ee), M(S);
 		var C = V(S, 2), w = B(C), te = (e) => {
-			X(e, ha());
+			X(e, fa());
 		}, T = (e) => {
 			var t = vr();
 			Or(Zt(t), 17, () => q(n).sections, (e) => e.id, (e, t) => {
-				ea(e, {
+				Zi(e, {
 					get section() {
 						return q(t);
 					},
@@ -3188,19 +3177,19 @@ function ya(e, t) {
 			q(n).sections.length === 0 && !q(a) ? e(te) : e(T, -1);
 		});
 		var E = V(w, 2), D = (e) => {
-			var t = ga(), n = B(t);
+			var t = pa(), n = B(t);
 			$(n);
 			var r = V(n, 2), i = V(r, 2);
 			M(t), J("keydown", n, (e) => {
 				e.key === "Enter" && f(), e.key === "Escape" && z(a, !1);
-			}), $r(n, () => q(o), (e) => z(o, e)), J("click", r, f), J("click", i, () => z(a, !1)), X(e, t);
+			}), Xr(n, () => q(o), (e) => z(o, e)), J("click", r, f), J("click", i, () => z(a, !1)), X(e, t);
 		}, ne = (e) => {
-			var t = _a();
+			var t = ma();
 			J("click", t, () => z(a, !0)), X(e, t);
 		};
 		Q(E, (e) => {
 			q(a) ? e(D) : e(ne, -1);
-		}), M(C), ia(V(C, 2), { get estimate() {
+		}), M(C), ta(V(C, 2), { get estimate() {
 			return q(n);
 		} }), M(t), H(() => {
 			Z(g, q(n).project.name), v.disabled = !c.canUndo, Z(x, q(n).project.status);
@@ -3219,11 +3208,11 @@ dr([
 ]);
 //#endregion
 //#region src/main.js
-var ba = document.getElementById("estimate-root");
-if (ba) {
-	let e = ba.dataset.projectId;
-	yr(ya, {
-		target: ba,
+var _a = document.getElementById("estimate-root");
+if (_a) {
+	let e = _a.dataset.projectId;
+	yr(ga, {
+		target: _a,
 		props: { projectId: e }
 	});
 }

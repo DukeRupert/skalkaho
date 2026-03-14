@@ -115,37 +115,37 @@
 		bind:value={query}
 		onkeydown={handleKeydown}
 		placeholder="Search items or type a name..."
-		class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg
-			focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none"
+		class="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-[var(--color-white)]
+			focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] outline-none placeholder-white/30 font-[var(--font-body)]"
 	/>
 
 	{#if results.length > 0}
-		<div class="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+		<div class="absolute top-full left-0 right-0 mt-1 bg-[var(--color-granite)] border border-white/[0.08] rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
 			{#each results as item, i}
 				<button
 					class="w-full text-left px-3 py-2 text-sm flex items-center justify-between
-						hover:bg-slate-50 {i === selectedIndex ? 'bg-blue-50' : ''}"
+						hover:bg-white/[0.06] {i === selectedIndex ? 'bg-[var(--color-sunburst)]/10' : ''}"
 					onclick={() => selectItem(item)}
 					onmouseenter={() => selectedIndex = i}
 				>
 					<div>
-						<span class="text-slate-800">{item.name}</span>
-						<span class="text-xs text-slate-400 ml-2">{item.category}</span>
+						<span class="text-[var(--color-white)] font-[var(--font-body)]">{item.name}</span>
+						<span class="text-xs text-white/40 ml-2 font-[var(--font-body)]">{item.category}</span>
 					</div>
 					<div class="flex items-center gap-2 text-xs">
-						<span class="font-mono text-slate-500">${item.price.toFixed(2)}</span>
-						<span class="text-slate-400">/ {item.unit}</span>
+						<span class="font-mono text-[var(--color-muted-text)]">${item.price.toFixed(2)}</span>
+						<span class="text-white/40">/ {item.unit}</span>
 					</div>
 				</button>
 			{/each}
 		</div>
 	{:else if query.length > 0}
-		<div class="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
+		<div class="absolute top-full left-0 right-0 mt-1 bg-[var(--color-granite)] border border-white/[0.08] rounded-lg shadow-lg z-50">
 			<button
-				class="w-full text-left px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
+				class="w-full text-left px-3 py-2 text-sm text-[var(--color-muted-text)] hover:bg-white/[0.06] font-[var(--font-body)]"
 				onclick={selectCustom}
 			>
-				Add custom item: <span class="font-medium text-slate-700">"{query}"</span>
+				Add custom item: <span class="font-medium text-[var(--color-white)]">"{query}"</span>
 			</button>
 		</div>
 	{/if}
