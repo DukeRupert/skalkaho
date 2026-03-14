@@ -1,79 +1,648 @@
 {{template "base" .}}
 {{define "title"}}Materials Database — Skalkaho{{end}}
+{{define "head"}}
+<style>
+    /* ── Page header ── */
+    .page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 40px;
+    }
+
+    .page-eyebrow {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--color-sunburst);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .page-eyebrow::before {
+        content: '';
+        display: block;
+        width: 24px;
+        height: 2px;
+        background: var(--color-sunburst);
+        flex-shrink: 0;
+    }
+
+    .page-title {
+        font-family: var(--font-display);
+        font-size: clamp(28px, 3.5vw, 40px);
+        font-weight: 700;
+        color: var(--color-white);
+        line-height: 1.1;
+    }
+
+    /* ── Primary button ── */
+    .btn-primary {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        background: var(--color-granite);
+        color: var(--color-white);
+        padding: 12px 24px;
+        border: 2px solid var(--color-granite);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .btn-primary:hover {
+        background: var(--color-sunburst);
+        border-color: var(--color-sunburst);
+        color: var(--color-ink);
+    }
+
+    .btn-primary:focus-visible {
+        outline: 2px solid var(--color-sunburst);
+        outline-offset: 3px;
+    }
+
+    .btn-primary svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* ── Supplier tabs ── */
+    .supplier-bar {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .supplier-tab {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4);
+        text-decoration: none;
+        padding: 8px 16px;
+        border-bottom: 2px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .supplier-tab:hover {
+        color: rgba(255,255,255,0.7);
+    }
+
+    .supplier-tab--active {
+        color: var(--color-sunburst);
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    .supplier-tab--active:hover {
+        color: var(--color-sunburst);
+    }
+
+    .supplier-delete {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.3);
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        transition: color 0.15s ease;
+    }
+
+    .supplier-delete:hover {
+        color: #B43C3C;
+    }
+
+    .supplier-add-btn {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.25);
+        cursor: pointer;
+        font-family: var(--font-ui);
+        font-size: 16px;
+        padding: 8px 12px;
+        transition: color 0.15s ease;
+    }
+
+    .supplier-add-btn:hover {
+        color: var(--color-sunburst);
+    }
+
+    /* Inline add supplier form */
+    .inline-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 8px;
+    }
+
+    .inline-input {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+        padding: 6px 0;
+        font-family: var(--font-body);
+        font-size: 13px;
+        color: var(--color-white);
+        width: 140px;
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+    .inline-input:focus {
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    .inline-submit {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        background: var(--color-granite);
+        color: var(--color-white);
+        padding: 6px 14px;
+        border: 1px solid rgba(255,255,255,0.1);
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .inline-submit:hover {
+        background: var(--color-sunburst);
+        color: var(--color-ink);
+    }
+
+    .inline-cancel {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.3);
+        cursor: pointer;
+        font-size: 16px;
+        transition: color 0.15s ease;
+    }
+
+    .inline-cancel:hover {
+        color: var(--color-white);
+    }
+
+    /* ── Filters + search ── */
+    .filters-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0;
+    }
+
+    .filter-tab {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.35);
+        text-decoration: none;
+        padding: 6px 14px;
+        border-bottom: 2px solid transparent;
+        transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .filter-tab:hover {
+        color: rgba(255,255,255,0.6);
+    }
+
+    .filter-tab--active {
+        color: var(--color-concrete);
+        border-bottom-color: var(--color-concrete);
+    }
+
+    .search-input {
+        width: 240px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+        padding: 8px 0;
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--color-white);
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-input::placeholder {
+        color: rgba(255,255,255,0.25);
+    }
+
+    .search-input:focus {
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+        border: 1px solid rgba(255,255,255,0.06);
+        overflow: hidden;
+    }
+
+    .table-wrap table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table-wrap thead tr {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.02);
+    }
+
+    .table-wrap th {
+        text-align: left;
+        padding: 12px 20px;
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+    }
+
+    .table-wrap th.text-right {
+        text-align: right;
+    }
+
+    .table-wrap tbody tr {
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        transition: background 0.1s ease;
+    }
+
+    .table-wrap tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .table-wrap tbody tr:hover {
+        background: rgba(255,255,255,0.03);
+    }
+
+    .table-wrap td {
+        padding: 14px 20px;
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    .cell-primary {
+        color: var(--color-white);
+        font-weight: 500;
+    }
+
+    .cell-secondary {
+        color: var(--color-concrete);
+    }
+
+    .cell-total {
+        text-align: right;
+        color: var(--color-white);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cell-date {
+        color: rgba(255,255,255,0.4);
+        font-size: 13px;
+    }
+
+    /* ── Source indicator ── */
+    .source {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .source::before {
+        content: '';
+        display: block;
+        width: 6px;
+        height: 6px;
+        flex-shrink: 0;
+    }
+
+    .source--supplier {
+        color: var(--color-sage);
+    }
+    .source--supplier::before {
+        background: var(--color-sage);
+    }
+
+    .source--manual {
+        color: rgba(255,255,255,0.45);
+    }
+    .source--manual::before {
+        background: rgba(255,255,255,0.3);
+    }
+
+    /* ── Actions ── */
+    .action-edit {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.3);
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.15s ease;
+    }
+
+    .action-edit:hover {
+        color: var(--color-sunburst);
+    }
+
+    .action-delete {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.2);
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.15s ease;
+    }
+
+    .action-delete:hover {
+        color: #B43C3C;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+        padding: 48px 20px;
+        text-align: center;
+    }
+
+    .empty-state p:first-child {
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--color-concrete);
+    }
+
+    .empty-state p:last-child {
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 300;
+        color: rgba(255,255,255,0.35);
+        margin-top: 6px;
+    }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+    }
+
+    .modal-panel {
+        position: relative;
+        background: var(--color-granite);
+        width: 100%;
+        max-width: 440px;
+        padding: 32px;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .modal-title {
+        font-family: var(--font-display);
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-white);
+        margin-bottom: 24px;
+    }
+
+    .modal-field {
+        margin-bottom: 24px;
+    }
+
+    .modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .modal-label {
+        display: block;
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.20em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-bottom: 10px;
+    }
+
+    .modal-input,
+    .modal-select {
+        width: 100%;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+        padding: 10px 0;
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--color-white);
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+    .modal-input:focus,
+    .modal-select:focus {
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    .modal-select {
+        cursor: pointer;
+    }
+
+    .modal-select option {
+        background: var(--color-granite);
+        color: var(--color-white);
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 32px;
+    }
+
+    .btn-ghost {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        background: transparent;
+        color: var(--color-concrete);
+        padding: 12px 20px;
+        border: 2px solid rgba(255,255,255,0.1);
+        cursor: pointer;
+        transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .btn-ghost:hover {
+        border-color: rgba(255,255,255,0.25);
+        color: var(--color-white);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 767px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .supplier-bar {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-wrap: nowrap;
+        }
+
+        .filters-bar {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .search-input {
+            width: 100%;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-wrap table {
+            min-width: 650px;
+        }
+
+        .modal-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{{end}}
 {{define "content"}}
 <div x-data="{ showCreate: false, showEdit: false, editHtml: '', showAddSupplier: false }">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Materials Database</h1>
-        <button @click="showCreate = true"
-            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
-            + New Material
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Materials</div>
+            <h1 class="page-title">Materials Database</h1>
+        </div>
+        <button @click="showCreate = true" class="btn-primary">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Material
         </button>
     </div>
 
     <!-- Supplier Tabs -->
-    <div class="flex items-center gap-1 mb-4 flex-wrap">
+    <div class="supplier-bar">
         {{$sid := .SupplierID}}
         <a href="/materials"
-            class="px-3 py-1.5 text-sm rounded-md {{if eq $sid ""}}bg-blue-100 text-blue-700 font-medium{{else}}text-gray-600 hover:bg-gray-100{{end}}">
+            class="supplier-tab {{if eq $sid ""}}supplier-tab--active{{end}}">
             All
         </a>
         {{range .Suppliers}}
         <a href="/materials?supplier={{.ID}}"
-            class="px-3 py-1.5 text-sm rounded-md flex items-center gap-1 {{if eq $sid .ID}}bg-blue-100 text-blue-700 font-medium{{else}}text-gray-600 hover:bg-gray-100{{end}}">
+            class="supplier-tab {{if eq $sid .ID}}supplier-tab--active{{end}}">
             {{.Name}}
             {{if eq $sid .ID}}
             <button hx-delete="/suppliers/{{.ID}}" hx-confirm="Delete supplier '{{.Name}}' and all its materials?"
-                class="ml-1 text-red-400 hover:text-red-600" @click.stop>&times;</button>
+                class="supplier-delete" @click.stop>&times;</button>
             {{end}}
         </a>
         {{end}}
-        <button @click="showAddSupplier = !showAddSupplier"
-            class="px-2 py-1.5 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">+</button>
-        <form x-show="showAddSupplier" x-cloak method="POST" action="/suppliers" class="flex items-center gap-1 ml-1">
-            <input type="text" name="name" placeholder="Supplier name" required
-                class="px-2 py-1 text-sm border border-gray-300 rounded-md w-36 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <button type="submit" class="px-2 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">Add</button>
-            <button type="button" @click="showAddSupplier = false" class="px-2 py-1 text-sm text-gray-500 hover:text-gray-700">&times;</button>
+        <button @click="showAddSupplier = !showAddSupplier" class="supplier-add-btn">+</button>
+        <form x-show="showAddSupplier" x-cloak method="POST" action="/suppliers" class="inline-form">
+            <input type="text" name="name" placeholder="Supplier name" required class="inline-input" />
+            <button type="submit" class="inline-submit">Add</button>
+            <button type="button" @click="showAddSupplier = false" class="inline-cancel">&times;</button>
         </form>
     </div>
 
     <!-- Filters Row -->
-    <div class="flex items-center justify-between mb-4">
-        <div class="flex gap-1">
+    <div class="filters-bar">
+        <div class="filter-tabs">
             {{$source := .PriceSource}}
             {{$base := "/materials"}}{{if .SupplierID}}{{$base = printf "/materials?supplier=%s" .SupplierID}}{{end}}
             <a href="{{$base}}"
-                class="px-3 py-1.5 text-xs rounded-md {{if eq $source ""}}bg-gray-200 text-gray-800 font-medium{{else}}text-gray-500 hover:bg-gray-100{{end}}">
+                class="filter-tab {{if eq $source ""}}filter-tab--active{{end}}">
                 All Sources
             </a>
             <a href="{{$base}}{{if .SupplierID}}&{{else}}?{{end}}source=Supplier"
-                class="px-3 py-1.5 text-xs rounded-md {{if eq $source "Supplier"}}bg-gray-200 text-gray-800 font-medium{{else}}text-gray-500 hover:bg-gray-100{{end}}">
+                class="filter-tab {{if eq $source "Supplier"}}filter-tab--active{{end}}">
                 Supplier
             </a>
             <a href="{{$base}}{{if .SupplierID}}&{{else}}?{{end}}source=Manual"
-                class="px-3 py-1.5 text-xs rounded-md {{if eq $source "Manual"}}bg-gray-200 text-gray-800 font-medium{{else}}text-gray-500 hover:bg-gray-100{{end}}">
+                class="filter-tab {{if eq $source "Manual"}}filter-tab--active{{end}}">
                 Manual
             </a>
         </div>
         <input type="search" name="search" value="{{.Search}}" placeholder="Search materials..."
             hx-get="/materials" hx-trigger="input changed delay:300ms" hx-target="#material-rows" hx-select="#material-rows"
             hx-push-url="true" hx-include="this"
-            class="w-64 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            class="search-input" />
     </div>
 
     <!-- Materials Table -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table class="w-full">
+    <div class="table-wrap">
+        <table>
             <thead>
-                <tr class="border-b border-gray-200 bg-gray-50">
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Code</th>
-                    <th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Unit Price</th>
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th>
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Source</th>
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Updated</th>
-                    <th class="px-4 py-3"></th>
+                <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th class="text-right">Unit Price</th>
+                    <th>Unit</th>
+                    <th>Source</th>
+                    <th>Updated</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody id="material-rows">
@@ -81,79 +650,69 @@
             </tbody>
         </table>
         {{if not .Materials}}
-        <div class="px-4 py-12 text-center text-gray-400">
-            <p class="text-sm">No materials found.</p>
+        <div class="empty-state">
+            <p>No materials found.</p>
             {{if not .Suppliers}}
-            <p class="text-xs mt-1">Add a supplier first, then add materials.</p>
+            <p>Add a supplier first, then add materials.</p>
             {{else}}
-            <p class="text-xs mt-1">Click "New Material" to add one.</p>
+            <p>Click "New Material" to add one.</p>
             {{end}}
         </div>
         {{end}}
     </div>
 
     <!-- Create Material Modal -->
-    <div x-show="showCreate" x-cloak class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/50" @click="showCreate = false"></div>
-        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6" @click.stop>
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">New Material</h2>
+    <div x-show="showCreate" x-cloak class="modal-backdrop">
+        <div class="modal-overlay" @click="showCreate = false"></div>
+        <div class="modal-panel" @click.stop>
+            <h2 class="modal-title">New Material</h2>
             <form method="POST" action="/materials">
-                <div class="space-y-4">
+                <div class="modal-field">
+                    <label class="modal-label">Name *</label>
+                    <input type="text" name="name" required class="modal-input" />
+                </div>
+                <div class="modal-field">
+                    <label class="modal-label">Supplier *</label>
+                    <select name="supplier_id" required class="modal-select">
+                        <option value="">Select supplier</option>
+                        {{range .Suppliers}}
+                        <option value="{{.ID}}" {{if eq $.SupplierID .ID}}selected{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
+                <div class="modal-grid" style="margin-bottom: 24px;">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                        <input type="text" name="name" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <label class="modal-label">Unit Price</label>
+                        <input type="number" name="unit_price" step="0.01" value="0" class="modal-input" />
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Supplier *</label>
-                        <select name="supplier_id" required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <option value="">— Select supplier —</option>
-                            {{range .Suppliers}}
-                            <option value="{{.ID}}" {{if eq $.SupplierID .ID}}selected{{end}}>{{.Name}}</option>
-                            {{end}}
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
-                            <input type="number" name="unit_price" step="0.01" value="0"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                            <input type="text" name="unit" value="ea"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Code</label>
-                        <input type="text" name="supplier_code"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Price Source</label>
-                        <select name="price_source"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <option value="Manual">Manual</option>
-                            <option value="Supplier">Supplier</option>
-                        </select>
+                        <label class="modal-label">Unit</label>
+                        <input type="text" name="unit" value="ea" class="modal-input" />
                     </div>
                 </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" @click="showCreate = false"
-                        class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
-                    <button type="submit"
-                        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Add Material</button>
+                <div class="modal-field">
+                    <label class="modal-label">Supplier Code</label>
+                    <input type="text" name="supplier_code" class="modal-input" />
+                </div>
+                <div class="modal-field">
+                    <label class="modal-label">Price Source</label>
+                    <select name="price_source" class="modal-select">
+                        <option value="Manual">Manual</option>
+                        <option value="Supplier">Supplier</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" @click="showCreate = false" class="btn-ghost">Cancel</button>
+                    <button type="submit" class="btn-primary">Add Material</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Edit Material Modal (loaded via HTMX) -->
-    <div x-show="showEdit" x-cloak class="fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/50" @click="showEdit = false"></div>
-        <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6" @click.stop>
+    <!-- Edit Material Modal -->
+    <div x-show="showEdit" x-cloak class="modal-backdrop">
+        <div class="modal-overlay" @click="showEdit = false"></div>
+        <div class="modal-panel" @click.stop>
             <div id="edit-material-content" x-html="editHtml"></div>
         </div>
     </div>
@@ -162,26 +721,25 @@
 
 {{define "material-rows"}}
 {{range .Materials}}
-<tr class="border-b border-gray-100 hover:bg-gray-50">
-    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{.Name}}</td>
-    <td class="px-4 py-3 text-sm text-gray-600">{{if .SupplierCode.Valid}}{{.SupplierCode.String}}{{else}}—{{end}}</td>
-    <td class="px-4 py-3 text-sm text-gray-900 text-right">${{printf "%.2f" .UnitPrice}}</td>
-    <td class="px-4 py-3 text-sm text-gray-600">{{.Unit}}</td>
-    <td class="px-4 py-3">
+<tr>
+    <td class="cell-primary">{{.Name}}</td>
+    <td class="cell-secondary">{{if .SupplierCode.Valid}}{{.SupplierCode.String}}{{else}}—{{end}}</td>
+    <td class="cell-total">${{printf "%.2f" .UnitPrice}}</td>
+    <td class="cell-secondary">{{.Unit}}</td>
+    <td>
         {{if eq .PriceSource "Supplier"}}
-        <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">Supplier</span>
+        <span class="source source--supplier">Supplier</span>
         {{else}}
-        <span class="inline-block px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700">Manual</span>
+        <span class="source source--manual">Manual</span>
         {{end}}
     </td>
-    <td class="px-4 py-3 text-sm text-gray-500">{{.LastUpdated.Format "Jan 2, 2006"}}</td>
-    <td class="px-4 py-3 text-right space-x-2">
-        <button
-            hx-get="/materials/{{.ID}}/edit" hx-target="#edit-material-content" hx-swap="innerHTML"
+    <td class="cell-date">{{.LastUpdated.Format "Jan 2, 2006"}}</td>
+    <td style="text-align: right;">
+        <button hx-get="/materials/{{.ID}}/edit" hx-target="#edit-material-content" hx-swap="innerHTML"
             @htmx:after-swap.window="showEdit = true"
-            class="text-xs text-blue-500 hover:text-blue-700">Edit</button>
+            class="action-edit" style="margin-right: 12px;">Edit</button>
         <button hx-delete="/materials/{{.ID}}" hx-confirm="Delete material '{{.Name}}'?"
-            class="text-xs text-red-500 hover:text-red-700">Delete</button>
+            class="action-delete">Delete</button>
     </td>
 </tr>
 {{end}}
@@ -189,54 +747,44 @@
 
 {{define "edit-modal"}}
 {{with .EditMaterial}}
-<h2 class="text-lg font-semibold text-gray-900 mb-4">Edit Material</h2>
+<h2 class="modal-title">Edit Material</h2>
 <form method="POST" action="/materials/{{.ID}}">
-    <div class="space-y-4">
+    <div class="modal-field">
+        <label class="modal-label">Name *</label>
+        <input type="text" name="name" value="{{.Name}}" required class="modal-input" />
+    </div>
+    <div class="modal-field">
+        <label class="modal-label">Supplier *</label>
+        <select name="supplier_id" required class="modal-select">
+            {{range $.Suppliers}}
+            <option value="{{.ID}}" {{if eq $.EditMaterial.SupplierID .ID}}selected{{end}}>{{.Name}}</option>
+            {{end}}
+        </select>
+    </div>
+    <div class="modal-grid" style="margin-bottom: 24px;">
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-            <input type="text" name="name" value="{{.Name}}" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <label class="modal-label">Unit Price</label>
+            <input type="number" name="unit_price" step="0.01" value="{{printf "%.2f" .UnitPrice}}" class="modal-input" />
         </div>
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier *</label>
-            <select name="supplier_id" required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-                {{range $.Suppliers}}
-                <option value="{{.ID}}" {{if eq $.EditMaterial.SupplierID .ID}}selected{{end}}>{{.Name}}</option>
-                {{end}}
-            </select>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
-                <input type="number" name="unit_price" step="0.01" value="{{printf "%.2f" .UnitPrice}}"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                <input type="text" name="unit" value="{{.Unit}}"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            </div>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Supplier Code</label>
-            <input type="text" name="supplier_code" value="{{if .SupplierCode.Valid}}{{.SupplierCode.String}}{{end}}"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Price Source</label>
-            <select name="price_source"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-                <option value="Manual" {{if eq .PriceSource "Manual"}}selected{{end}}>Manual</option>
-                <option value="Supplier" {{if eq .PriceSource "Supplier"}}selected{{end}}>Supplier</option>
-            </select>
+            <label class="modal-label">Unit</label>
+            <input type="text" name="unit" value="{{.Unit}}" class="modal-input" />
         </div>
     </div>
-    <div class="flex justify-end gap-3 mt-6">
-        <button type="button" @click="showEdit = false"
-            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
-        <button type="submit"
-            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Save Changes</button>
+    <div class="modal-field">
+        <label class="modal-label">Supplier Code</label>
+        <input type="text" name="supplier_code" value="{{if .SupplierCode.Valid}}{{.SupplierCode.String}}{{end}}" class="modal-input" />
+    </div>
+    <div class="modal-field">
+        <label class="modal-label">Price Source</label>
+        <select name="price_source" class="modal-select">
+            <option value="Manual" {{if eq .PriceSource "Manual"}}selected{{end}}>Manual</option>
+            <option value="Supplier" {{if eq .PriceSource "Supplier"}}selected{{end}}>Supplier</option>
+        </select>
+    </div>
+    <div class="modal-actions">
+        <button type="button" @click="showEdit = false" class="btn-ghost">Cancel</button>
+        <button type="submit" class="btn-primary">Save Changes</button>
     </div>
 </form>
 {{end}}

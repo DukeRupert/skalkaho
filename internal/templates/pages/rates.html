@@ -1,65 +1,592 @@
 {{template "base" .}}
 {{define "title"}}Labor &amp; Equipment Rates — Skalkaho{{end}}
+{{define "head"}}
+<style>
+    /* ── Page header ── */
+    .page-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        margin-bottom: 40px;
+    }
+
+    .page-eyebrow {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--color-sunburst);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .page-eyebrow::before {
+        content: '';
+        display: block;
+        width: 24px;
+        height: 2px;
+        background: var(--color-sunburst);
+        flex-shrink: 0;
+    }
+
+    .page-title {
+        font-family: var(--font-display);
+        font-size: clamp(28px, 3.5vw, 40px);
+        font-weight: 700;
+        color: var(--color-white);
+        line-height: 1.1;
+    }
+
+    /* ── Primary button ── */
+    .btn-primary {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        background: var(--color-granite);
+        color: var(--color-white);
+        padding: 12px 24px;
+        border: 2px solid var(--color-granite);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .btn-primary:hover {
+        background: var(--color-sunburst);
+        border-color: var(--color-sunburst);
+        color: var(--color-ink);
+    }
+
+    .btn-primary:focus-visible {
+        outline: 2px solid var(--color-sunburst);
+        outline-offset: 3px;
+    }
+
+    .btn-primary svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* ── Category tabs ── */
+    .category-bar {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .category-tab {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4);
+        text-decoration: none;
+        padding: 8px 16px;
+        border-bottom: 2px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .category-tab:hover {
+        color: rgba(255,255,255,0.7);
+    }
+
+    .category-tab--active {
+        color: var(--color-sunburst);
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    .category-tab--active:hover {
+        color: var(--color-sunburst);
+    }
+
+    .category-count {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.25);
+        min-width: 18px;
+        text-align: center;
+    }
+
+    .category-tab--active .category-count {
+        color: var(--color-sunburst);
+        opacity: 0.6;
+    }
+
+    .category-delete {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.3);
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        transition: color 0.15s ease;
+    }
+
+    .category-delete:hover {
+        color: #B43C3C;
+    }
+
+    .category-add-btn {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.25);
+        cursor: pointer;
+        font-family: var(--font-ui);
+        font-size: 16px;
+        padding: 8px 12px;
+        transition: color 0.15s ease;
+    }
+
+    .category-add-btn:hover {
+        color: var(--color-sunburst);
+    }
+
+    /* Inline add category form */
+    .inline-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 8px;
+    }
+
+    .inline-input {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+        padding: 6px 0;
+        font-family: var(--font-body);
+        font-size: 13px;
+        color: var(--color-white);
+        width: 140px;
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+    .inline-input:focus {
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    .inline-submit {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        background: var(--color-granite);
+        color: var(--color-white);
+        padding: 6px 14px;
+        border: 1px solid rgba(255,255,255,0.1);
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .inline-submit:hover {
+        background: var(--color-sunburst);
+        color: var(--color-ink);
+    }
+
+    .inline-cancel {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.3);
+        cursor: pointer;
+        font-size: 16px;
+        transition: color 0.15s ease;
+    }
+
+    .inline-cancel:hover {
+        color: var(--color-white);
+    }
+
+    /* ── Search ── */
+    .search-bar {
+        margin-bottom: 20px;
+    }
+
+    .search-input {
+        width: 240px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+        padding: 8px 0;
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--color-white);
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+    .search-input::placeholder {
+        color: rgba(255,255,255,0.25);
+    }
+
+    .search-input:focus {
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+        border: 1px solid rgba(255,255,255,0.06);
+        overflow: hidden;
+    }
+
+    .table-wrap table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table-wrap thead tr {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.02);
+    }
+
+    .table-wrap th {
+        text-align: left;
+        padding: 12px 20px;
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+    }
+
+    .table-wrap th.text-right {
+        text-align: right;
+    }
+
+    .table-wrap tbody tr {
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        transition: background 0.1s ease;
+    }
+
+    .table-wrap tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .table-wrap tbody tr:hover {
+        background: rgba(255,255,255,0.03);
+    }
+
+    .table-wrap td {
+        padding: 14px 20px;
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    .cell-primary {
+        color: var(--color-white);
+        font-weight: 500;
+    }
+
+    .cell-secondary {
+        color: var(--color-concrete);
+    }
+
+    .cell-total {
+        text-align: right;
+        color: var(--color-white);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .cell-date {
+        color: rgba(255,255,255,0.4);
+        font-size: 13px;
+    }
+
+    /* ── Actions ── */
+    .action-edit {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.3);
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.15s ease;
+    }
+
+    .action-edit:hover {
+        color: var(--color-sunburst);
+    }
+
+    .action-delete {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.2);
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.15s ease;
+    }
+
+    .action-delete:hover {
+        color: #B43C3C;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+        padding: 48px 20px;
+        text-align: center;
+    }
+
+    .empty-state p:first-child {
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--color-concrete);
+    }
+
+    .empty-state p:last-child {
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 300;
+        color: rgba(255,255,255,0.35);
+        margin-top: 6px;
+    }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+    }
+
+    .modal-panel {
+        position: relative;
+        background: var(--color-granite);
+        width: 100%;
+        max-width: 440px;
+        padding: 32px;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .modal-title {
+        font-family: var(--font-display);
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--color-white);
+        margin-bottom: 24px;
+    }
+
+    .modal-field {
+        margin-bottom: 24px;
+    }
+
+    .modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .modal-label {
+        display: block;
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.20em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-bottom: 10px;
+    }
+
+    .modal-input,
+    .modal-select,
+    .modal-textarea {
+        width: 100%;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+        padding: 10px 0;
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 400;
+        color: var(--color-white);
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+    .modal-input:focus,
+    .modal-select:focus,
+    .modal-textarea:focus {
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    .modal-select {
+        cursor: pointer;
+    }
+
+    .modal-select option {
+        background: var(--color-granite);
+        color: var(--color-white);
+    }
+
+    .modal-textarea {
+        resize: vertical;
+        min-height: 60px;
+        border: 2px solid rgba(255,255,255,0.08);
+        padding: 10px 12px;
+    }
+
+    .modal-textarea:focus {
+        border-color: var(--color-sunburst);
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 32px;
+    }
+
+    .btn-ghost {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        background: transparent;
+        color: var(--color-concrete);
+        padding: 12px 20px;
+        border: 2px solid rgba(255,255,255,0.1);
+        cursor: pointer;
+        transition: border-color 0.2s ease, color 0.2s ease;
+    }
+
+    .btn-ghost:hover {
+        border-color: rgba(255,255,255,0.25);
+        color: var(--color-white);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 767px) {
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .category-bar {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            flex-wrap: nowrap;
+        }
+
+        .search-input {
+            width: 100%;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-wrap table {
+            min-width: 650px;
+        }
+
+        .modal-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{{end}}
 {{define "content"}}
 <div x-data="{ showAddCategory: false }">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Labor &amp; Equipment Rates</h1>
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Rates</div>
+            <h1 class="page-title">Labor &amp; Equipment Rates</h1>
+        </div>
         <button hx-get="/rates/new-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
-            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
-            + New Rate
+            class="btn-primary">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Rate
         </button>
     </div>
 
     <!-- Category Tabs -->
-    <div class="flex items-center gap-1 mb-4 flex-wrap">
+    <div class="category-bar">
         {{$cid := .CategoryID}}
         {{$counts := .CategoryCounts}}
         <a href="/rates"
-            class="px-3 py-1.5 text-sm rounded-md {{if eq $cid ""}}bg-blue-100 text-blue-700 font-medium{{else}}text-gray-600 hover:bg-gray-100{{end}}">
+            class="category-tab {{if eq $cid ""}}category-tab--active{{end}}">
             All
         </a>
         {{range .Categories}}
         <a href="/rates?category={{.ID}}"
-            class="px-3 py-1.5 text-sm rounded-md flex items-center gap-1.5 {{if eq $cid .ID}}bg-blue-100 text-blue-700 font-medium{{else}}text-gray-600 hover:bg-gray-100{{end}}">
+            class="category-tab {{if eq $cid .ID}}category-tab--active{{end}}">
             {{.Name}}
-            <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs rounded-full {{if eq $cid .ID}}bg-blue-200 text-blue-800{{else}}bg-gray-200 text-gray-600{{end}}">{{index $counts .ID}}</span>
+            <span class="category-count">{{index $counts .ID}}</span>
             {{if eq $cid .ID}}
             <button hx-delete="/rate-categories/{{.ID}}" hx-confirm="Delete category '{{.Name}}' and all its rates?"
-                class="ml-0.5 text-red-400 hover:text-red-600" @click.stop>&times;</button>
+                class="category-delete" @click.stop>&times;</button>
             {{end}}
         </a>
         {{end}}
-        <button @click="showAddCategory = !showAddCategory"
-            class="px-2 py-1.5 text-sm text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">+</button>
-        <form x-show="showAddCategory" x-cloak method="POST" action="/rate-categories" class="flex items-center gap-1 ml-1">
-            <input type="text" name="name" placeholder="Category name" required
-                class="px-2 py-1 text-sm border border-gray-300 rounded-md w-36 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-            <button type="submit" class="px-2 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">Add</button>
-            <button type="button" @click="showAddCategory = false" class="px-2 py-1 text-sm text-gray-500 hover:text-gray-700">&times;</button>
+        <button @click="showAddCategory = !showAddCategory" class="category-add-btn">+</button>
+        <form x-show="showAddCategory" x-cloak method="POST" action="/rate-categories" class="inline-form">
+            <input type="text" name="name" placeholder="Category name" required class="inline-input" />
+            <button type="submit" class="inline-submit">Add</button>
+            <button type="button" @click="showAddCategory = false" class="inline-cancel">&times;</button>
         </form>
     </div>
 
     <!-- Search -->
-    <div class="mb-4">
+    <div class="search-bar">
         <input type="search" name="search" value="{{.Search}}" placeholder="Search rates..."
             hx-get="/rates" hx-trigger="input changed delay:300ms" hx-target="#rate-rows" hx-select="#rate-rows"
             hx-push-url="true" hx-include="this"
-            class="w-64 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            class="search-input" />
     </div>
 
     <!-- Rates Table -->
-    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table class="w-full">
+    <div class="table-wrap">
+        <table>
             <thead>
-                <tr class="border-b border-gray-200 bg-gray-50">
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Category</th>
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Supplier</th>
-                    <th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Rate</th>
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Unit</th>
-                    <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Updated</th>
-                    <th class="px-4 py-3"></th>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Supplier</th>
+                    <th class="text-right">Rate</th>
+                    <th>Unit</th>
+                    <th>Updated</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody id="rate-rows">
@@ -67,9 +594,9 @@
             </tbody>
         </table>
         {{if not .Rates}}
-        <div class="px-4 py-12 text-center text-gray-400">
-            <p class="text-sm">No rates found.</p>
-            <p class="text-xs mt-1">Click "New Rate" to add one.</p>
+        <div class="empty-state">
+            <p>No rates found.</p>
+            <p>Click "New Rate" to add one.</p>
         </div>
         {{end}}
     </div>
@@ -81,74 +608,63 @@
 
 {{define "rate-rows"}}
 {{range .Rates}}
-<tr class="border-b border-gray-100 hover:bg-gray-50">
-    <td class="px-4 py-3 text-sm font-medium text-gray-900">{{.Name}}</td>
-    <td class="px-4 py-3 text-sm text-gray-600">{{index $.CategoryNames .CategoryID}}</td>
-    <td class="px-4 py-3 text-sm text-gray-600">{{if .Supplier.Valid}}{{.Supplier.String}}{{else}}—{{end}}</td>
-    <td class="px-4 py-3 text-sm text-gray-900 text-right">${{printf "%.2f" .Rate}}</td>
-    <td class="px-4 py-3 text-sm text-gray-600">{{.Unit}}</td>
-    <td class="px-4 py-3 text-sm text-gray-500">{{.LastUpdated.Format "Jan 2, 2006"}}</td>
-    <td class="px-4 py-3 text-right space-x-2">
-        <button
-            hx-get="/rates/{{.ID}}/edit" hx-target="#modal-outlet" hx-swap="innerHTML"
-            class="text-xs text-blue-500 hover:text-blue-700">Edit</button>
+<tr>
+    <td class="cell-primary">{{.Name}}</td>
+    <td class="cell-secondary">{{index $.CategoryNames .CategoryID}}</td>
+    <td class="cell-secondary">{{if .Supplier.Valid}}{{.Supplier.String}}{{else}}—{{end}}</td>
+    <td class="cell-total">${{printf "%.2f" .Rate}}</td>
+    <td class="cell-secondary">{{.Unit}}</td>
+    <td class="cell-date">{{.LastUpdated.Format "Jan 2, 2006"}}</td>
+    <td style="text-align: right;">
+        <button hx-get="/rates/{{.ID}}/edit" hx-target="#modal-outlet" hx-swap="innerHTML"
+            class="action-edit" style="margin-right: 12px;">Edit</button>
         <button hx-delete="/rates/{{.ID}}" hx-confirm="Delete rate '{{.Name}}'?"
-            class="text-xs text-red-500 hover:text-red-700">Delete</button>
+            class="action-delete">Delete</button>
     </td>
 </tr>
 {{end}}
 {{end}}
 
 {{define "new-rate-modal"}}
-<div class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="absolute inset-0 bg-black/50" onclick="dismissModal()"></div>
-    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6" onclick="event.stopPropagation()">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">New Rate</h2>
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" onclick="event.stopPropagation()">
+        <h2 class="modal-title">New Rate</h2>
         <form method="POST" action="/rates">
-            <div class="space-y-4">
+            <div class="modal-field">
+                <label class="modal-label">Name *</label>
+                <input type="text" name="name" required class="modal-input" />
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Category *</label>
+                <select name="category_id" required class="modal-select">
+                    <option value="">Select category</option>
+                    {{range .Categories}}
+                    <option value="{{.ID}}" {{if eq $.CategoryID .ID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Supplier</label>
+                <input type="text" name="supplier" class="modal-input" />
+            </div>
+            <div class="modal-grid" style="margin-bottom: 24px;">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                    <input type="text" name="name" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <label class="modal-label">Rate</label>
+                    <input type="number" name="rate" step="0.01" value="0" class="modal-input" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                    <select name="category_id" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        <option value="">— Select category —</option>
-                        {{range .Categories}}
-                        <option value="{{.ID}}" {{if eq $.CategoryID .ID}}selected{{end}}>{{.Name}}</option>
-                        {{end}}
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-                    <input type="text" name="supplier"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
-                        <input type="number" name="rate" step="0.01" value="0"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                        <input type="text" name="unit" value="hour"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                    <textarea name="notes" rows="2"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"></textarea>
+                    <label class="modal-label">Unit</label>
+                    <input type="text" name="unit" value="hour" class="modal-input" />
                 </div>
             </div>
-            <div class="flex justify-end gap-3 mt-6">
-                <button type="button" onclick="dismissModal()"
-                    class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
-                <button type="submit"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Add Rate</button>
+            <div class="modal-field">
+                <label class="modal-label">Notes</label>
+                <textarea name="notes" rows="2" class="modal-textarea"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Add Rate</button>
             </div>
         </form>
     </div>
@@ -157,55 +673,45 @@
 {{end}}
 
 {{define "edit-modal"}}
-<div class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="absolute inset-0 bg-black/50" onclick="dismissModal()"></div>
-    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6" onclick="event.stopPropagation()">
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" onclick="event.stopPropagation()">
         {{with .EditRate}}
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Edit Rate</h2>
+        <h2 class="modal-title">Edit Rate</h2>
         <form method="POST" action="/rates/{{.ID}}">
-            <div class="space-y-4">
+            <div class="modal-field">
+                <label class="modal-label">Name *</label>
+                <input type="text" name="name" value="{{.Name}}" required class="modal-input" />
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Category *</label>
+                <select name="category_id" required class="modal-select">
+                    {{range $.Categories}}
+                    <option value="{{.ID}}" {{if eq $.EditRate.CategoryID .ID}}selected{{end}}>{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div class="modal-field">
+                <label class="modal-label">Supplier</label>
+                <input type="text" name="supplier" value="{{if .Supplier.Valid}}{{.Supplier.String}}{{end}}" class="modal-input" />
+            </div>
+            <div class="modal-grid" style="margin-bottom: 24px;">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                    <input type="text" name="name" value="{{.Name}}" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    <label class="modal-label">Rate</label>
+                    <input type="number" name="rate" step="0.01" value="{{printf "%.2f" .Rate}}" class="modal-input" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                    <select name="category_id" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        {{range $.Categories}}
-                        <option value="{{.ID}}" {{if eq $.EditRate.CategoryID .ID}}selected{{end}}>{{.Name}}</option>
-                        {{end}}
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-                    <input type="text" name="supplier" value="{{if .Supplier.Valid}}{{.Supplier.String}}{{end}}"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Rate</label>
-                        <input type="number" name="rate" step="0.01" value="{{printf "%.2f" .Rate}}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                        <input type="text" name="unit" value="{{.Unit}}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                    <textarea name="notes" rows="2"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500">{{if .Notes.Valid}}{{.Notes.String}}{{end}}</textarea>
+                    <label class="modal-label">Unit</label>
+                    <input type="text" name="unit" value="{{.Unit}}" class="modal-input" />
                 </div>
             </div>
-            <div class="flex justify-end gap-3 mt-6">
-                <button type="button" onclick="dismissModal()"
-                    class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
-                <button type="submit"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Save Changes</button>
+            <div class="modal-field">
+                <label class="modal-label">Notes</label>
+                <textarea name="notes" rows="2" class="modal-textarea">{{if .Notes.Valid}}{{.Notes.String}}{{end}}</textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Save Changes</button>
             </div>
         </form>
         {{end}}
