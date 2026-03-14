@@ -1,240 +1,769 @@
 {{template "base" .}}
 {{define "title"}}{{if .Project}}{{.Project.Name}} — {{end}}Overview — Skalkaho{{end}}
+{{define "head"}}{{end}}
 {{define "content"}}
+<style>
+    /* ── Status indicators ── */
+    .status--draft { color: rgba(255,255,255,0.45); }
+    .status--draft::before { background: rgba(255,255,255,0.3); }
+    .status--review { color: var(--color-sunburst); }
+    .status--review::before { background: var(--color-sunburst); }
+    .status--active { color: var(--color-sage); }
+    .status--active::before { background: var(--color-sage); }
+    .status--completed { color: var(--color-concrete); }
+    .status--completed::before { background: var(--color-concrete); }
+
+    /* ── Status badge (clickable) ── */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        border: 1px solid;
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .status-badge::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        flex-shrink: 0;
+    }
+
+    .status-badge--draft {
+        color: rgba(255,255,255,0.5);
+        border-color: rgba(255,255,255,0.12);
+        background: rgba(255,255,255,0.03);
+    }
+    .status-badge--draft::before { background: rgba(255,255,255,0.35); }
+    .status-badge--draft:hover { background: rgba(255,255,255,0.06); }
+
+    .status-badge--review {
+        color: var(--color-sunburst);
+        border-color: rgba(196,154,60,0.25);
+        background: rgba(196,154,60,0.06);
+    }
+    .status-badge--review::before { background: var(--color-sunburst); }
+    .status-badge--review:hover { background: rgba(196,154,60,0.12); }
+
+    .status-badge--active {
+        color: var(--color-sage);
+        border-color: rgba(122,140,110,0.3);
+        background: rgba(122,140,110,0.06);
+    }
+    .status-badge--active::before { background: var(--color-sage); }
+    .status-badge--active:hover { background: rgba(122,140,110,0.12); }
+
+    .status-badge--completed {
+        color: var(--color-concrete);
+        border-color: rgba(212,206,198,0.2);
+        background: rgba(212,206,198,0.04);
+    }
+    .status-badge--completed::before { background: var(--color-concrete); }
+    .status-badge--completed:hover { background: rgba(212,206,198,0.08); }
+
+    .status-badge svg {
+        width: 10px;
+        height: 10px;
+        opacity: 0.5;
+    }
+
+    /* ── Two-column layout ── */
+    .overview-grid {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 32px;
+        align-items: start;
+    }
+
+    @media (max-width: 1023px) {
+        .overview-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ── Info cards ── */
+    .info-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1px;
+        background: rgba(255,255,255,0.06);
+        margin-bottom: 32px;
+    }
+
+    .info-card {
+        background: var(--color-ink);
+        padding: 24px;
+    }
+
+    .info-label {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.20em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-bottom: 12px;
+    }
+
+    .info-dl {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .info-pair {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+    }
+
+    .info-key {
+        font-family: var(--font-body);
+        font-size: 13px;
+        color: rgba(255,255,255,0.35);
+    }
+
+    .info-val {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-white);
+    }
+
+    .info-val--link {
+        color: var(--color-sunburst);
+        text-decoration: none;
+        transition: color 0.15s ease;
+    }
+
+    .info-val--link:hover {
+        color: var(--color-white);
+    }
+
+    .info-val--mono {
+        font-variant-numeric: tabular-nums;
+        font-size: 12px;
+        letter-spacing: 0.03em;
+    }
+
+    .info-empty {
+        font-family: var(--font-body);
+        font-size: 14px;
+        color: rgba(255,255,255,0.2);
+        font-style: italic;
+    }
+
+    @media (max-width: 767px) {
+        .info-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ── Cost summary cards ── */
+    .cost-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 1px;
+        background: rgba(255,255,255,0.06);
+        margin-bottom: 32px;
+    }
+
+    .cost-card {
+        background: var(--color-ink);
+        padding: 20px 24px;
+    }
+
+    .cost-label {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-bottom: 6px;
+    }
+
+    .cost-value {
+        font-family: var(--font-body);
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--color-white);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.2;
+    }
+
+    .cost-value--grand {
+        color: var(--color-sunburst);
+    }
+
+    .cost-sub {
+        font-family: var(--font-body);
+        font-size: 12px;
+        font-weight: 300;
+        color: rgba(255,255,255,0.35);
+        margin-top: 4px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* ── Sections breakdown table ── */
+    .section-label {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.20em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .section-label::before {
+        content: '';
+        display: block;
+        width: 16px;
+        height: 1.5px;
+        background: var(--color-sage);
+        flex-shrink: 0;
+    }
+
+    .table-total-row td {
+        background: rgba(255,255,255,0.03);
+        border-bottom: none;
+    }
+
+    /* ── Action cards (right column) ── */
+    .action-group-label {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.20em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .action-group-label::before {
+        content: '';
+        display: block;
+        width: 16px;
+        height: 1.5px;
+        background: var(--color-sage);
+        flex-shrink: 0;
+    }
+
+    .action-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        background: var(--color-granite);
+        border: 1px solid rgba(255,255,255,0.06);
+        text-decoration: none;
+        cursor: pointer;
+        transition: border-color 0.2s ease, background 0.2s ease;
+        font-family: inherit;
+        width: 100%;
+        text-align: left;
+    }
+
+    .action-card:hover {
+        border-color: var(--color-sunburst);
+        background: rgba(196,154,60,0.04);
+    }
+
+    .action-card--disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+    .action-card--disabled:hover {
+        border-color: rgba(255,255,255,0.06);
+        background: var(--color-granite);
+    }
+
+    .action-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(255,255,255,0.04);
+        color: var(--color-concrete);
+    }
+
+    .action-icon svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .action-icon--sunburst { color: var(--color-sunburst); background: rgba(196,154,60,0.08); }
+    .action-icon--sage { color: var(--color-sage); background: rgba(122,140,110,0.1); }
+
+    .action-title {
+        font-family: var(--font-ui);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: var(--color-white);
+    }
+
+    .action-desc {
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 300;
+        color: rgba(255,255,255,0.4);
+        margin-top: 2px;
+    }
+
+    .action-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 32px;
+    }
+
+    /* ── Quote section ── */
+    .quote-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+    }
+
+    .quote-status::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        flex-shrink: 0;
+    }
+
+    .quote-status--draft { color: rgba(255,255,255,0.4); }
+    .quote-status--draft::before { background: rgba(255,255,255,0.3); }
+    .quote-status--sent { color: var(--color-sunburst); }
+    .quote-status--sent::before { background: var(--color-sunburst); }
+    .quote-status--signed { color: var(--color-sage); }
+    .quote-status--signed::before { background: var(--color-sage); }
+    .quote-status--expired { color: #B43C3C; }
+    .quote-status--expired::before { background: #B43C3C; }
+    .quote-status--superseded { color: rgba(255,255,255,0.25); }
+    .quote-status--superseded::before { background: rgba(255,255,255,0.2); }
+
+    /* ── Status modal (restyled) ── */
+    .status-option {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border: 1px solid rgba(255,255,255,0.06);
+        cursor: pointer;
+        transition: background 0.15s ease, border-color 0.15s ease;
+        font-family: inherit;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+    }
+
+    .status-option:hover {
+        background: rgba(255,255,255,0.03);
+        border-color: rgba(255,255,255,0.12);
+    }
+
+    .status-option--active {
+        border-color: var(--color-sunburst);
+        background: rgba(196,154,60,0.04);
+    }
+
+    .status-option-dot {
+        width: 8px;
+        height: 8px;
+        flex-shrink: 0;
+    }
+
+    .status-option-name {
+        font-family: var(--font-ui);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--color-white);
+    }
+
+    .status-option-desc {
+        font-family: var(--font-body);
+        font-size: 12px;
+        font-weight: 300;
+        color: rgba(255,255,255,0.4);
+        margin-top: 2px;
+    }
+
+    .status-option-current {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: var(--color-sunburst);
+        margin-left: auto;
+        flex-shrink: 0;
+    }
+</style>
 <div>
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
+    <div class="page-header">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">{{.FullProject.Name}}</h1>
-            {{if .FullProject.Description.Valid}}
-            <p class="mt-1 text-sm text-gray-500">{{.FullProject.Description.String}}</p>
-            {{end}}
+            <div class="page-eyebrow">Project Overview</div>
+            <h1 class="page-title">{{.FullProject.Name}}</h1>
         </div>
-        <div class="flex items-center gap-3">
-            <!-- Status Badge -->
+        <div style="display: flex; align-items: center; gap: 16px;">
             <button
                 hx-get="/projects/{{.FullProject.ID}}/status-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer
-                    {{if eq .FullProject.Status "Draft"}}bg-gray-100 text-gray-700 hover:bg-gray-200
-                    {{else if eq .FullProject.Status "In Review"}}bg-yellow-100 text-yellow-700 hover:bg-yellow-200
-                    {{else if eq .FullProject.Status "Active"}}bg-green-100 text-green-700 hover:bg-green-200
-                    {{else if eq .FullProject.Status "Completed"}}bg-blue-100 text-blue-700 hover:bg-blue-200{{end}}">
+                class="status-badge {{if eq .FullProject.Status "Draft"}}status-badge--draft{{else if eq .FullProject.Status "In Review"}}status-badge--review{{else if eq .FullProject.Status "Active"}}status-badge--active{{else if eq .FullProject.Status "Completed"}}status-badge--completed{{end}}">
                 {{.FullProject.Status}}
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </button>
-            <a href="/projects/{{.FullProject.ID}}/estimate"
-                class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+            <a href="/projects/{{.FullProject.ID}}/estimate" class="btn-primary">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
                 Edit Estimate
             </a>
         </div>
     </div>
 
-    <!-- Info Cards Row -->
-    <div class="grid grid-cols-2 gap-6 mb-6">
-        <!-- Project Info -->
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Project Info</h2>
-            <dl class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                    <dt class="text-gray-500">Created</dt>
-                    <dd class="text-gray-900">{{.FullProject.CreatedAt.Format "Jan 2, 2006"}}</dd>
+    <!-- Project + Client info -->
+    <div class="info-row">
+        <div class="info-card">
+            <div class="info-label">Project Details</div>
+            <div class="info-dl">
+                {{if .FullProject.Description.Valid}}
+                <div style="margin-bottom: 4px;">
+                    <span style="font-family: var(--font-body); font-size: 14px; color: var(--color-concrete); line-height: 1.6;">
+                        {{.FullProject.Description.String}}
+                    </span>
                 </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-500">Last Updated</dt>
-                    <dd class="text-gray-900">{{.FullProject.UpdatedAt.Format "Jan 2, 2006"}}</dd>
+                {{end}}
+                <div class="info-pair">
+                    <span class="info-key">Created</span>
+                    <span class="info-val">{{.FullProject.CreatedAt.Format "Jan 2, 2006"}}</span>
                 </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-500">Markups</dt>
-                    <dd class="text-gray-900 font-mono text-xs">
+                <div class="info-pair">
+                    <span class="info-key">Last Updated</span>
+                    <span class="info-val">{{.FullProject.UpdatedAt.Format "Jan 2, 2006"}}</span>
+                </div>
+                <div class="info-pair">
+                    <span class="info-key">Markups</span>
+                    <span class="info-val info-val--mono">
                         Mat {{printf "%.0f" .FullProject.MaterialsMarkup}}%
-                        Lab {{printf "%.0f" .FullProject.LaborMarkup}}%
-                        Equip {{printf "%.0f" .FullProject.EquipmentMarkup}}%
-                        Subs {{printf "%.0f" .FullProject.SubsMarkup}}%
-                        Other {{printf "%.0f" .FullProject.OtherMarkup}}%
-                    </dd>
+                        &middot; Lab {{printf "%.0f" .FullProject.LaborMarkup}}%
+                        &middot; Equip {{printf "%.0f" .FullProject.EquipmentMarkup}}%
+                        &middot; Subs {{printf "%.0f" .FullProject.SubsMarkup}}%
+                        &middot; Other {{printf "%.0f" .FullProject.OtherMarkup}}%
+                    </span>
                 </div>
-            </dl>
+            </div>
         </div>
-
-        <!-- Client Info -->
-        <div class="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Client</h2>
+        <div class="info-card">
+            <div class="info-label">Client</div>
             {{if .Client}}
-            <dl class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                    <dt class="text-gray-500">Company</dt>
-                    <dd class="text-gray-900 font-medium">{{.Client.CompanyName}}</dd>
+            <div class="info-dl">
+                <div class="info-pair">
+                    <span class="info-key">Company</span>
+                    <span class="info-val">{{.Client.CompanyName}}</span>
                 </div>
                 {{if .Client.ContactName.Valid}}
-                <div class="flex justify-between">
-                    <dt class="text-gray-500">Contact</dt>
-                    <dd class="text-gray-900">{{.Client.ContactName.String}}</dd>
+                <div class="info-pair">
+                    <span class="info-key">Contact</span>
+                    <span class="info-val">{{.Client.ContactName.String}}</span>
                 </div>
                 {{end}}
                 {{if .Client.Email.Valid}}
-                <div class="flex justify-between">
-                    <dt class="text-gray-500">Email</dt>
-                    <dd class="text-gray-900">{{.Client.Email.String}}</dd>
+                <div class="info-pair">
+                    <span class="info-key">Email</span>
+                    <a href="mailto:{{.Client.Email.String}}" class="info-val info-val--link">{{.Client.Email.String}}</a>
                 </div>
                 {{end}}
                 {{if .Client.Phone.Valid}}
-                <div class="flex justify-between">
-                    <dt class="text-gray-500">Phone</dt>
-                    <dd class="text-gray-900">{{.Client.Phone.String}}</dd>
+                <div class="info-pair">
+                    <span class="info-key">Phone</span>
+                    <span class="info-val">{{.Client.Phone.String}}</span>
                 </div>
                 {{end}}
-            </dl>
+            </div>
             {{else}}
-            <p class="text-sm text-gray-400">No client linked to this project.</p>
+            <p class="info-empty">No client linked to this project.</p>
             {{end}}
         </div>
     </div>
 
-    <!-- Cost Summary KPIs -->
-    <div class="mb-6">
-        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Cost Summary</h2>
-        <div class="grid grid-cols-6 gap-3">
-            <!-- Grand Total -->
-            <div class="bg-gray-900 text-white rounded-lg p-4">
-                <p class="text-xs text-gray-400">Grand Total</p>
-                <p class="text-xl font-bold">{{money .CostSummary.GrandTotal}}</p>
-                <p class="text-xs text-gray-400 mt-1">Base {{money .CostSummary.BaseTotal}} + Markup {{money .CostSummary.MarkupTotal}}</p>
+    <!-- Cost Summary -->
+    <div class="cost-grid">
+        <div class="cost-card">
+            <div class="cost-label">Grand Total</div>
+            <div class="cost-value cost-value--grand">{{money .CostSummary.GrandTotal}}</div>
+            <div class="cost-sub">Base {{money .CostSummary.BaseTotal}} + Markup {{money .CostSummary.MarkupTotal}}</div>
+        </div>
+        {{if gtf (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup) 0}}
+        <div class="cost-card">
+            <div class="cost-label">Materials</div>
+            <div class="cost-value">{{money (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup)}}</div>
+            <div class="cost-sub">Base {{money .CostSummary.MaterialsBase}}</div>
+        </div>
+        {{end}}
+        {{if gtf (addf .CostSummary.LaborBase .CostSummary.LaborMarkup) 0}}
+        <div class="cost-card">
+            <div class="cost-label">Labor</div>
+            <div class="cost-value">{{money (addf .CostSummary.LaborBase .CostSummary.LaborMarkup)}}</div>
+            <div class="cost-sub">Base {{money .CostSummary.LaborBase}}</div>
+        </div>
+        {{end}}
+        {{if gtf (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup) 0}}
+        <div class="cost-card">
+            <div class="cost-label">Equipment</div>
+            <div class="cost-value">{{money (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup)}}</div>
+            <div class="cost-sub">Base {{money .CostSummary.EquipmentBase}}</div>
+        </div>
+        {{end}}
+        {{if gtf (addf .CostSummary.SubsBase .CostSummary.SubsMarkup) 0}}
+        <div class="cost-card">
+            <div class="cost-label">Subcontractors</div>
+            <div class="cost-value">{{money (addf .CostSummary.SubsBase .CostSummary.SubsMarkup)}}</div>
+            <div class="cost-sub">Base {{money .CostSummary.SubsBase}}</div>
+        </div>
+        {{end}}
+        {{if gtf (addf .CostSummary.OtherBase .CostSummary.OtherMarkup) 0}}
+        <div class="cost-card">
+            <div class="cost-label">Other</div>
+            <div class="cost-value">{{money (addf .CostSummary.OtherBase .CostSummary.OtherMarkup)}}</div>
+            <div class="cost-sub">Base {{money .CostSummary.OtherBase}}</div>
+        </div>
+        {{end}}
+        {{if gtf .CostSummary.LumpSumTotal 0}}
+        <div class="cost-card">
+            <div class="cost-label">Lump Sums</div>
+            <div class="cost-value">{{money .CostSummary.LumpSumTotal}}</div>
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Two-column layout: breakdown + actions -->
+    <div class="overview-grid">
+        <!-- Left: Sections breakdown + Quotes -->
+        <div>
+            <!-- Sections Breakdown -->
+            {{if .CostSummary.Sections}}
+            <div style="margin-bottom: 32px;">
+                <div class="section-label">Sections Breakdown</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Section</th>
+                                <th class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{range .CostSummary.Sections}}
+                            <tr>
+                                <td class="cell-primary">{{.Name}}</td>
+                                <td class="cell-total">{{money .Total}}</td>
+                            </tr>
+                            {{end}}
+                            <tr class="table-total-row">
+                                <td class="cell-primary" style="font-weight: 600;">Total</td>
+                                <td class="cell-total" style="font-weight: 600; color: var(--color-sunburst);">{{money .CostSummary.GrandTotal}}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            {{if gtf (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup) 0}}
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p class="text-xs text-blue-600">Materials</p>
-                <p class="text-lg font-bold text-blue-900">{{money (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup)}}</p>
-                <p class="text-xs text-blue-400">Base {{money .CostSummary.MaterialsBase}}</p>
+            {{else}}
+            <div style="margin-bottom: 32px;">
+                <div class="section-label">Estimate</div>
+                <div class="table-wrap">
+                    <div class="empty-state">
+                        <p>No estimate data yet.</p>
+                        <p>
+                            <a href="/projects/{{.FullProject.ID}}/estimate"
+                                style="color: var(--color-sunburst); text-decoration: none;">
+                                Open the Estimate Builder
+                            </a>
+                            to start building your estimate.
+                        </p>
+                    </div>
+                </div>
             </div>
             {{end}}
-            {{if gtf (addf .CostSummary.LaborBase .CostSummary.LaborMarkup) 0}}
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <p class="text-xs text-amber-600">Labor</p>
-                <p class="text-lg font-bold text-amber-900">{{money (addf .CostSummary.LaborBase .CostSummary.LaborMarkup)}}</p>
-                <p class="text-xs text-amber-400">Base {{money .CostSummary.LaborBase}}</p>
+
+            <!-- Quote Versions -->
+            <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <div class="section-label" style="margin-bottom: 0;">Quote Versions</div>
+                    <button hx-post="/projects/{{.FullProject.ID}}/quotes" hx-target="#quote-list" hx-swap="innerHTML"
+                        class="btn-primary" style="padding: 8px 16px; font-size: 11px;">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 12px; height: 12px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        New Quote
+                    </button>
+                </div>
+                <div id="quote-list"
+                    hx-get="/projects/{{.FullProject.ID}}/quotes" hx-trigger="load" hx-swap="innerHTML">
+                    <div class="table-wrap">
+                        <div class="empty-state" style="padding: 32px 20px;">
+                            <p>Loading quotes...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            {{end}}
-            {{if gtf (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup) 0}}
-            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                <p class="text-xs text-purple-600">Equipment</p>
-                <p class="text-lg font-bold text-purple-900">{{money (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup)}}</p>
-                <p class="text-xs text-purple-400">Base {{money .CostSummary.EquipmentBase}}</p>
+        </div>
+
+        <!-- Right: Actions + Output Documents -->
+        <div>
+            <!-- Actions -->
+            <div class="action-group-label">Actions</div>
+            <div class="action-stack">
+                <a href="/projects/{{.FullProject.ID}}/estimate" class="action-card">
+                    <div class="action-icon action-icon--sunburst">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="action-title">Edit Estimate</div>
+                        <div class="action-desc">Modify line items and markups</div>
+                    </div>
+                </a>
+                <button hx-post="/projects/{{.FullProject.ID}}/quotes" hx-target="#quote-list" hx-swap="innerHTML"
+                    class="action-card">
+                    <div class="action-icon action-icon--sage">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="action-title">Create Quote</div>
+                        <div class="action-desc">Snapshot estimate for client</div>
+                    </div>
+                </button>
             </div>
-            {{end}}
-            {{if gtf (addf .CostSummary.SubsBase .CostSummary.SubsMarkup) 0}}
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p class="text-xs text-green-600">Subcontractors</p>
-                <p class="text-lg font-bold text-green-900">{{money (addf .CostSummary.SubsBase .CostSummary.SubsMarkup)}}</p>
-                <p class="text-xs text-green-400">Base {{money .CostSummary.SubsBase}}</p>
+
+            <!-- Output Documents -->
+            <div class="action-group-label">Output Documents</div>
+            <div class="action-stack">
+                <div class="action-card action-card--disabled">
+                    <div class="action-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="action-title">Internal Estimate</div>
+                        <div class="action-desc">Full detailed breakdown (PDF)</div>
+                    </div>
+                </div>
+                <div class="action-card action-card--disabled">
+                    <div class="action-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="action-title">Crew Material List</div>
+                        <div class="action-desc">Organized by section (PDF)</div>
+                    </div>
+                </div>
+                <div class="action-card action-card--disabled">
+                    <div class="action-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="action-title">Supplier Order List</div>
+                        <div class="action-desc">Consolidated quantities (PDF)</div>
+                    </div>
+                </div>
             </div>
-            {{end}}
-            {{if gtf (addf .CostSummary.OtherBase .CostSummary.OtherMarkup) 0}}
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p class="text-xs text-gray-600">Other</p>
-                <p class="text-lg font-bold text-gray-900">{{money (addf .CostSummary.OtherBase .CostSummary.OtherMarkup)}}</p>
-                <p class="text-xs text-gray-400">Base {{money .CostSummary.OtherBase}}</p>
-            </div>
-            {{end}}
-            {{if gtf .CostSummary.LumpSumTotal 0}}
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p class="text-xs text-gray-600">Lump Sums</p>
-                <p class="text-lg font-bold text-gray-900">{{money .CostSummary.LumpSumTotal}}</p>
-            </div>
-            {{end}}
         </div>
     </div>
 
-    <!-- Sections Breakdown -->
-    {{if .CostSummary.Sections}}
-    <div class="mb-6">
-        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Sections Breakdown</h2>
-        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-gray-200 bg-gray-50">
-                        <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Section</th>
-                        <th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{range .CostSummary.Sections}}
-                    <tr class="border-b border-gray-100">
-                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{.Name}}</td>
-                        <td class="px-4 py-3 text-sm text-gray-900 text-right font-mono">{{money .Total}}</td>
-                    </tr>
-                    {{end}}
-                    <tr class="bg-gray-50">
-                        <td class="px-4 py-3 text-sm font-bold text-gray-900">Total</td>
-                        <td class="px-4 py-3 text-sm font-bold text-gray-900 text-right font-mono">{{money .CostSummary.GrandTotal}}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {{else}}
-    <div class="mb-6 text-center py-12 text-gray-400 bg-white rounded-lg border border-gray-200">
-        <p class="text-sm">No estimate data yet.</p>
-        <p class="text-xs mt-1">
-            <a href="/projects/{{.FullProject.ID}}/estimate" class="text-blue-500 hover:text-blue-700">Open the Estimate Builder</a>
-            to start building your estimate.
-        </p>
-    </div>
-    {{end}}
-
-    <!-- Quote Versions -->
-    <div class="mb-6">
-        <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Quote Versions</h2>
-            <button hx-post="/projects/{{.FullProject.ID}}/quotes" hx-target="#quote-list" hx-swap="innerHTML"
-                class="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700">
-                Create New Quote
-            </button>
-        </div>
-        <div id="quote-list"
-            hx-get="/projects/{{.FullProject.ID}}/quotes" hx-trigger="load" hx-swap="innerHTML">
-            <div class="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400">
-                <p class="text-sm">Loading quotes...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal outlet: empty by default, HTMX swaps self-contained modals here -->
+    <!-- Modal outlet -->
     <div id="modal-outlet"></div>
 </div>
 {{end}}
 
 {{define "status-modal"}}
-<div class="fixed inset-0 z-50 flex items-center justify-center" id="status-modal-wrapper">
-    <div class="absolute inset-0 bg-black/50" onclick="dismissModal()"></div>
-    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-sm p-6" onclick="event.stopPropagation()">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Change Status</h2>
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" onclick="event.stopPropagation()" style="max-width: 400px;">
+        <h2 class="modal-title" style="font-size: 20px;">Update Status</h2>
         <form hx-patch="/projects/{{.ProjectID}}/status" hx-swap="none">
-            <div class="space-y-2">
+            <div style="display: flex; flex-direction: column; gap: 6px;">
                 {{$current := .Status}}
-                <label class="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 {{if eq $current "Draft"}}bg-blue-50 ring-1 ring-blue-200{{end}}">
-                    <input type="radio" name="status" value="Draft" {{if eq $current "Draft"}}checked{{end}} class="text-blue-600 focus:ring-blue-500" />
-                    <div><span class="text-sm font-medium text-gray-900">Draft</span> <span class="text-xs text-gray-400 ml-1">Work in progress</span></div>
+                <label class="status-option {{if eq $current "Draft"}}status-option--active{{end}}">
+                    <input type="radio" name="status" value="Draft" {{if eq $current "Draft"}}checked{{end}}
+                        style="position: absolute; opacity: 0; width: 0; height: 0;" />
+                    <span class="status-option-dot" style="background: rgba(255,255,255,0.3);"></span>
+                    <div style="flex: 1;">
+                        <div class="status-option-name">Draft</div>
+                        <div class="status-option-desc">Work in progress</div>
+                    </div>
+                    {{if eq $current "Draft"}}<span class="status-option-current">Current</span>{{end}}
                 </label>
-                <label class="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 {{if eq $current "In Review"}}bg-blue-50 ring-1 ring-blue-200{{end}}">
-                    <input type="radio" name="status" value="In Review" {{if eq $current "In Review"}}checked{{end}} class="text-blue-600 focus:ring-blue-500" />
-                    <div><span class="text-sm font-medium text-gray-900">In Review</span> <span class="text-xs text-gray-400 ml-1">Ready for client review</span></div>
+                <label class="status-option {{if eq $current "In Review"}}status-option--active{{end}}">
+                    <input type="radio" name="status" value="In Review" {{if eq $current "In Review"}}checked{{end}}
+                        style="position: absolute; opacity: 0; width: 0; height: 0;" />
+                    <span class="status-option-dot" style="background: var(--color-sunburst);"></span>
+                    <div style="flex: 1;">
+                        <div class="status-option-name">In Review</div>
+                        <div class="status-option-desc">Estimate sent, awaiting approval</div>
+                    </div>
+                    {{if eq $current "In Review"}}<span class="status-option-current">Current</span>{{end}}
                 </label>
-                <label class="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 {{if eq $current "Active"}}bg-blue-50 ring-1 ring-blue-200{{end}}">
-                    <input type="radio" name="status" value="Active" {{if eq $current "Active"}}checked{{end}} class="text-blue-600 focus:ring-blue-500" />
-                    <div><span class="text-sm font-medium text-gray-900">Active</span> <span class="text-xs text-gray-400 ml-1">Approved and active</span></div>
+                <label class="status-option {{if eq $current "Active"}}status-option--active{{end}}">
+                    <input type="radio" name="status" value="Active" {{if eq $current "Active"}}checked{{end}}
+                        style="position: absolute; opacity: 0; width: 0; height: 0;" />
+                    <span class="status-option-dot" style="background: var(--color-sage);"></span>
+                    <div style="flex: 1;">
+                        <div class="status-option-name">Active</div>
+                        <div class="status-option-desc">Approved &amp; signed — work underway</div>
+                    </div>
+                    {{if eq $current "Active"}}<span class="status-option-current">Current</span>{{end}}
                 </label>
-                <label class="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-gray-50 {{if eq $current "Completed"}}bg-blue-50 ring-1 ring-blue-200{{end}}">
-                    <input type="radio" name="status" value="Completed" {{if eq $current "Completed"}}checked{{end}} class="text-blue-600 focus:ring-blue-500" />
-                    <div><span class="text-sm font-medium text-gray-900">Completed</span> <span class="text-xs text-gray-400 ml-1">Project finished</span></div>
+                <label class="status-option {{if eq $current "Completed"}}status-option--active{{end}}">
+                    <input type="radio" name="status" value="Completed" {{if eq $current "Completed"}}checked{{end}}
+                        style="position: absolute; opacity: 0; width: 0; height: 0;" />
+                    <span class="status-option-dot" style="background: var(--color-concrete);"></span>
+                    <div style="flex: 1;">
+                        <div class="status-option-name">Completed</div>
+                        <div class="status-option-desc">Project finished &amp; paid</div>
+                    </div>
+                    {{if eq $current "Completed"}}<span class="status-option-current">Current</span>{{end}}
                 </label>
             </div>
-            <div class="flex justify-end gap-3 mt-6">
-                <button type="button" onclick="dismissModal()"
-                    class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
-                <button type="submit" onclick="dismissModal()"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Update Status</button>
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" onclick="dismissModal()" class="btn-primary">Update</button>
             </div>
         </form>
     </div>
@@ -244,45 +773,44 @@
 
 {{define "quote-list"}}
 {{if .Quotes}}
-<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-    <table class="w-full">
+<div class="table-wrap">
+    <table>
         <thead>
-            <tr class="border-b border-gray-200 bg-gray-50">
-                <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Version</th>
-                <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Sent</th>
-                <th class="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase">Expires</th>
-                <th class="text-right px-4 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+            <tr>
+                <th>Version</th>
+                <th>Status</th>
+                <th>Sent</th>
+                <th>Expires</th>
+                <th class="text-right">Actions</th>
             </tr>
         </thead>
         <tbody>
             {{range .Quotes}}
-            <tr class="border-b border-gray-100">
-                <td class="px-4 py-3 text-sm font-medium text-gray-900">v{{.Version}}</td>
-                <td class="px-4 py-3">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                        {{if eq .Status "draft"}}bg-gray-100 text-gray-700
-                        {{else if eq .Status "sent"}}bg-blue-100 text-blue-700
-                        {{else if eq .Status "signed"}}bg-green-100 text-green-700
-                        {{else if eq .Status "expired"}}bg-red-100 text-red-700
-                        {{else if eq .Status "superseded"}}bg-yellow-100 text-yellow-700{{end}}">
+            <tr>
+                <td class="cell-primary">v{{.Version}}</td>
+                <td>
+                    <span class="quote-status
+                        {{if eq .Status "draft"}}quote-status--draft
+                        {{else if eq .Status "sent"}}quote-status--sent
+                        {{else if eq .Status "signed"}}quote-status--signed
+                        {{else if eq .Status "expired"}}quote-status--expired
+                        {{else if eq .Status "superseded"}}quote-status--superseded{{end}}">
                         {{.Status}}
                     </span>
                 </td>
-                <td class="px-4 py-3 text-sm text-gray-500">{{if .SentAt}}{{.SentAt}}{{else}}&mdash;{{end}}</td>
-                <td class="px-4 py-3 text-sm text-gray-500">{{if .ExpiresAt}}{{.ExpiresAt}}{{else}}&mdash;{{end}}</td>
-                <td class="px-4 py-3 text-right">
-                    <div class="flex items-center justify-end gap-2">
+                <td class="cell-date">{{if .SentAt}}{{.SentAt}}{{else}}&mdash;{{end}}</td>
+                <td class="cell-date">{{if .ExpiresAt}}{{.ExpiresAt}}{{else}}&mdash;{{end}}</td>
+                <td style="text-align: right;">
+                    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
                         {{if .Token}}
-                        <a href="/q/{{.Token}}" target="_blank"
-                            class="text-xs text-blue-600 hover:text-blue-800">View</a>
+                        <a href="/q/{{.Token}}" target="_blank" class="action-edit">View</a>
                         {{end}}
                         {{if eq .Status "draft"}}
                         <button hx-get="/quotes/{{.ID}}/send-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
-                            class="text-xs text-blue-600 hover:text-blue-800">Send</button>
+                            class="action-edit">Send</button>
                         {{else if eq .Status "sent"}}
                         <button hx-get="/quotes/{{.ID}}/send-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
-                            class="text-xs text-blue-600 hover:text-blue-800">Resend</button>
+                            class="action-edit">Resend</button>
                         {{end}}
                     </div>
                 </td>
@@ -292,44 +820,42 @@
     </table>
 </div>
 {{else}}
-<div class="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-400">
-    <p class="text-sm">No quotes generated yet.</p>
-    <p class="text-xs mt-1">Click "Create New Quote" to snapshot the current estimate.</p>
+<div class="table-wrap">
+    <div class="empty-state" style="padding: 32px 20px;">
+        <p>No quotes generated yet.</p>
+        <p>Click "New Quote" to snapshot the current estimate.</p>
+    </div>
 </div>
 {{end}}
 {{end}}
 
 {{define "send-modal"}}
-<div class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="absolute inset-0 bg-black/50" onclick="dismissModal()"></div>
-    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6" onclick="event.stopPropagation()">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" onclick="event.stopPropagation()">
+        <h2 class="modal-title" style="font-size: 20px;">
             {{if eq .Status "draft"}}Send Quote{{else}}Resend Quote{{end}}
         </h2>
         {{if .QuoteURL}}
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Share Link</label>
-            <div class="flex items-center gap-2">
-                <input type="text" value="{{.QuoteURL}}" readonly id="quote-link"
-                    class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600" />
+        <div class="modal-field">
+            <label class="modal-label">Share Link</label>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <input type="text" value="{{.QuoteURL}}" readonly id="quote-link" class="modal-input" style="flex: 1;" />
                 <button type="button" onclick="navigator.clipboard.writeText(window.location.origin + document.getElementById('quote-link').value)"
-                    class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200">Copy</button>
+                    class="btn-ghost" style="padding: 8px 14px; font-size: 11px; white-space: nowrap;">Copy</button>
             </div>
         </div>
         {{end}}
         <form hx-post="/quotes/{{.QuoteID}}/{{if eq .Status "draft"}}send{{else}}resend{{end}}"
             hx-target="#modal-outlet" hx-swap="innerHTML">
-            <div class="mb-4">
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email to Client (optional)</label>
-                <input type="email" name="email" id="email" value="{{.Email}}"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            <div class="modal-field">
+                <label for="email" class="modal-label">Email to Client (optional)</label>
+                <input type="email" name="email" id="email" value="{{.Email}}" class="modal-input"
                     placeholder="client@example.com" />
             </div>
-            <div class="flex justify-end gap-3">
-                <button type="button" onclick="dismissModal()"
-                    class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
-                <button type="submit"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">
                     {{if eq .Status "draft"}}Send Quote{{else}}Resend Quote{{end}}
                 </button>
             </div>
@@ -340,24 +866,26 @@
 {{end}}
 
 {{define "send-modal-result"}}
-<div class="fixed inset-0 z-50 flex items-center justify-center">
-    <div class="absolute inset-0 bg-black/50" onclick="dismissModal()"></div>
-    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6 text-center" onclick="event.stopPropagation()">
-        <svg class="w-12 h-12 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <h2 class="text-lg font-semibold text-gray-900 mb-2">Quote Sent!</h2>
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Share Link</label>
-            <div class="flex items-center gap-2">
-                <input type="text" value="{{.QuoteURL}}" readonly id="sent-quote-link"
-                    class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm text-gray-600" />
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" onclick="event.stopPropagation()" style="text-align: center;">
+        <div style="margin-bottom: 20px;">
+            <svg style="width: 48px; height: 48px; color: var(--color-sage); margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <h2 class="modal-title" style="font-size: 20px; text-align: center;">Quote Sent</h2>
+        <div class="modal-field">
+            <label class="modal-label">Share Link</label>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <input type="text" value="{{.QuoteURL}}" readonly id="sent-quote-link" class="modal-input" style="flex: 1;" />
                 <button type="button" onclick="navigator.clipboard.writeText(window.location.origin + document.getElementById('sent-quote-link').value)"
-                    class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200">Copy</button>
+                    class="btn-ghost" style="padding: 8px 14px; font-size: 11px; white-space: nowrap;">Copy</button>
             </div>
         </div>
-        <button type="button" onclick="dismissModal()"
-            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700">Done</button>
+        <div class="modal-actions" style="justify-content: center;">
+            <button type="button" onclick="dismissModal()" class="btn-primary">Done</button>
+        </div>
     </div>
 </div>
 <script>function dismissModal(){document.getElementById('modal-outlet').innerHTML='';}</script>
