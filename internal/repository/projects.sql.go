@@ -350,6 +350,21 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (P
 	return i, err
 }
 
+const updateProjectClient = `-- name: UpdateProjectClient :exec
+UPDATE projects SET client_id = $2, client_name = $3, updated_at = now() WHERE id = $1
+`
+
+type UpdateProjectClientParams struct {
+	ID         string         `json:"id"`
+	ClientID   sql.NullString `json:"client_id"`
+	ClientName sql.NullString `json:"client_name"`
+}
+
+func (q *Queries) UpdateProjectClient(ctx context.Context, arg UpdateProjectClientParams) error {
+	_, err := q.db.ExecContext(ctx, updateProjectClient, arg.ID, arg.ClientID, arg.ClientName)
+	return err
+}
+
 const updateProjectStatus = `-- name: UpdateProjectStatus :exec
 UPDATE projects SET status = $2, updated_at = now() WHERE id = $1
 `

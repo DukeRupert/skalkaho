@@ -1,6 +1,7 @@
 package app
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 
@@ -13,6 +14,7 @@ type OverviewPageData struct {
 	PageData
 	FullProject repository.Project
 	Client      *repository.Client
+	Clients     []repository.Client
 	CostSummary domain.ProjectCostSummary
 	Sections    []domain.EstimateSection
 }
@@ -38,6 +40,13 @@ func (h *Handler) GetProjectOverview(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Load all clients for the selector
+	clients, err := h.queries.ListClients(ctx)
+	if err != nil {
+		h.logger.Error("listing clients", "error", err)
+		clients = nil
+	}
+
 	// Load estimate data and calculate costs using shared function
 	sections, err := h.loadEstimateSections(r, projectID)
 	if err != nil {
@@ -59,6 +68,7 @@ func (h *Handler) GetProjectOverview(w http.ResponseWriter, r *http.Request) {
 		PageData:    h.pageData(r, "overview"),
 		FullProject: project,
 		Client:      client,
+		Clients:     clients,
 		CostSummary: costSummary,
 		Sections:    sections,
 	}
@@ -68,6 +78,42 @@ func (h *Handler) GetProjectOverview(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("rendering project overview", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
+}
+
+// UpdateProjectClient handles PATCH /projects/{id}/client.
+func (h *Handler) UpdateProjectClient(w http.ResponseWriter, r *http.Request) {
+	projectID := r.PathValue("id")
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	clientID := r.FormValue("client_id")
+	var clientName string
+
+	if clientID != "" {
+		client, err := h.queries.GetClient(r.Context(), clientID)
+		if err != nil {
+			h.logger.Error("getting client", "error", err)
+			http.Error(w, "Client not found", http.StatusNotFound)
+			return
+		}
+		clientName = client.CompanyName
+	}
+
+	if err := h.queries.UpdateProjectClient(r.Context(), repository.UpdateProjectClientParams{
+		ID:         projectID,
+		ClientID:   sql.NullString{String: clientID, Valid: clientID != ""},
+		ClientName: sql.NullString{String: clientName, Valid: clientName != ""},
+	}); err != nil {
+		h.logger.Error("updating project client", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect back to overview to show updated client
+	w.Header().Set("HX-Redirect", fmt.Sprintf("/projects/%s", projectID))
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // GetStatusModal returns the status selector modal HTML.

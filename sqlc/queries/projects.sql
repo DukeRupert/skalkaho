@@ -29,6 +29,9 @@ SET name = $2, client_id = $3, client_name = $4, description = $5, updated_at = 
 WHERE id = $1
 RETURNING *;
 
+-- name: UpdateProjectClient :exec
+UPDATE projects SET client_id = $2, client_name = $3, updated_at = now() WHERE id = $1;
+
 -- name: UpdateProjectStatus :exec
 UPDATE projects SET status = $2, updated_at = now() WHERE id = $1;
 

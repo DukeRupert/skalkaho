@@ -62,13 +62,14 @@
 	}
 </script>
 
-<div class="mb-4 border border-white/[0.06] rounded-lg overflow-hidden bg-[var(--color-ink)]">
-	<div class="flex items-center justify-between px-4 py-3 bg-[var(--color-granite)] text-[var(--color-white)]">
+<div class="mb-6 border border-white/[0.06] overflow-hidden" style="background: var(--color-ink);">
+	<!-- Section header -->
+	<div class="flex items-center justify-between px-5 py-3 group/sec" style="background: var(--color-granite);">
 		<button
-			class="flex items-center gap-3 hover:bg-white/[0.06] -ml-2 px-2 py-1 rounded transition-colors text-left flex-1 min-w-0"
+			class="flex items-center gap-3 hover:bg-white/[0.04] -ml-2 px-2 py-1 transition-colors text-left flex-1 min-w-0"
 			onclick={() => isCollapsed = !isCollapsed}
 		>
-			<svg class="w-4 h-4 text-white/40 transition-transform {isCollapsed ? '' : 'rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-4 h-4 text-white/30 transition-transform shrink-0 {isCollapsed ? '' : 'rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
 			</svg>
 			{#if isEditing}
@@ -77,24 +78,33 @@
 					type="text"
 					bind:value={editName}
 					autofocus
-					class="bg-white/[0.06] text-[var(--color-white)] px-2 py-0.5 rounded text-sm font-semibold border border-white/[0.08] focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] font-[var(--font-ui)]"
+					class="bg-white/[0.06] text-[var(--color-white)] px-2 py-0.5 text-sm font-semibold border border-white/[0.08] focus:ring-1 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] font-[var(--font-ui)] uppercase tracking-wide"
 					onclick={(e) => e.stopPropagation()}
 					onkeydown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') isEditing = false; }}
 					onblur={commitRename}
 				/>
 			{:else}
-				<span role="button" tabindex="0" class="font-semibold font-[var(--font-ui)] uppercase tracking-wide" ondblclick={(e) => { e.stopPropagation(); startRename(); }}>{section.name}</span>
+				<span class="font-semibold font-[var(--font-ui)] uppercase tracking-wide text-[var(--color-white)]">{section.name}</span>
+				<button
+					onclick={(e) => { e.stopPropagation(); startRename(); }}
+					class="opacity-0 group-hover/sec:opacity-100 text-white/20 hover:text-[var(--color-sunburst)] transition-opacity p-0.5 shrink-0"
+					title="Rename section"
+				>
+					<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+					</svg>
+				</button>
 			{/if}
-			<span class="text-xs text-white/40 font-[var(--font-body)]">
+			<span class="text-xs text-white/30 font-[var(--font-body)]">
 				{section.subcategories.length} subcategor{section.subcategories.length !== 1 ? 'ies' : 'y'}
 				&middot; {totalItems} item{totalItems !== 1 ? 's' : ''}
 			</span>
 		</button>
-		<div class="flex items-center gap-2">
-			<span class="font-mono font-semibold">{formatMoney(totals.withMarkup)}</span>
+		<div class="flex items-center gap-3">
+			<span class="font-mono font-semibold text-[var(--color-white)]">{formatMoney(totals.withMarkup)}</span>
 			<button
 				onclick={() => ondelete?.(section.id)}
-				class="text-white/30 hover:text-red-400 transition-colors p-1"
+				class="text-white/20 hover:text-red-400 transition-colors p-1"
 				title="Delete section"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,7 +116,7 @@
 
 	{#if !isCollapsed}
 		{#if section.subcategories.length === 0 && !showAddSubcat}
-			<div class="px-4 py-8 text-center text-[var(--color-muted-text)] text-sm font-[var(--font-body)]">
+			<div class="px-5 py-10 text-center text-[var(--color-muted-text)] text-sm font-[var(--font-body)]">
 				No subcategories yet
 			</div>
 		{:else}
@@ -115,25 +125,25 @@
 			{/each}
 		{/if}
 
-		<div class="px-4 pb-3">
+		<div class="px-5 pb-4">
 			{#if showAddSubcat}
 				<div class="flex items-center gap-2 mt-2">
 					<input
 						type="text"
 						bind:value={newSubcatName}
 						placeholder="Subcategory name"
-						class="flex-1 px-2 py-1.5 bg-transparent border-0 border-b-2 border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/30"
+						class="flex-1 px-0 py-1.5 bg-transparent border-0 border-b border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/20"
 						onkeydown={(e) => { if (e.key === 'Enter') addSubcategory(); if (e.key === 'Escape') showAddSubcat = false; }}
 					/>
-					<button onclick={addSubcategory} class="px-2 py-1.5 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-xs rounded font-[var(--font-ui)] font-semibold hover:brightness-110">Add</button>
+					<button onclick={addSubcategory} class="px-3 py-1.5 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-xs font-[var(--font-ui)] font-bold uppercase tracking-wide hover:brightness-110">Add</button>
 					<button onclick={() => showAddSubcat = false} class="px-2 py-1.5 text-[var(--color-muted-text)] text-xs hover:text-[var(--color-white)] font-[var(--font-ui)]">Cancel</button>
 				</div>
 			{:else}
 				<button
 					onclick={() => showAddSubcat = true}
-					class="mt-2 text-sm text-[var(--color-sunburst)] hover:brightness-110 flex items-center gap-1 font-[var(--font-ui)]"
+					class="mt-2 text-xs text-[var(--color-muted-text)] hover:text-[var(--color-sunburst)] flex items-center gap-1 font-[var(--font-ui)] uppercase tracking-wide transition-colors"
 				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
 					</svg>
 					Add Subcategory

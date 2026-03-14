@@ -63,6 +63,36 @@
         background-color: rgba(212,206,198,0.04);
     }
 
+    /* ── Client select ── */
+    .client-select {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        padding: 6px 28px 6px 0;
+        font-family: var(--font-body);
+        font-size: 13px;
+        color: var(--color-concrete);
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.2s ease, color 0.2s ease;
+        background-image: url("data:image/svg+xml,%3Csvg fill='none' stroke='rgba(255,255,255,0.3)' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 4px center;
+        background-size: 14px;
+    }
+
+    .client-select:focus {
+        border-bottom-color: var(--color-sunburst);
+    }
+
+    .client-select option {
+        background: var(--color-granite);
+        color: var(--color-white);
+    }
+
     /* ── Two-column layout ── */
     .overview-grid {
         display: grid;
@@ -440,8 +470,28 @@
                 </div>
                 {{end}}
             </div>
+            <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06);">
+                <select name="client_id"
+                    hx-patch="/projects/{{.FullProject.ID}}/client" hx-swap="none"
+                    class="client-select">
+                    <option value="">No client</option>
+                    {{range .Clients}}
+                    <option value="{{.ID}}" {{if and $.Client (eq $.Client.ID .ID)}}selected{{end}}>{{.CompanyName}}</option>
+                    {{end}}
+                </select>
+            </div>
             {{else}}
-            <p class="info-empty">No client linked to this project.</p>
+            <div>
+                <p class="info-empty" style="margin-bottom: 12px;">No client linked to this project.</p>
+                <select name="client_id"
+                    hx-patch="/projects/{{.FullProject.ID}}/client" hx-swap="none"
+                    class="client-select">
+                    <option value="" selected>Select a client...</option>
+                    {{range .Clients}}
+                    <option value="{{.ID}}">{{.CompanyName}}</option>
+                    {{end}}
+                </select>
+            </div>
             {{end}}
         </div>
     </div>

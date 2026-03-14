@@ -23,13 +23,6 @@
 				source: 'material',
 			}));
 		} else {
-			// Labor, equipment, subs, other — search rates
-			const catMap = {
-				labor: 'Labor',
-				equipment: 'Equipment Rentals',
-				subs: 'Subcontractors',
-				other: 'Other',
-			};
 			pool = ratesDb
 				.filter(r => {
 					if (categoryType === 'labor') return r.category === 'Labor';
@@ -66,7 +59,6 @@
 			if (results.length > 0 && selectedIndex < results.length) {
 				selectItem(results[selectedIndex]);
 			} else if (query.trim()) {
-				// Custom item — not from DB
 				selectCustom();
 			}
 		} else if (e.key === 'Escape') {
@@ -98,12 +90,10 @@
 	}
 
 	$effect(() => {
-		// Reset selection when results change
 		selectedIndex = 0;
 	});
 
 	$effect(() => {
-		// Auto-focus on mount
 		inputEl?.focus();
 	});
 </script>
@@ -115,34 +105,34 @@
 		bind:value={query}
 		onkeydown={handleKeydown}
 		placeholder="Search items or type a name..."
-		class="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] rounded-lg text-[var(--color-white)]
-			focus:ring-2 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] outline-none placeholder-white/30 font-[var(--font-body)]"
+		class="w-full px-3 py-2 text-sm bg-white/[0.04] border border-white/[0.08] text-[var(--color-white)]
+			focus:ring-1 focus:ring-[var(--color-sunburst)] focus:border-[var(--color-sunburst)] outline-none placeholder-white/20 font-[var(--font-body)]"
 	/>
 
 	{#if results.length > 0}
-		<div class="absolute top-full left-0 right-0 mt-1 bg-[var(--color-granite)] border border-white/[0.08] rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+		<div class="absolute top-full left-0 right-0 mt-1 border border-white/[0.08] shadow-lg z-50 max-h-64 overflow-y-auto" style="background: var(--color-granite);">
 			{#each results as item, i}
 				<button
 					class="w-full text-left px-3 py-2 text-sm flex items-center justify-between
-						hover:bg-white/[0.06] {i === selectedIndex ? 'bg-[var(--color-sunburst)]/10' : ''}"
+						hover:bg-white/[0.04] {i === selectedIndex ? 'bg-white/[0.06]' : ''} transition-colors"
 					onclick={() => selectItem(item)}
 					onmouseenter={() => selectedIndex = i}
 				>
 					<div>
 						<span class="text-[var(--color-white)] font-[var(--font-body)]">{item.name}</span>
-						<span class="text-xs text-white/40 ml-2 font-[var(--font-body)]">{item.category}</span>
+						<span class="text-xs text-white/30 ml-2 font-[var(--font-body)]">{item.category}</span>
 					</div>
 					<div class="flex items-center gap-2 text-xs">
-						<span class="font-mono text-[var(--color-muted-text)]">${item.price.toFixed(2)}</span>
-						<span class="text-white/40">/ {item.unit}</span>
+						<span class="font-mono text-[var(--color-sunburst)]">${item.price.toFixed(2)}</span>
+						<span class="text-white/30">/ {item.unit}</span>
 					</div>
 				</button>
 			{/each}
 		</div>
 	{:else if query.length > 0}
-		<div class="absolute top-full left-0 right-0 mt-1 bg-[var(--color-granite)] border border-white/[0.08] rounded-lg shadow-lg z-50">
+		<div class="absolute top-full left-0 right-0 mt-1 border border-white/[0.08] shadow-lg z-50" style="background: var(--color-granite);">
 			<button
-				class="w-full text-left px-3 py-2 text-sm text-[var(--color-muted-text)] hover:bg-white/[0.06] font-[var(--font-body)]"
+				class="w-full text-left px-3 py-2 text-sm text-[var(--color-muted-text)] hover:bg-white/[0.04] font-[var(--font-body)] transition-colors"
 				onclick={selectCustom}
 			>
 				Add custom item: <span class="font-medium text-[var(--color-white)]">"{query}"</span>

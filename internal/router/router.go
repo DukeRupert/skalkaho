@@ -31,6 +31,7 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	mux.Handle("POST /projects", protect(sm, http.HandlerFunc(appH.CreateProject)))
 	mux.Handle("DELETE /projects/{id}", protect(sm, http.HandlerFunc(appH.DeleteProject)))
 	mux.Handle("PATCH /projects/{id}/status", protect(sm, http.HandlerFunc(appH.UpdateProjectStatus)))
+	mux.Handle("PATCH /projects/{id}/client", protect(sm, http.HandlerFunc(appH.UpdateProjectClient)))
 	mux.Handle("GET /clients", protect(sm, http.HandlerFunc(appH.ListClients)))
 	mux.Handle("GET /clients/new-modal", protect(sm, http.HandlerFunc(appH.NewClientModal)))
 	mux.Handle("POST /clients", protect(sm, http.HandlerFunc(appH.CreateClient)))

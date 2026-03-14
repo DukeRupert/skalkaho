@@ -21,13 +21,13 @@
 	};
 </script>
 
-<div class="fixed bottom-0 left-0 right-0 bg-[var(--color-ink)] text-[var(--color-white)] border-t border-white/[0.08] z-20">
-	<div class="flex items-center justify-between px-4 py-3">
+<div class="fixed bottom-0 right-0 border-t-2 z-20" style="left: var(--sidebar-width, 220px); background: var(--color-granite); border-color: var(--color-sunburst);">
+	<div class="flex items-center justify-between px-5 py-3">
 		<div class="flex items-center gap-6 text-sm">
 			<!-- Base cost -->
 			<div class="flex flex-col">
-				<span class="text-xs text-white/40 uppercase tracking-wide font-[var(--font-ui)]">Base Cost</span>
-				<span class="font-mono">{formatMoney(totals.base)}</span>
+				<span class="text-xs text-white/30 uppercase tracking-wider font-[var(--font-ui)]">Base Cost</span>
+				<span class="font-mono text-[var(--color-concrete)]">{formatMoney(totals.base)}</span>
 			</div>
 
 			<!-- Divider -->
@@ -36,8 +36,8 @@
 			<!-- Per-type totals (only non-zero) -->
 			{#each activeTypes as { type, value }}
 				<div class="flex flex-col">
-					<span class="text-xs text-white/40 uppercase tracking-wide font-[var(--font-ui)]">{TYPE_LABELS[type]}</span>
-					<span class="font-mono">{formatMoney(value)}</span>
+					<span class="text-xs text-white/30 uppercase tracking-wider font-[var(--font-ui)]">{TYPE_LABELS[type]}</span>
+					<span class="font-mono text-[var(--color-concrete)]">{formatMoney(value)}</span>
 				</div>
 			{/each}
 
@@ -48,7 +48,7 @@
 
 		<!-- Grand total -->
 		<div class="flex flex-col items-end">
-			<span class="text-xs text-white/40 uppercase tracking-wide font-[var(--font-ui)]">Total</span>
+			<span class="text-xs text-white/30 uppercase tracking-wider font-[var(--font-ui)]">Total</span>
 			<span class="font-mono text-lg font-bold text-[var(--color-sunburst)]">{formatMoney(totals.withMarkup)}</span>
 		</div>
 	</div>
