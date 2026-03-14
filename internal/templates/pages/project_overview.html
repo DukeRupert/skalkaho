@@ -13,12 +13,11 @@
     .status--completed { color: var(--color-concrete); }
     .status--completed::before { background: var(--color-concrete); }
 
-    /* ── Status badge (clickable) ── */
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 16px;
+    /* ── Status select dropdown ── */
+    .status-select {
+        appearance: none;
+        -webkit-appearance: none;
+        padding: 6px 28px 6px 16px;
         font-family: var(--font-ui);
         font-size: 11px;
         font-weight: 700;
@@ -26,52 +25,42 @@
         text-transform: uppercase;
         border: 1px solid;
         cursor: pointer;
+        outline: none;
         transition: background 0.15s ease, border-color 0.15s ease;
+        background-image: url("data:image/svg+xml,%3Csvg fill='none' stroke='rgba(255,255,255,0.4)' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 12px;
     }
 
-    .status-badge::before {
-        content: '';
-        width: 7px;
-        height: 7px;
-        flex-shrink: 0;
+    .status-select option {
+        background: var(--color-granite);
+        color: var(--color-white);
+        font-weight: 600;
     }
 
-    .status-badge--draft {
+    .status-select--draft {
         color: rgba(255,255,255,0.5);
         border-color: rgba(255,255,255,0.12);
-        background: rgba(255,255,255,0.03);
+        background-color: rgba(255,255,255,0.03);
     }
-    .status-badge--draft::before { background: rgba(255,255,255,0.35); }
-    .status-badge--draft:hover { background: rgba(255,255,255,0.06); }
 
-    .status-badge--review {
+    .status-select--review {
         color: var(--color-sunburst);
         border-color: rgba(196,154,60,0.25);
-        background: rgba(196,154,60,0.06);
+        background-color: rgba(196,154,60,0.06);
     }
-    .status-badge--review::before { background: var(--color-sunburst); }
-    .status-badge--review:hover { background: rgba(196,154,60,0.12); }
 
-    .status-badge--active {
+    .status-select--active {
         color: var(--color-sage);
         border-color: rgba(122,140,110,0.3);
-        background: rgba(122,140,110,0.06);
+        background-color: rgba(122,140,110,0.06);
     }
-    .status-badge--active::before { background: var(--color-sage); }
-    .status-badge--active:hover { background: rgba(122,140,110,0.12); }
 
-    .status-badge--completed {
+    .status-select--completed {
         color: var(--color-concrete);
         border-color: rgba(212,206,198,0.2);
-        background: rgba(212,206,198,0.04);
-    }
-    .status-badge--completed::before { background: var(--color-concrete); }
-    .status-badge--completed:hover { background: rgba(212,206,198,0.08); }
-
-    .status-badge svg {
-        width: 10px;
-        height: 10px;
-        opacity: 0.5;
+        background-color: rgba(212,206,198,0.04);
     }
 
     /* ── Two-column layout ── */
@@ -366,64 +355,6 @@
     .quote-status--superseded { color: rgba(255,255,255,0.25); }
     .quote-status--superseded::before { background: rgba(255,255,255,0.2); }
 
-    /* ── Status modal (restyled) ── */
-    .status-option {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 14px 16px;
-        border: 1px solid rgba(255,255,255,0.06);
-        cursor: pointer;
-        transition: background 0.15s ease, border-color 0.15s ease;
-        font-family: inherit;
-        width: 100%;
-        text-align: left;
-        background: transparent;
-    }
-
-    .status-option:hover {
-        background: rgba(255,255,255,0.03);
-        border-color: rgba(255,255,255,0.12);
-    }
-
-    .status-option--active {
-        border-color: var(--color-sunburst);
-        background: rgba(196,154,60,0.04);
-    }
-
-    .status-option-dot {
-        width: 8px;
-        height: 8px;
-        flex-shrink: 0;
-    }
-
-    .status-option-name {
-        font-family: var(--font-ui);
-        font-size: 13px;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--color-white);
-    }
-
-    .status-option-desc {
-        font-family: var(--font-body);
-        font-size: 12px;
-        font-weight: 300;
-        color: rgba(255,255,255,0.4);
-        margin-top: 2px;
-    }
-
-    .status-option-current {
-        font-family: var(--font-ui);
-        font-size: 10px;
-        font-weight: 600;
-        letter-spacing: 0.10em;
-        text-transform: uppercase;
-        color: var(--color-sunburst);
-        margin-left: auto;
-        flex-shrink: 0;
-    }
 </style>
 <div>
     <!-- Header -->
@@ -433,14 +364,14 @@
             <h1 class="page-title">{{.FullProject.Name}}</h1>
         </div>
         <div style="display: flex; align-items: center; gap: 16px;">
-            <button
-                hx-get="/projects/{{.FullProject.ID}}/status-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
-                class="status-badge {{if eq .FullProject.Status "Draft"}}status-badge--draft{{else if eq .FullProject.Status "In Review"}}status-badge--review{{else if eq .FullProject.Status "Active"}}status-badge--active{{else if eq .FullProject.Status "Completed"}}status-badge--completed{{end}}">
-                {{.FullProject.Status}}
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </button>
+            <select name="status"
+                hx-patch="/projects/{{.FullProject.ID}}/status" hx-swap="none"
+                class="status-select {{if eq .FullProject.Status "Draft"}}status-select--draft{{else if eq .FullProject.Status "In Review"}}status-select--review{{else if eq .FullProject.Status "Active"}}status-select--active{{else if eq .FullProject.Status "Completed"}}status-select--completed{{end}}">
+                <option value="Draft" {{if eq .FullProject.Status "Draft"}}selected{{end}}>Draft</option>
+                <option value="In Review" {{if eq .FullProject.Status "In Review"}}selected{{end}}>In Review</option>
+                <option value="Active" {{if eq .FullProject.Status "Active"}}selected{{end}}>Active</option>
+                <option value="Completed" {{if eq .FullProject.Status "Completed"}}selected{{end}}>Completed</option>
+            </select>
             <a href="/projects/{{.FullProject.ID}}/estimate" class="btn-primary">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -710,65 +641,6 @@
     <!-- Modal outlet -->
     <div id="modal-outlet"></div>
 </div>
-{{end}}
-
-{{define "status-modal"}}
-<div class="modal-backdrop">
-    <div class="modal-overlay" onclick="dismissModal()"></div>
-    <div class="modal-panel" onclick="event.stopPropagation()" style="max-width: 400px;">
-        <h2 class="modal-title" style="font-size: 20px;">Update Status</h2>
-        <form hx-patch="/projects/{{.ProjectID}}/status" hx-swap="none">
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                {{$current := .Status}}
-                <label class="status-option {{if eq $current "Draft"}}status-option--active{{end}}">
-                    <input type="radio" name="status" value="Draft" {{if eq $current "Draft"}}checked{{end}}
-                        style="position: absolute; opacity: 0; width: 0; height: 0;" />
-                    <span class="status-option-dot" style="background: rgba(255,255,255,0.3);"></span>
-                    <div style="flex: 1;">
-                        <div class="status-option-name">Draft</div>
-                        <div class="status-option-desc">Work in progress</div>
-                    </div>
-                    {{if eq $current "Draft"}}<span class="status-option-current">Current</span>{{end}}
-                </label>
-                <label class="status-option {{if eq $current "In Review"}}status-option--active{{end}}">
-                    <input type="radio" name="status" value="In Review" {{if eq $current "In Review"}}checked{{end}}
-                        style="position: absolute; opacity: 0; width: 0; height: 0;" />
-                    <span class="status-option-dot" style="background: var(--color-sunburst);"></span>
-                    <div style="flex: 1;">
-                        <div class="status-option-name">In Review</div>
-                        <div class="status-option-desc">Estimate sent, awaiting approval</div>
-                    </div>
-                    {{if eq $current "In Review"}}<span class="status-option-current">Current</span>{{end}}
-                </label>
-                <label class="status-option {{if eq $current "Active"}}status-option--active{{end}}">
-                    <input type="radio" name="status" value="Active" {{if eq $current "Active"}}checked{{end}}
-                        style="position: absolute; opacity: 0; width: 0; height: 0;" />
-                    <span class="status-option-dot" style="background: var(--color-sage);"></span>
-                    <div style="flex: 1;">
-                        <div class="status-option-name">Active</div>
-                        <div class="status-option-desc">Approved &amp; signed — work underway</div>
-                    </div>
-                    {{if eq $current "Active"}}<span class="status-option-current">Current</span>{{end}}
-                </label>
-                <label class="status-option {{if eq $current "Completed"}}status-option--active{{end}}">
-                    <input type="radio" name="status" value="Completed" {{if eq $current "Completed"}}checked{{end}}
-                        style="position: absolute; opacity: 0; width: 0; height: 0;" />
-                    <span class="status-option-dot" style="background: var(--color-concrete);"></span>
-                    <div style="flex: 1;">
-                        <div class="status-option-name">Completed</div>
-                        <div class="status-option-desc">Project finished &amp; paid</div>
-                    </div>
-                    {{if eq $current "Completed"}}<span class="status-option-current">Current</span>{{end}}
-                </label>
-            </div>
-            <div class="modal-actions">
-                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
-                <button type="submit" onclick="dismissModal()" class="btn-primary">Update</button>
-            </div>
-        </form>
-    </div>
-</div>
-<script>function dismissModal(){document.getElementById('modal-outlet').innerHTML='';}</script>
 {{end}}
 
 {{define "quote-list"}}
