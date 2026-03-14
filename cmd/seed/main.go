@@ -155,5 +155,5 @@ func deleteUser(ctx context.Context, queries *repository.Queries, args []string)
 }
 
 func generateID() string {
-	return uuid.New().String()[:20]
+	return uuid.New().String()
 }
