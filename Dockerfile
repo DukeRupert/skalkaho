@@ -1,8 +1,8 @@
 # =============================================================================
 # Multi-stage Dockerfile for Skalkaho
 # =============================================================================
-# Stage 1: Build the Svelte frontend
-# Stage 2: Build the Go binary
+# Stage 1: Build the Svelte estimate builder
+# Stage 2: Build the Go binary (with Mage)
 # Stage 3: Create minimal production image
 # =============================================================================
 
@@ -11,14 +11,14 @@
 # -----------------------------------------------------------------------------
 FROM node:22-alpine AS frontend
 
-WORKDIR /app/frontend
+WORKDIR /app/ui
 
 # Copy package files first for better layer caching
-COPY frontend/package.json frontend/package-lock.json ./
+COPY ui/package.json ui/package-lock.json ./
 RUN npm ci
 
 # Copy frontend source and build
-COPY frontend/ ./
+COPY ui/ ./
 RUN npm run build
 
 # -----------------------------------------------------------------------------
@@ -26,28 +26,23 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM golang:1.24-alpine AS builder
 
-# Install build dependencies for SQLite (CGO required for go-sqlite3)
-RUN apk add --no-cache gcc musl-dev sqlite-dev
-
 WORKDIR /app
 
 # Copy go mod files first for better layer caching
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Install mage
+RUN go install github.com/magefile/mage@latest
+
 # Copy source code
 COPY . .
 
-# Copy frontend build output into static/js
-COPY --from=frontend /app/static/js/quote-editor.iife.js ./static/js/quote-editor.iife.js
+# Copy frontend build output
+COPY --from=frontend /app/static/estimate-builder ./static/estimate-builder/
 
-# Build with CGO enabled for SQLite
-ARG VERSION=dev
-ARG COMMIT=unknown
-RUN CGO_ENABLED=1 GOOS=linux go build \
-    -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${COMMIT}" \
-    -o /app/server \
-    ./cmd/server
+# Build server binary with mage
+RUN mage build
 
 # -----------------------------------------------------------------------------
 # Production Stage
@@ -57,7 +52,6 @@ FROM alpine:3.20
 # Install runtime dependencies
 RUN apk add --no-cache \
     ca-certificates \
-    sqlite-libs \
     tzdata
 
 # Create non-root user
@@ -66,8 +60,8 @@ RUN addgroup -g 1000 -S skalkaho && \
 
 WORKDIR /app
 
-# Copy binary and static files from builder
-COPY --from=builder /app/server /app/server
+# Copy binaries and static files from builder
+COPY --from=builder /app/bin/server /app/server
 COPY --from=builder /app/static /app/static
 
 RUN chown -R skalkaho:skalkaho /app
