@@ -1,6 +1,7 @@
 {{template "base" .}}
 {{define "title"}}Projects — Skalkaho{{end}}
-{{define "head"}}
+{{define "head"}}{{end}}
+{{define "content"}}
 <style>
     /* ── Project-specific: status indicators ── */
     .status--draft { color: rgba(255,255,255,0.45); }
@@ -21,8 +22,6 @@
     }
     .project-link:hover { color: var(--color-sunburst); }
 </style>
-{{end}}
-{{define "content"}}
 <div>
     <!-- Header -->
     <div class="page-header">
