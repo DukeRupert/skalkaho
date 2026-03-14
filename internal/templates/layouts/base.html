@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{block "title" .}}Skalkaho{{end}}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -114,20 +115,32 @@
 
       /* Logo */
       .sidebar-logo {
-        padding: 24px 20px 20px;
+        padding: 16px 20px;
         border-bottom: 1px solid rgba(255,255,255,0.08);
         transition: padding 0.2s ease;
       }
 
       .sidebar-logo-link {
         text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .sidebar-logo-img {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+      }
+
+      .sidebar-logo-text {
         display: block;
       }
 
       .sidebar-logo-name {
         display: block;
         font-family: var(--font-display);
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 700;
         color: var(--color-white);
         line-height: 1.1;
@@ -141,18 +154,14 @@
         letter-spacing: 0.22em;
         text-transform: uppercase;
         color: var(--color-sunburst);
-        margin-top: 4px;
+        margin-top: 2px;
       }
 
-      /* Single-letter mark for collapsed state */
+      /* Icon-only mark for collapsed state */
       .sidebar-logo-mark {
         display: none;
-        font-family: var(--font-display);
-        font-size: 24px;
-        font-weight: 700;
-        color: var(--color-white);
-        line-height: 1;
-        text-align: center;
+        width: 32px;
+        height: 32px;
       }
 
       /* Navigation */
@@ -333,13 +342,13 @@
         }
 
         .sidebar-logo {
-          padding: 20px 0;
+          padding: 12px 0;
           display: flex;
           justify-content: center;
         }
 
-        .sidebar-logo-name,
-        .sidebar-logo-sub {
+        .sidebar-logo-img,
+        .sidebar-logo-text {
           display: none;
         }
 
@@ -509,6 +518,14 @@
 
         .sidebar-logo-mark {
           display: none;
+        }
+
+        .sidebar-logo-img {
+          display: block;
+        }
+
+        .sidebar-logo-text {
+          display: block;
         }
 
         .sidebar-logo-name {
