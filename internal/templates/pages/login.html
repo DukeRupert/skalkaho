@@ -5,42 +5,351 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In — Skalkaho</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Barlow:wght@300;400;500&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-ink:        #1E2120;
+            --color-granite:    #3D4A52;
+            --color-sage:       #7A8C6E;
+            --color-sunburst:   #C49A3C;
+            --color-limestone:  #F2EDE4;
+            --color-concrete:   #D4CEC6;
+            --color-white:      #FAFAF8;
+            --color-body-text:  #3A3830;
+            --color-muted-text: #7A7468;
+
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-ui:      'Barlow Condensed', system-ui, sans-serif;
+            --font-body:    'Barlow', system-ui, sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-ink);
+            color: var(--color-concrete);
+            min-height: 100vh;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Grain texture overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Left brand panel */
+        .brand-panel {
+            display: none;
+            width: 45%;
+            background: var(--color-granite);
+            position: relative;
+            padding: clamp(48px, 6vw, 96px);
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .brand-panel::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(
+                180deg,
+                transparent 0%,
+                var(--color-sunburst) 30%,
+                var(--color-sage) 70%,
+                transparent 100%
+            );
+        }
+
+        .brand-tagline {
+            font-family: var(--font-display);
+            font-size: clamp(32px, 3.5vw, 48px);
+            font-weight: 600;
+            line-height: 1.1;
+            color: var(--color-white);
+            margin-bottom: 24px;
+        }
+
+        .brand-tagline em {
+            font-style: italic;
+            color: var(--color-sunburst);
+        }
+
+        .brand-sub {
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 300;
+            line-height: 1.75;
+            color: var(--color-concrete);
+            max-width: 380px;
+        }
+
+        /* Right form panel */
+        .form-panel {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(32px, 5vw, 72px);
+            position: relative;
+            z-index: 2;
+        }
+
+        .form-container {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        /* Eyebrow */
+        .eyebrow {
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: var(--color-sunburst);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .eyebrow::before {
+            content: '';
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--color-sunburst);
+            flex-shrink: 0;
+        }
+
+        /* Title */
+        .login-title {
+            font-family: var(--font-display);
+            font-size: clamp(36px, 5vw, 52px);
+            font-weight: 700;
+            line-height: 1.05;
+            color: var(--color-white);
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 300;
+            color: var(--color-concrete);
+            margin-bottom: 48px;
+        }
+
+        /* Error */
+        .error-banner {
+            background: rgba(180, 60, 60, 0.12);
+            border-left: 3px solid #B43C3C;
+            padding: 12px 16px;
+            margin-bottom: 32px;
+            font-family: var(--font-body);
+            font-size: 13px;
+            font-weight: 400;
+            color: #E8A0A0;
+        }
+
+        /* Form fields */
+        .field {
+            margin-bottom: 28px;
+        }
+
+        .field-label {
+            display: block;
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.20em;
+            text-transform: uppercase;
+            color: var(--color-sage);
+            margin-bottom: 10px;
+        }
+
+        .field-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+            padding: 10px 0;
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 400;
+            color: var(--color-white);
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .field-input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .field-input:focus {
+            border-bottom-color: var(--color-sunburst);
+        }
+
+        /* Autofill override */
+        .field-input:-webkit-autofill,
+        .field-input:-webkit-autofill:hover,
+        .field-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: var(--color-white);
+            -webkit-box-shadow: 0 0 0 1000px var(--color-ink) inset;
+            border-bottom: 2px solid var(--color-sunburst);
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* Submit button */
+        .btn-submit {
+            width: 100%;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            background: var(--color-granite);
+            color: var(--color-white);
+            padding: 15px 28px;
+            border: 2px solid var(--color-granite);
+            cursor: pointer;
+            transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+            margin-top: 12px;
+        }
+
+        .btn-submit:hover {
+            background: var(--color-sunburst);
+            border-color: var(--color-sunburst);
+            color: var(--color-ink);
+        }
+
+        .btn-submit:focus-visible {
+            outline: 2px solid var(--color-sunburst);
+            outline-offset: 3px;
+        }
+
+        .btn-submit:active {
+            transform: translateY(1px);
+        }
+
+        /* Bottom accent */
+        .bottom-accent {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(
+                90deg,
+                var(--color-sunburst) 0%,
+                var(--color-sage) 55%,
+                transparent 100%
+            );
+            z-index: 10;
+        }
+
+        /* Entrance animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-container > * {
+            opacity: 0;
+            animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .form-container > :nth-child(1) { animation-delay: 0.1s; }
+        .form-container > :nth-child(2) { animation-delay: 0.18s; }
+        .form-container > :nth-child(3) { animation-delay: 0.26s; }
+        .form-container > :nth-child(4) { animation-delay: 0.34s; }
+        .form-container > form           { animation-delay: 0.34s; }
+
+        /* Brand panel entrance */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-24px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        .brand-panel > * {
+            opacity: 0;
+            animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .brand-panel > :nth-child(1) { animation-delay: 0.3s; }
+        .brand-panel > :nth-child(2) { animation-delay: 0.45s; }
+
+        /* Desktop: show brand panel */
+        @media (min-width: 900px) {
+            .brand-panel { display: flex; }
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
-    <div class="w-full max-w-sm">
-        <div class="bg-white rounded-lg shadow-md p-8">
-            <h1 class="text-2xl font-bold text-gray-900 text-center mb-6">Skalkaho</h1>
-            <p class="text-sm text-gray-500 text-center mb-6">Sign in to your account</p>
+<body>
+    <!-- Left brand panel (desktop only) -->
+    <div class="brand-panel">
+        <div class="brand-tagline">
+            Estimates that<br><em>hold up.</em>
+        </div>
+        <p class="brand-sub">
+            Skalkaho is your quoting workspace — built for contractors
+            who measure twice and cut once.
+        </p>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="form-panel">
+        <div class="form-container">
+            <div class="eyebrow">Sign In</div>
+            <h1 class="login-title">Skalkaho</h1>
+            <p class="login-subtitle">Enter your credentials to continue.</p>
 
             {{if .Error}}
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 text-sm">
-                {{.Error}}
-            </div>
+            <div class="error-banner">{{.Error}}</div>
             {{end}}
 
-            <form method="POST" action="/login" class="space-y-4">
+            <form method="POST" action="/login">
                 {{if .Redirect}}
                 <input type="hidden" name="redirect" value="{{.Redirect}}">
                 {{end}}
 
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" id="email" name="email" value="{{.Email}}" required autofocus
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <div class="field">
+                    <label for="email" class="field-label">Email</label>
+                    <input type="email" id="email" name="email" value="{{.Email}}"
+                        required autofocus autocomplete="email"
+                        placeholder="you@company.com"
+                        class="field-input">
                 </div>
 
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" id="password" name="password" required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <div class="field">
+                    <label for="password" class="field-label">Password</label>
+                    <input type="password" id="password" name="password"
+                        required autocomplete="current-password"
+                        class="field-input">
                 </div>
 
-                <button type="submit"
-                    class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium">
-                    Sign In
-                </button>
+                <button type="submit" class="btn-submit">Sign In</button>
             </form>
         </div>
     </div>
+
+    <!-- Bottom accent rule -->
+    <div class="bottom-accent"></div>
 </body>
 </html>
