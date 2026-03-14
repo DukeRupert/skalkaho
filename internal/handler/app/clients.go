@@ -75,6 +75,14 @@ func (h *Handler) ListClients(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// NewClientModal renders the new client modal partial.
+func (h *Handler) NewClientModal(w http.ResponseWriter, r *http.Request) {
+	if err := h.renderer.RenderPartial(w, "clients.html", "new-client-modal", nil); err != nil {
+		h.logger.Error("rendering new client modal", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
 // CreateClient handles POST /clients.
 func (h *Handler) CreateClient(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {

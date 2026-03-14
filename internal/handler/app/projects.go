@@ -86,6 +86,25 @@ func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// NewProjectModal renders the new project modal partial.
+func (h *Handler) NewProjectModal(w http.ResponseWriter, r *http.Request) {
+	clients, err := h.queries.ListClients(r.Context())
+	if err != nil {
+		h.logger.Error("listing clients", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	data := struct {
+		Clients []repository.Client
+	}{Clients: clients}
+
+	if err := h.renderer.RenderPartial(w, "projects.html", "new-project-modal", data); err != nil {
+		h.logger.Error("rendering new project modal", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
 // CreateProject handles POST /projects.
 func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {

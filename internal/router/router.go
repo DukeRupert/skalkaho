@@ -27,10 +27,12 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 
 	// Protected app routes
 	mux.Handle("GET /{$}", protect(sm, http.HandlerFunc(appH.ListProjects)))
+	mux.Handle("GET /projects/new-modal", protect(sm, http.HandlerFunc(appH.NewProjectModal)))
 	mux.Handle("POST /projects", protect(sm, http.HandlerFunc(appH.CreateProject)))
 	mux.Handle("DELETE /projects/{id}", protect(sm, http.HandlerFunc(appH.DeleteProject)))
 	mux.Handle("PATCH /projects/{id}/status", protect(sm, http.HandlerFunc(appH.UpdateProjectStatus)))
 	mux.Handle("GET /clients", protect(sm, http.HandlerFunc(appH.ListClients)))
+	mux.Handle("GET /clients/new-modal", protect(sm, http.HandlerFunc(appH.NewClientModal)))
 	mux.Handle("POST /clients", protect(sm, http.HandlerFunc(appH.CreateClient)))
 	mux.Handle("GET /clients/{id}/edit", protect(sm, http.HandlerFunc(appH.GetClientEditForm)))
 	mux.Handle("POST /clients/{id}", protect(sm, http.HandlerFunc(appH.UpdateClient)))
@@ -43,6 +45,7 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	mux.Handle("POST /suppliers", protect(sm, http.HandlerFunc(appH.CreateSupplier)))
 	mux.Handle("DELETE /suppliers/{id}", protect(sm, http.HandlerFunc(appH.DeleteSupplier)))
 	mux.Handle("GET /rates", protect(sm, http.HandlerFunc(appH.ListRates)))
+	mux.Handle("GET /rates/new-modal", protect(sm, http.HandlerFunc(appH.NewRateModal)))
 	mux.Handle("POST /rates", protect(sm, http.HandlerFunc(appH.CreateRate)))
 	mux.Handle("GET /rates/{id}/edit", protect(sm, http.HandlerFunc(appH.GetRateEditForm)))
 	mux.Handle("POST /rates/{id}", protect(sm, http.HandlerFunc(appH.UpdateRate)))

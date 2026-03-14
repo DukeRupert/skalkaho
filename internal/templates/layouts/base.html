@@ -8,7 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>.fouc-guard{opacity:0}.fouc-ready{opacity:1;transition:opacity .05s}</style>
+    <style>
+      [x-cloak] { display: none !important; }
+      .fouc-guard{opacity:0}
+      .fouc-ready{opacity:1;transition:opacity .05s}
+    </style>
     <script>
     // Reveal page once Tailwind CDN finishes processing styles
     if (window.tailwind) {
@@ -18,6 +22,12 @@
       // Fallback: reveal after 300ms if event never fires
       setTimeout(function() { document.body && document.body.classList.replace('fouc-guard','fouc-ready'); }, 300);
     }
+    // After hx-boost navigation, Tailwind is already loaded — ensure content is visible
+    document.addEventListener('htmx:afterSwap', function() { document.body.classList.replace('fouc-guard','fouc-ready'); });
+    // Re-initialize Alpine components in content swapped by HTMX (boosted navigation)
+    document.addEventListener('htmx:afterSettle', function(evt) {
+      if (window.Alpine) Alpine.initTree(evt.detail.elt);
+    });
     </script>
     {{block "head" .}}{{end}}
 </head>

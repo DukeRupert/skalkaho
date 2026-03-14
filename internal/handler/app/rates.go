@@ -94,6 +94,27 @@ func (h *Handler) ListRates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// NewRateModal renders the new rate modal partial.
+func (h *Handler) NewRateModal(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	categories, err := h.queries.ListRateCategories(ctx)
+	if err != nil {
+		h.logger.Error("listing rate categories", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	data := RatesPageData{
+		Categories: categories,
+		CategoryID: r.URL.Query().Get("category"),
+	}
+
+	if err := h.renderer.RenderPartial(w, "rates.html", "new-rate-modal", data); err != nil {
+		h.logger.Error("rendering new rate modal", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
 // CreateRate handles POST /rates.
 func (h *Handler) CreateRate(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
