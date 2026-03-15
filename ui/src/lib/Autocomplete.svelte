@@ -1,5 +1,5 @@
 <script>
-	let { materialsDb = [], ratesDb = [], categoryType = 'materials', onselect, oncancel } = $props();
+	let { materialsDb = [], ratesDb = [], subcontractorsDb = [], categoryType = 'materials', onselect, oncancel } = $props();
 
 	let query = $state('');
 	let selectedIndex = $state(0);
@@ -23,6 +23,7 @@
 				source: 'material',
 			}));
 		} else {
+			// Start with rates filtered by category
 			pool = ratesDb
 				.filter(r => {
 					if (categoryType === 'labor') return r.category === 'Labor';
@@ -40,6 +41,20 @@
 					type: categoryType,
 					source: 'rate',
 				}));
+
+			// For subs, also include subcontractors from the directory
+			if (categoryType === 'subs' && subcontractorsDb.length > 0) {
+				const subPool = subcontractorsDb.map(s => ({
+					id: s.id,
+					name: s.company ? `${s.name} (${s.company})` : s.name,
+					category: s.primary_trade || 'Subcontractor',
+					unit: 'ls',
+					price: 0,
+					type: 'subs',
+					source: 'subcontractor',
+				}));
+				pool = [...subPool, ...pool];
+			}
 		}
 
 		return pool
@@ -75,6 +90,7 @@
 			category_type: item.type,
 			is_custom: false,
 			material_id: item.source === 'material' ? item.id : null,
+			subcontractor_id: item.source === 'subcontractor' ? item.id : null,
 		});
 	}
 
@@ -86,6 +102,7 @@
 			category_type: categoryType,
 			is_custom: true,
 			material_id: null,
+			subcontractor_id: null,
 		});
 	}
 
@@ -122,10 +139,14 @@
 						<span class="text-[var(--color-white)] font-[var(--font-body)]">{item.name}</span>
 						<span class="text-xs text-white/30 ml-2 font-[var(--font-body)]">{item.category}</span>
 					</div>
-					<div class="flex items-center gap-2 text-xs">
-						<span class="font-mono text-[var(--color-sunburst)]">${item.price.toFixed(2)}</span>
-						<span class="text-white/30">/ {item.unit}</span>
-					</div>
+					{#if item.source === 'subcontractor'}
+						<span class="text-xs text-[var(--color-sage)] font-[var(--font-ui)]">Sub</span>
+					{:else}
+						<div class="flex items-center gap-2 text-xs">
+							<span class="font-mono text-[var(--color-sunburst)]">${item.price.toFixed(2)}</span>
+							<span class="text-white/30">/ {item.unit}</span>
+						</div>
+					{/if}
 				</button>
 			{/each}
 		</div>

@@ -44,11 +44,11 @@ SELECT * FROM line_items WHERE subcategory_id = $1 ORDER BY sort_order ASC;
 INSERT INTO line_items (
     id, subcategory_id, component_group_id, category_type, item_name,
     quantity, unit, unit_price, is_custom, material_id,
-    price_override, description, sort_order
+    price_override, description, sort_order, subcontractor_id
 ) VALUES (
     $1, $2, $3, $4, $5,
     $6, $7, $8, $9, $10,
-    $11, $12, $13
+    $11, $12, $13, $14
 )
 RETURNING *;
 

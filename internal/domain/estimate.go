@@ -2,11 +2,12 @@ package domain
 
 // EstimatePayload is the JSON contract between the Go API and the Svelte estimate builder.
 type EstimatePayload struct {
-	Project     EstimateProject   `json:"project"`
-	Globals     MarkupGlobals     `json:"globals"`
-	Sections    []EstimateSection `json:"sections"`
-	MaterialsDB []MaterialDBEntry `json:"materials_db"`
-	RatesDB     []RateDBEntry     `json:"rates_db"`
+	Project          EstimateProject          `json:"project"`
+	Globals          MarkupGlobals            `json:"globals"`
+	Sections         []EstimateSection        `json:"sections"`
+	MaterialsDB      []MaterialDBEntry        `json:"materials_db"`
+	RatesDB          []RateDBEntry            `json:"rates_db"`
+	SubcontractorsDB []SubcontractorDBEntry   `json:"subcontractors_db"`
 }
 
 // EstimateProject is the minimal project info included in the estimate payload.
@@ -92,6 +93,7 @@ type EstimateLineItem struct {
 	UnitPrice        float64      `json:"unit_price"`
 	IsCustom         bool         `json:"is_custom"`
 	MaterialID       *string      `json:"material_id,omitempty"`
+	SubcontractorID  *string      `json:"subcontractor_id,omitempty"`
 	PriceOverride    bool         `json:"price_override"`
 	Description      *string      `json:"description,omitempty"`
 	SortOrder        int          `json:"sort_order"`
@@ -106,6 +108,14 @@ type MaterialDBEntry struct {
 	UnitPrice    float64 `json:"unit_price"`
 	Unit         string  `json:"unit"`
 	SupplierCode string  `json:"supplier_code,omitempty"`
+}
+
+// SubcontractorDBEntry represents a subcontractor from the directory for the picker.
+type SubcontractorDBEntry struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Company      string `json:"company"`
+	PrimaryTrade string `json:"primary_trade"`
 }
 
 // RateDBEntry represents a labor/equipment/subs rate for autocomplete.

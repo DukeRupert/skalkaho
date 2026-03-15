@@ -3,7 +3,7 @@
 	import Autocomplete from './Autocomplete.svelte';
 	import { nanoid } from 'nanoid';
 
-	let { group, globals, markupOverrides, markupEnabled, onchange, onsnapshot, ondelete, materialsDb, ratesDb } = $props();
+	let { group, globals, markupOverrides, markupEnabled, onchange, onsnapshot, ondelete, materialsDb, ratesDb, subcontractorsDb } = $props();
 
 	let showAddForm = $state(false);
 	let isEditing = $state(false);
@@ -20,6 +20,7 @@
 			unit_price: itemData.unit_price,
 			is_custom: itemData.is_custom,
 			material_id: itemData.material_id,
+			subcontractor_id: itemData.subcontractor_id || null,
 			price_override: false,
 			description: null,
 			sort_order: group.line_items.length,
@@ -105,6 +106,7 @@
 			<Autocomplete
 				{materialsDb}
 				{ratesDb}
+				{subcontractorsDb}
 				categoryType="materials"
 				onselect={addItem}
 				oncancel={() => showAddForm = false}

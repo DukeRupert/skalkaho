@@ -1,0 +1,493 @@
+{{template "base" .}}
+{{define "title"}}Subcontractors — Skalkaho{{end}}
+{{define "head"}}{{end}}
+{{define "content"}}
+<style>
+    /* ── Subcontractor-specific styles ── */
+    .subs-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1px;
+        margin-bottom: 32px;
+    }
+
+    .subs-stats .stat-item {
+        border-right: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .subs-stats .stat-item:last-child {
+        border-right: none;
+    }
+
+    .favorite-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: rgba(255,255,255,0.25);
+        transition: color 0.15s ease;
+        display: flex;
+        align-items: center;
+    }
+
+    .favorite-btn:hover {
+        color: var(--color-sunburst);
+    }
+
+    .favorite-btn--active {
+        color: var(--color-sunburst);
+    }
+
+    .trade-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        background: rgba(255,255,255,0.06);
+        color: var(--color-sage);
+    }
+
+    .trade-badge-more {
+        color: rgba(255,255,255,0.35);
+        font-size: 11px;
+        margin-left: 4px;
+    }
+
+    .expand-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-white);
+        padding: 0;
+        transition: color 0.15s ease;
+    }
+
+    .expand-btn:hover {
+        color: var(--color-sunburst);
+    }
+
+    .expand-btn svg {
+        width: 14px;
+        height: 14px;
+        color: rgba(255,255,255,0.3);
+        transition: transform 0.15s ease;
+    }
+
+    .detail-row td {
+        padding: 16px 20px;
+        background: rgba(255,255,255,0.02);
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .detail-label {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-bottom: 4px;
+    }
+
+    .detail-value {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 300;
+        color: var(--color-concrete);
+    }
+
+    /* Trade checkboxes in modal */
+    .trade-checks {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .trade-check-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--color-concrete);
+    }
+
+    .trade-check-item input[type="checkbox"] {
+        accent-color: var(--color-sunburst);
+    }
+
+    .primary-radio-group {
+        margin-top: 12px;
+        padding: 12px;
+        background: rgba(255,255,255,0.03);
+        border-radius: 6px;
+    }
+
+    .primary-radio-group label {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .primary-radio-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--color-concrete);
+        margin-bottom: 4px;
+    }
+
+    .primary-radio-item input[type="radio"] {
+        accent-color: var(--color-sunburst);
+    }
+
+    @media (max-width: 767px) {
+        .subs-stats {
+            grid-template-columns: 1fr;
+        }
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+        .trade-checks {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+<div>
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Subcontractors</div>
+            <h1 class="page-title">Subcontractor Directory</h1>
+        </div>
+        <button hx-get="/subcontractors/new-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
+            class="btn-primary" data-shortcut="new">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Sub
+        </button>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="subs-stats">
+        <div class="stat-item">
+            <p class="stat-label">Total Subcontractors</p>
+            <p class="stat-count">{{.TotalSubs}}</p>
+        </div>
+        <div class="stat-item">
+            <p class="stat-label">Favorites</p>
+            <p class="stat-count">{{.TotalFavorites}}</p>
+        </div>
+        <div class="stat-item">
+            <p class="stat-label">Trades</p>
+            <p class="stat-count">{{len .Trades}}</p>
+        </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="sub-filter-bar">
+        <div class="sub-filters">
+            <select hx-get="/subcontractors" hx-target="#sub-rows" hx-select="#sub-rows"
+                hx-push-url="true" name="trade" class="filter-select">
+                <option value="">All Trades</option>
+                {{range .Trades}}
+                <option value="{{.ID}}" {{if eq $.TradeFilter .ID}}selected{{end}}>{{.Name}}</option>
+                {{end}}
+            </select>
+        </div>
+        <input type="search" name="search" value="{{.Search}}" placeholder="Search subcontractors..."
+            hx-get="/subcontractors" hx-trigger="input changed delay:300ms" hx-target="#sub-rows" hx-select="#sub-rows"
+            hx-push-url="true" hx-include="this"
+            class="search-input" />
+    </div>
+
+    <!-- Subcontractors Table -->
+    <div class="table-wrap" style="border-top: none;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 36px;"></th>
+                    <th>Name</th>
+                    <th>Company</th>
+                    <th>Trade</th>
+                    <th>Phone</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="sub-rows">
+                {{template "sub-rows" .}}
+            </tbody>
+        </table>
+        {{if not .Subcontractors}}
+        <div class="empty-state">
+            <p>No subcontractors yet.</p>
+            <p>Click "New Sub" to get started.</p>
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Modal outlet -->
+    <div id="modal-outlet"></div>
+</div>
+{{end}}
+
+{{define "sub-rows"}}
+{{range .Subcontractors}}
+<tr x-data="{ expanded: false }">
+    <td>
+        <button class="favorite-btn {{if .IsFavorite}}favorite-btn--active{{end}}"
+            hx-patch="/subcontractors/{{.ID}}/favorite" hx-swap="outerHTML">
+            <svg fill="{{if .IsFavorite}}currentColor{{else}}none{{end}}" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+            </svg>
+        </button>
+    </td>
+    <td>
+        <button @click="expanded = !expanded" class="expand-btn">
+            <svg :class="expanded && 'rotate-90'" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="transition: transform 0.15s ease;">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            {{.Name}}
+        </button>
+    </td>
+    <td class="cell-secondary">{{if .Company.Valid}}{{.Company.String}}{{else}}—{{end}}</td>
+    <td>
+        {{if .PrimaryTrade.Valid}}<span class="trade-badge">{{.PrimaryTrade.String}}</span>{{else}}—{{end}}
+    </td>
+    <td class="cell-secondary">{{if .Phone.Valid}}{{.Phone.String}}{{else}}—{{end}}</td>
+    <td style="text-align: right;">
+        <button hx-get="/subcontractors/{{.ID}}/edit" hx-target="#modal-outlet" hx-swap="innerHTML"
+            class="action-edit" style="margin-right: 12px;">Edit</button>
+        <button hx-delete="/subcontractors/{{.ID}}" hx-confirm="Delete subcontractor '{{.Name}}'?"
+            class="action-delete">Delete</button>
+    </td>
+</tr>
+<tr x-show="expanded" x-cloak class="detail-row">
+    <td colspan="6">
+        <div class="detail-grid">
+            <div>
+                <div class="detail-label">Email</div>
+                <div class="detail-value">{{if .Email.Valid}}{{.Email.String}}{{else}}Not set{{end}}</div>
+            </div>
+            <div>
+                <div class="detail-label">Address</div>
+                <div class="detail-value">{{if .Address.Valid}}{{.Address.String}}{{else}}Not set{{end}}</div>
+            </div>
+            <div style="grid-column: 1 / -1;">
+                <div class="detail-label">Notes</div>
+                <div class="detail-value">{{if .Notes.Valid}}{{.Notes.String}}{{else}}None{{end}}</div>
+            </div>
+        </div>
+    </td>
+</tr>
+{{end}}
+{{end}}
+
+{{define "new-sub-modal"}}
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" style="max-width: 560px;" onclick="event.stopPropagation()"
+         x-data="subFormData()" x-init="init()">
+        <h2 class="modal-title">New Subcontractor</h2>
+        <form method="POST" action="/subcontractors">
+            <div class="modal-grid">
+                <div class="modal-field">
+                    <label class="modal-label">Name *</label>
+                    <input type="text" name="name" required class="modal-input" />
+                </div>
+                <div class="modal-field">
+                    <label class="modal-label">Company</label>
+                    <input type="text" name="company" class="modal-input" />
+                </div>
+                <div class="modal-field">
+                    <label class="modal-label">Phone</label>
+                    <input type="text" name="phone" class="modal-input" />
+                </div>
+                <div class="modal-field">
+                    <label class="modal-label">Email</label>
+                    <input type="email" name="email" class="modal-input" />
+                </div>
+                <div class="modal-grid--full modal-field">
+                    <label class="modal-label">Address</label>
+                    <input type="text" name="address" class="modal-input" />
+                </div>
+                <div class="modal-grid--full modal-field">
+                    <label class="modal-label">Trades</label>
+                    <div class="trade-checks">
+                        {{range .Trades}}
+                        <label class="trade-check-item">
+                            <input type="checkbox" name="trade_ids" value="{{.ID}}"
+                                @change="toggleTrade('{{.ID}}', '{{.Name}}', $event.target.checked)" />
+                            {{.Name}}
+                        </label>
+                        {{end}}
+                    </div>
+                    <div x-show="selectedTrades.length > 0" x-cloak class="primary-radio-group">
+                        <label>Primary Trade</label>
+                        <template x-for="t in selectedTrades" :key="t.id">
+                            <div class="primary-radio-item">
+                                <input type="radio" name="primary_trade_id" :value="t.id"
+                                    :checked="selectedTrades.length === 1 || t.id === primaryTrade" />
+                                <span x-text="t.name"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="modal-grid--full modal-field">
+                    <label class="modal-label">Notes</label>
+                    <textarea name="notes" rows="2" class="modal-textarea"></textarea>
+                </div>
+                <div class="modal-grid--full modal-field">
+                    <label class="trade-check-item">
+                        <input type="checkbox" name="is_favorite" />
+                        Mark as favorite
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Create Subcontractor</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+function dismissModal(){document.getElementById('modal-outlet').innerHTML='';}
+function subFormData() {
+    return {
+        selectedTrades: [],
+        primaryTrade: '',
+        init() {},
+        toggleTrade(id, name, checked) {
+            if (checked) {
+                this.selectedTrades.push({ id, name });
+                if (this.selectedTrades.length === 1) this.primaryTrade = id;
+            } else {
+                this.selectedTrades = this.selectedTrades.filter(t => t.id !== id);
+                if (this.primaryTrade === id) {
+                    this.primaryTrade = this.selectedTrades.length > 0 ? this.selectedTrades[0].id : '';
+                }
+            }
+        }
+    };
+}
+</script>
+{{end}}
+
+{{define "edit-sub-modal"}}
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" style="max-width: 560px;" onclick="event.stopPropagation()"
+         x-data="editSubFormData()" x-init="init()">
+        {{with .EditSubcontractor}}
+        <h2 class="modal-title">Edit Subcontractor</h2>
+        <form method="POST" action="/subcontractors/{{.ID}}">
+            <div class="modal-grid">
+                <div class="modal-field">
+                    <label class="modal-label">Name *</label>
+                    <input type="text" name="name" value="{{.Name}}" required class="modal-input" />
+                </div>
+                <div class="modal-field">
+                    <label class="modal-label">Company</label>
+                    <input type="text" name="company" value="{{if .Company.Valid}}{{.Company.String}}{{end}}" class="modal-input" />
+                </div>
+                <div class="modal-field">
+                    <label class="modal-label">Phone</label>
+                    <input type="text" name="phone" value="{{if .Phone.Valid}}{{.Phone.String}}{{end}}" class="modal-input" />
+                </div>
+                <div class="modal-field">
+                    <label class="modal-label">Email</label>
+                    <input type="email" name="email" value="{{if .Email.Valid}}{{.Email.String}}{{end}}" class="modal-input" />
+                </div>
+                <div class="modal-grid--full modal-field">
+                    <label class="modal-label">Address</label>
+                    <input type="text" name="address" value="{{if .Address.Valid}}{{.Address.String}}{{end}}" class="modal-input" />
+                </div>
+                {{end}}
+                <div class="modal-grid--full modal-field">
+                    <label class="modal-label">Trades</label>
+                    <div class="trade-checks">
+                        {{$editTrades := .EditTrades}}
+                        {{range .Trades}}
+                        {{$tid := .ID}}
+                        {{$checked := false}}
+                        {{range $editTrades}}{{if eq .ID $tid}}{{$checked = true}}{{end}}{{end}}
+                        <label class="trade-check-item">
+                            <input type="checkbox" name="trade_ids" value="{{.ID}}"
+                                {{if $checked}}checked{{end}}
+                                @change="toggleTrade('{{.ID}}', '{{.Name}}', $event.target.checked)" />
+                            {{.Name}}
+                        </label>
+                        {{end}}
+                    </div>
+                    <div x-show="selectedTrades.length > 0" x-cloak class="primary-radio-group">
+                        <label>Primary Trade</label>
+                        <template x-for="t in selectedTrades" :key="t.id">
+                            <div class="primary-radio-item">
+                                <input type="radio" name="primary_trade_id" :value="t.id"
+                                    :checked="t.id === primaryTrade" />
+                                <span x-text="t.name"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <div class="modal-grid--full modal-field">
+                    <label class="modal-label">Notes</label>
+                    <textarea name="notes" rows="2" class="modal-textarea">{{if .EditSubcontractor}}{{if .EditSubcontractor.Notes.Valid}}{{.EditSubcontractor.Notes.String}}{{end}}{{end}}</textarea>
+                </div>
+                <div class="modal-grid--full modal-field">
+                    <label class="trade-check-item">
+                        <input type="checkbox" name="is_favorite" {{if .EditSubcontractor}}{{if .EditSubcontractor.IsFavorite}}checked{{end}}{{end}} />
+                        Mark as favorite
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+function dismissModal(){document.getElementById('modal-outlet').innerHTML='';}
+function editSubFormData() {
+    return {
+        selectedTrades: [{{range $i, $t := .EditTrades}}{{if $i}},{{end}}{id:'{{$t.ID}}',name:'{{$t.Name}}'}{{end}}],
+        primaryTrade: '{{range .EditTrades}}{{if eq .Position 0}}{{.ID}}{{end}}{{end}}',
+        init() {},
+        toggleTrade(id, name, checked) {
+            if (checked) {
+                this.selectedTrades.push({ id, name });
+                if (this.selectedTrades.length === 1) this.primaryTrade = id;
+            } else {
+                this.selectedTrades = this.selectedTrades.filter(t => t.id !== id);
+                if (this.primaryTrade === id) {
+                    this.primaryTrade = this.selectedTrades.length > 0 ? this.selectedTrades[0].id : '';
+                }
+            }
+        }
+    };
+}
+</script>
+{{end}}

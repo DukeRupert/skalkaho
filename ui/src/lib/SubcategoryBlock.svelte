@@ -5,7 +5,7 @@
 	import { subcategoryTotals, formatMoney, resolveMarkup, formatPercent } from './markup.js';
 	import { nanoid } from 'nanoid';
 
-	let { subcat, globals, collapsed = false, onchange, onsnapshot, ondelete, materialsDb = [], ratesDb = [] } = $props();
+	let { subcat, globals, collapsed = false, onchange, onsnapshot, ondelete, materialsDb = [], ratesDb = [], subcontractorsDb = [] } = $props();
 
 	let isCollapsed = $state(collapsed);
 	let showAddForm = $state(false);
@@ -43,6 +43,7 @@
 			unit_price: itemData.unit_price,
 			is_custom: itemData.is_custom,
 			material_id: itemData.material_id,
+			subcontractor_id: itemData.subcontractor_id || null,
 			price_override: false,
 			description: null,
 			sort_order: subcat.line_items.length,
@@ -304,6 +305,7 @@
 					ondelete={deleteComponentGroup}
 					{materialsDb}
 					{ratesDb}
+					{subcontractorsDb}
 				/>
 			{/each}
 
@@ -338,6 +340,7 @@
 					<Autocomplete
 						{materialsDb}
 						{ratesDb}
+						{subcontractorsDb}
 						categoryType="materials"
 						onselect={addItem}
 						oncancel={() => showAddForm = false}

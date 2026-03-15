@@ -194,6 +194,7 @@ func (h *Handler) createLineItem(r *http.Request, subcategoryID string, componen
 		UnitPrice:        li.UnitPrice,
 		IsCustom:         li.IsCustom,
 		MaterialID:       toNullString(ptrToStr(li.MaterialID)),
+		SubcontractorID:  toNullString(ptrToStr(li.SubcontractorID)),
 		PriceOverride:    li.PriceOverride,
 		Description:      toNullString(ptrToStr(li.Description)),
 		SortOrder:        int64(li.SortOrder),
@@ -279,6 +280,21 @@ func (h *Handler) buildEstimatePayload(r *http.Request, project repository.Proje
 		})
 	}
 
+	// Load subcontractors for picker
+	dbSubs, err := h.queries.ListSubcontractors(ctx)
+	if err != nil {
+		return domain.EstimatePayload{}, err
+	}
+	subcontractorsDB := make([]domain.SubcontractorDBEntry, 0, len(dbSubs))
+	for _, s := range dbSubs {
+		subcontractorsDB = append(subcontractorsDB, domain.SubcontractorDBEntry{
+			ID:           s.ID,
+			Name:         s.Name,
+			Company:      nullStrToStr(s.Company),
+			PrimaryTrade: nullStrToStr(s.PrimaryTrade),
+		})
+	}
+
 	return domain.EstimatePayload{
 		Project: domain.EstimateProject{
 			ID:     project.ID,
@@ -292,9 +308,10 @@ func (h *Handler) buildEstimatePayload(r *http.Request, project repository.Proje
 			SubsMarkup:      project.SubsMarkup,
 			OtherMarkup:     project.OtherMarkup,
 		},
-		Sections:    sections,
-		MaterialsDB: materialsDB,
-		RatesDB:     ratesDB,
+		Sections:         sections,
+		MaterialsDB:      materialsDB,
+		RatesDB:          ratesDB,
+		SubcontractorsDB: subcontractorsDB,
 	}, nil
 }
 
@@ -396,6 +413,9 @@ func toDomainLineItem(li repository.LineItem) domain.EstimateLineItem {
 	}
 	if li.MaterialID.Valid {
 		item.MaterialID = &li.MaterialID.String
+	}
+	if li.SubcontractorID.Valid {
+		item.SubcontractorID = &li.SubcontractorID.String
 	}
 	if li.Description.Valid {
 		item.Description = &li.Description.String

@@ -216,6 +216,7 @@
 						ondelete={deleteSection}
 						materialsDb={estimate.materials_db}
 						ratesDb={estimate.rates_db}
+						subcontractorsDb={estimate.subcontractors_db}
 					/>
 				{/each}
 			{/if}

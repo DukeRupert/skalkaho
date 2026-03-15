@@ -56,6 +56,7 @@ type LineItem struct {
 	PriceOverride    bool           `json:"price_override"`
 	Description      sql.NullString `json:"description"`
 	SortOrder        int64          `json:"sort_order"`
+	SubcontractorID  sql.NullString `json:"subcontractor_id"`
 }
 
 type Material struct {
@@ -172,11 +173,36 @@ type Subcategory struct {
 	OtherMarkupEnabled     bool            `json:"other_markup_enabled"`
 }
 
+type Subcontractor struct {
+	ID         string         `json:"id"`
+	Name       string         `json:"name"`
+	Company    sql.NullString `json:"company"`
+	Phone      sql.NullString `json:"phone"`
+	Email      sql.NullString `json:"email"`
+	Address    sql.NullString `json:"address"`
+	Notes      sql.NullString `json:"notes"`
+	IsFavorite bool           `json:"is_favorite"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
+}
+
+type SubcontractorTrade struct {
+	SubcontractorID string `json:"subcontractor_id"`
+	TradeID         string `json:"trade_id"`
+	Position        int64  `json:"position"`
+}
+
 type Supplier struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	SortOrder int64     `json:"sort_order"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type Trade struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	SortOrder int64  `json:"sort_order"`
 }
 
 type User struct {

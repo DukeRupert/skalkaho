@@ -3,7 +3,7 @@
 	import { sectionTotals, formatMoney } from './markup.js';
 	import { nanoid } from 'nanoid';
 
-	let { section, globals, collapsed = false, onchange, onsnapshot, ondelete, materialsDb = [], ratesDb = [] } = $props();
+	let { section, globals, collapsed = false, onchange, onsnapshot, ondelete, materialsDb = [], ratesDb = [], subcontractorsDb = [] } = $props();
 
 	let isCollapsed = $state(collapsed);
 	let isEditing = $state(false);
@@ -121,7 +121,7 @@
 			</div>
 		{:else}
 			{#each section.subcategories as subcat (subcat.id)}
-				<SubcategoryBlock {subcat} {globals} {onchange} {onsnapshot} ondelete={deleteSubcategory} {materialsDb} {ratesDb} />
+				<SubcategoryBlock {subcat} {globals} {onchange} {onsnapshot} ondelete={deleteSubcategory} {materialsDb} {ratesDb} {subcontractorsDb} />
 			{/each}
 		{/if}
 
