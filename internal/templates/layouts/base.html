@@ -1419,7 +1419,7 @@
 
       // Shift + key: navigation
       if (e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        var nav = { P: '/', C: '/clients', M: '/materials', R: '/rates' };
+        var nav = { P: '/', C: '/clients', M: '/materials', R: '/rates', T: '/templates' };
         if (nav[e.key]) {
           e.preventDefault();
           // Use hx-boost style navigation if available

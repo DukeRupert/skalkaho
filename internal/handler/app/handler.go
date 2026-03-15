@@ -1,6 +1,7 @@
 package app
 
 import (
+	"database/sql"
 	"log/slog"
 	"net/http"
 
@@ -29,6 +30,12 @@ type Handler struct {
 	renderer    *templates.Renderer
 	logger      *slog.Logger
 	emailClient *email.Client
+	db          *sql.DB
+}
+
+// SetDB sets the raw database connection for transaction support.
+func (h *Handler) SetDB(db *sql.DB) {
+	h.db = db
 }
 
 // NewHandler creates a new app handler.

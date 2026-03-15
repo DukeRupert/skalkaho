@@ -1,0 +1,358 @@
+{{template "base" .}}
+{{define "title"}}{{.Template.Name}} — Templates — Skalkaho{{end}}
+{{define "head"}}
+<style>
+    .tree-section {
+        border: 1px solid rgba(255,255,255,0.06);
+        background: var(--color-granite);
+        margin-bottom: 12px;
+    }
+
+    .tree-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .tree-node-name {
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--color-white);
+    }
+
+    .tree-node-level {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-right: 10px;
+    }
+
+    .tree-node-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tree-subcategory {
+        padding: 12px 20px 12px 40px;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .tree-subcategory:last-child {
+        border-bottom: none;
+    }
+
+    .tree-subcat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+    }
+
+    .tree-group {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 0 6px 24px;
+    }
+
+    .tree-group-name {
+        font-family: var(--font-body);
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--color-concrete);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tree-group-name::before {
+        content: '';
+        display: block;
+        width: 8px;
+        height: 1px;
+        background: rgba(255,255,255,0.15);
+    }
+
+    .tree-add-btn {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.25);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: color 0.15s ease;
+    }
+
+    .tree-add-btn:hover {
+        color: var(--color-sunburst);
+    }
+
+    .tree-add-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .tree-add-section {
+        padding: 16px 20px;
+    }
+
+    .tree-add-groups {
+        padding: 4px 0 4px 24px;
+    }
+
+    .tree-add-subcats {
+        padding: 8px 20px 12px 40px;
+    }
+
+    /* Inline edit form */
+    .tree-edit-input {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid var(--color-sunburst);
+        padding: 4px 0;
+        font-family: var(--font-body);
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--color-white);
+        outline: none;
+        width: 200px;
+    }
+
+    .tree-edit-input--sm {
+        font-size: 13px;
+        font-weight: 400;
+        width: 160px;
+    }
+
+    /* Template info header */
+    .template-info {
+        margin-bottom: 32px;
+    }
+
+    .template-desc {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 300;
+        color: var(--color-concrete);
+        margin-top: 8px;
+    }
+</style>
+{{end}}
+{{define "content"}}
+<div>
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">
+                <a href="/templates" style="color: var(--color-sunburst); text-decoration: none;">Templates</a>
+            </div>
+            <h1 class="page-title">{{.Template.Name}}</h1>
+            {{if .Template.Description.Valid}}
+            <p class="template-desc">{{.Template.Description.String}}</p>
+            {{end}}
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <button hx-get="/templates/{{.Template.ID}}/edit-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
+                class="btn-ghost">Edit Details</button>
+            <button hx-delete="/templates/{{.Template.ID}}" hx-confirm="Delete this template? This cannot be undone."
+                class="action-delete" style="padding: 12px 20px;">Delete</button>
+        </div>
+    </div>
+
+    <!-- Tree Editor -->
+    <div id="template-tree">
+        {{template "template-tree" .}}
+    </div>
+
+    <!-- Modal outlet -->
+    <div id="modal-outlet"></div>
+</div>
+{{end}}
+
+{{define "template-tree"}}
+{{$templateID := .Template.ID}}
+{{range .Tree}}
+<div class="tree-section">
+    <div class="tree-section-header">
+        <div style="display: flex; align-items: center;">
+            <span class="tree-node-level">Section</span>
+            <div x-data="{ editing: false, name: '{{.Section.Name}}' }">
+                <span x-show="!editing" class="tree-node-name" @click="editing = true; $nextTick(() => $refs.input.focus())" style="cursor: pointer;" title="Click to rename">{{.Section.Name}}</span>
+                <form x-show="editing" x-cloak
+                    hx-post="/templates/{{$templateID}}/sections/{{.Section.ID}}"
+                    hx-target="#template-tree" hx-swap="innerHTML"
+                    @submit="editing = false"
+                    style="display: inline;">
+                    <input x-ref="input" type="text" name="name" :value="name"
+                        class="tree-edit-input"
+                        @blur="editing = false; $el.form.requestSubmit()"
+                        @keydown.escape="editing = false" />
+                    <input type="hidden" name="sort_order" value="{{.Section.SortOrder}}" />
+                </form>
+            </div>
+        </div>
+        <div class="tree-node-actions">
+            <button hx-delete="/templates/{{$templateID}}/sections/{{.Section.ID}}"
+                hx-target="#template-tree" hx-swap="innerHTML"
+                hx-confirm="Delete section '{{.Section.Name}}' and all its contents?"
+                class="action-delete">Delete</button>
+        </div>
+    </div>
+
+    {{$sectionID := .Section.ID}}
+    {{range .Subcategories}}
+    <div class="tree-subcategory">
+        <div class="tree-subcat-header">
+            <div style="display: flex; align-items: center;">
+                <span class="tree-node-level">Subcat</span>
+                <div x-data="{ editing: false, name: '{{.Subcategory.Name}}' }">
+                    <span x-show="!editing" class="tree-node-name" style="font-size: 14px; cursor: pointer;" @click="editing = true; $nextTick(() => $refs.input.focus())" title="Click to rename">{{.Subcategory.Name}}</span>
+                    <form x-show="editing" x-cloak
+                        hx-post="/templates/{{$templateID}}/subcategories/{{.Subcategory.ID}}"
+                        hx-target="#template-tree" hx-swap="innerHTML"
+                        @submit="editing = false"
+                        style="display: inline;">
+                        <input x-ref="input" type="text" name="name" :value="name"
+                            class="tree-edit-input"
+                            @blur="editing = false; $el.form.requestSubmit()"
+                            @keydown.escape="editing = false" />
+                        <input type="hidden" name="sort_order" value="{{.Subcategory.SortOrder}}" />
+                    </form>
+                </div>
+            </div>
+            <div class="tree-node-actions">
+                <button hx-delete="/templates/{{$templateID}}/subcategories/{{.Subcategory.ID}}"
+                    hx-target="#template-tree" hx-swap="innerHTML"
+                    hx-confirm="Delete subcategory '{{.Subcategory.Name}}' and its groups?"
+                    class="action-delete">Delete</button>
+            </div>
+        </div>
+
+        {{$subcategoryID := .Subcategory.ID}}
+        {{range .ComponentGroups}}
+        <div class="tree-group">
+            <div x-data="{ editing: false, name: '{{.Name}}' }">
+                <span x-show="!editing" class="tree-group-name" @click="editing = true; $nextTick(() => $refs.input.focus())" style="cursor: pointer;" title="Click to rename">{{.Name}}</span>
+                <form x-show="editing" x-cloak
+                    hx-post="/templates/{{$templateID}}/groups/{{.ID}}"
+                    hx-target="#template-tree" hx-swap="innerHTML"
+                    @submit="editing = false"
+                    style="display: inline;">
+                    <input x-ref="input" type="text" name="name" :value="name"
+                        class="tree-edit-input tree-edit-input--sm"
+                        @blur="editing = false; $el.form.requestSubmit()"
+                        @keydown.escape="editing = false" />
+                    <input type="hidden" name="sort_order" value="{{.SortOrder}}" />
+                </form>
+            </div>
+            <button hx-delete="/templates/{{$templateID}}/groups/{{.ID}}"
+                hx-target="#template-tree" hx-swap="innerHTML"
+                class="action-delete">Delete</button>
+        </div>
+        {{end}}
+
+        <div class="tree-add-groups">
+            <form hx-post="/templates/{{$templateID}}/subcategories/{{$subcategoryID}}/groups"
+                hx-target="#template-tree" hx-swap="innerHTML"
+                x-data="{ adding: false }" style="display: inline;">
+                <button x-show="!adding" @click.prevent="adding = true; $nextTick(() => $refs.ginput.focus())" type="button" class="tree-add-btn">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Add Group
+                </button>
+                <div x-show="adding" x-cloak style="display: inline-flex; align-items: center; gap: 8px;">
+                    <input x-ref="ginput" type="text" name="name" placeholder="Group name..."
+                        class="tree-edit-input tree-edit-input--sm"
+                        @keydown.escape="adding = false" />
+                    <button type="submit" class="inline-submit">Add</button>
+                    <button type="button" @click="adding = false" class="inline-cancel">&times;</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {{end}}
+
+    <div class="tree-add-subcats">
+        <form hx-post="/templates/{{$templateID}}/sections/{{$sectionID}}/subcategories"
+            hx-target="#template-tree" hx-swap="innerHTML"
+            x-data="{ adding: false }" style="display: inline;">
+            <button x-show="!adding" @click.prevent="adding = true; $nextTick(() => $refs.sinput.focus())" type="button" class="tree-add-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Add Subcategory
+            </button>
+            <div x-show="adding" x-cloak style="display: inline-flex; align-items: center; gap: 8px;">
+                <input x-ref="sinput" type="text" name="name" placeholder="Subcategory name..."
+                    class="tree-edit-input"
+                    @keydown.escape="adding = false" />
+                <button type="submit" class="inline-submit">Add</button>
+                <button type="button" @click="adding = false" class="inline-cancel">&times;</button>
+            </div>
+        </form>
+    </div>
+</div>
+{{end}}
+
+<div class="tree-add-section">
+    <form hx-post="/templates/{{$templateID}}/sections"
+        hx-target="#template-tree" hx-swap="innerHTML"
+        x-data="{ adding: false }" style="display: inline;">
+        <button x-show="!adding" @click.prevent="adding = true; $nextTick(() => $refs.secinput.focus())" type="button" class="tree-add-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Section
+        </button>
+        <div x-show="adding" x-cloak style="display: inline-flex; align-items: center; gap: 8px;">
+            <input x-ref="secinput" type="text" name="name" placeholder="Section name..."
+                class="tree-edit-input"
+                @keydown.escape="adding = false" />
+            <button type="submit" class="inline-submit">Add</button>
+            <button type="button" @click="adding = false" class="inline-cancel">&times;</button>
+        </div>
+    </form>
+</div>
+
+{{if not .Tree}}
+<div class="empty-state" style="border: 1px solid rgba(255,255,255,0.06); background: var(--color-granite);">
+    <p>No sections yet.</p>
+    <p>Add sections to build your template structure.</p>
+</div>
+{{end}}
+{{end}}
+
+{{define "edit-template-modal"}}
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" style="max-width: 480px;" onclick="event.stopPropagation()">
+        <h2 class="modal-title">Edit Template</h2>
+        <form method="POST" action="/templates/{{.Template.ID}}">
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="modal-field" style="margin-bottom: 0;">
+                    <label class="modal-label">Template Name *</label>
+                    <input type="text" name="name" value="{{.Template.Name}}" required class="modal-input" />
+                </div>
+                <div class="modal-field" style="margin-bottom: 0;">
+                    <label class="modal-label">Description</label>
+                    <textarea name="description" rows="2" class="modal-textarea">{{if .Template.Description.Valid}}{{.Template.Description.String}}{{end}}</textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>function dismissModal(){document.getElementById('modal-outlet').innerHTML='';}</script>
+{{end}}

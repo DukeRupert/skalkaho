@@ -88,16 +88,26 @@ func (h *Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
 
 // NewProjectModal renders the new project modal partial.
 func (h *Handler) NewProjectModal(w http.ResponseWriter, r *http.Request) {
-	clients, err := h.queries.ListClients(r.Context())
+	ctx := r.Context()
+
+	clients, err := h.queries.ListClients(ctx)
 	if err != nil {
 		h.logger.Error("listing clients", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	templates, err := h.queries.ListTemplates(ctx)
+	if err != nil {
+		h.logger.Error("listing templates", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
 	data := struct {
-		Clients []repository.Client
-	}{Clients: clients}
+		Clients   []repository.Client
+		Templates []repository.Template
+	}{Clients: clients, Templates: templates}
 
 	if err := h.renderer.RenderPartial(w, "projects.html", "new-project-modal", data); err != nil {
 		h.logger.Error("rendering new project modal", "error", err)
@@ -121,6 +131,7 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	clientID := r.FormValue("client_id")
 	clientName := r.FormValue("client_name")
 	description := r.FormValue("description")
+	templateID := r.FormValue("template_id")
 
 	// If client_id is set but client_name isn't, look up the client
 	if clientID != "" && clientName == "" {
@@ -131,18 +142,57 @@ func (h *Handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := uuid.New().String()[:20]
-	_, err := h.queries.CreateProject(r.Context(), repository.CreateProjectParams{
-		ID:          id,
-		Name:        name,
-		ClientID:    toNullString(clientID),
-		ClientName:  toNullString(clientName),
-		Description: toNullString(description),
-		Status:      "Draft",
-	})
-	if err != nil {
-		h.logger.Error("creating project", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
+
+	// If a template is selected, use a transaction to create project + stamp structure
+	if templateID != "" && h.db != nil {
+		tx, err := h.db.BeginTx(r.Context(), nil)
+		if err != nil {
+			h.logger.Error("beginning transaction", "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		defer func() { _ = tx.Rollback() }()
+
+		qtx := h.queries.WithTx(tx)
+		_, err = qtx.CreateProject(r.Context(), repository.CreateProjectParams{
+			ID:          id,
+			Name:        name,
+			ClientID:    toNullString(clientID),
+			ClientName:  toNullString(clientName),
+			Description: toNullString(description),
+			Status:      "Draft",
+		})
+		if err != nil {
+			h.logger.Error("creating project", "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		if err := h.stampTemplate(r.Context(), tx, templateID, id); err != nil {
+			h.logger.Error("stamping template", "error", err, "template_id", templateID)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		if err := tx.Commit(); err != nil {
+			h.logger.Error("committing transaction", "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		_, err := h.queries.CreateProject(r.Context(), repository.CreateProjectParams{
+			ID:          id,
+			Name:        name,
+			ClientID:    toNullString(clientID),
+			ClientName:  toNullString(clientName),
+			Description: toNullString(description),
+			Status:      "Draft",
+		})
+		if err != nil {
+			h.logger.Error("creating project", "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Redirect to the new project's overview

@@ -25,6 +25,12 @@ Client ←── Project (N:1 optional)
                   ├── QuoteSignatures (1:N RESTRICT)
                   └── QuoteEmails (1:N CASCADE)
 
+Template
+├── TemplateSections (1:N CASCADE)
+│   └── TemplateSubcategories (1:N CASCADE)
+│       └── TemplateComponentGroups (1:N CASCADE)
+└── stamped into → Project (at creation time, one-way copy)
+
 Supplier ──→ Materials (1:N CASCADE)
 RateCategory ──→ Rates (1:N CASCADE)
 Subcontractor ←──→ Trades (N:N via subcontractor_trades, position 0 = primary)
@@ -91,6 +97,16 @@ CompanyProfile (singleton, id='default')
 | `subcontractors` | id, name, company, phone, email, is_favorite | Directory of sub companies |
 | `subcontractor_trades` | subcontractor_id, trade_id, position | Composite PK; position 0 = primary trade |
 
+### Templates (Migration 012)
+| Table | Key Columns | Notes |
+|-------|------------|-------|
+| `templates` | id, name, description, created_at, updated_at | Reusable project skeletons |
+| `template_sections` | id, template_id (FK CASCADE), name, sort_order | Mirrors sections table |
+| `template_subcategories` | id, template_section_id (FK CASCADE), name, sort_order | Mirrors subcategories table |
+| `template_component_groups` | id, template_subcategory_id (FK CASCADE), name, sort_order | Mirrors component_groups table |
+
+Templates are structure-only (no line items, no markup overrides). When a project is created with a template selected, the entire tree is copied into the project's own sections/subcategories/component_groups within a single transaction. Once stamped, the project is fully independent — editing or deleting the template has no effect on existing projects.
+
 All IDs are TEXT (uuid[:20] or semantic slugs). All timestamps are TIMESTAMPTZ with `DEFAULT now()`.
 
 ---
@@ -152,6 +168,10 @@ HTTP Request
 | GET/POST/DELETE | `/rates/*` | Rate CRUD | Rate management |
 | POST/DELETE | `/rate-categories/*` | Category CRUD | Rate categories |
 | GET/POST/DELETE/PATCH | `/subcontractors/*` | Sub CRUD + favorite | Subcontractor directory |
+| GET/POST/DELETE | `/templates/*` | Template CRUD | Template management |
+| POST/DELETE | `/templates/{id}/sections/*` | Section CRUD | Template tree nodes |
+| POST/DELETE | `/templates/{id}/subcategories/*` | Subcategory CRUD | Template tree nodes |
+| POST/DELETE | `/templates/{id}/groups/*` | Group CRUD | Template tree nodes |
 
 ---
 
@@ -303,6 +323,7 @@ internal/
 │   │   ├── rates.go            Rate + category CRUD
 │   │   ├── projects.go         Project CRUD + overview
 │   │   ├── subcontractors.go   Subcontractor CRUD + favorites
+│   │   ├── templates.go        Template CRUD, tree editor, stamp function
 │   │   ├── estimate_api.go     JSON API for estimate load/save
 │   │   ├── quotes.go           Quote create/send/resend
 │   │   └── public_quote.go     Public quote page + signature

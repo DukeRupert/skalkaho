@@ -62,7 +62,7 @@ static/                     # Built assets
 
 Core entities: **User** → **Project** (quote container) → **Section** → **Subcategory** → **LineItem**
 
-Supporting: **Client**, **Supplier** → **Material**, **RateCategory** → **Rate**, **Quote** → **QuoteSignature**
+Supporting: **Client**, **Supplier** → **Material**, **RateCategory** → **Rate**, **Quote** → **QuoteSignature**, **Template** → **TemplateSection** → **TemplateSubcategory** → **TemplateComponentGroup**
 
 No `org_id` on any table. Single-tenant. No roles.
 

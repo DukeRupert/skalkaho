@@ -88,6 +88,7 @@ func main() {
 	// Initialize handlers
 	authHandler := authhandler.NewHandler(queries, renderer, sessionManager, logger)
 	appHandler := apphandler.NewHandler(queries, renderer, logger)
+	appHandler.SetDB(db)
 	appHandler.SetEmailClient(emailClient)
 
 	// Setup router

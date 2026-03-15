@@ -1,0 +1,98 @@
+{{template "base" .}}
+{{define "title"}}Templates — Skalkaho{{end}}
+{{define "head"}}{{end}}
+{{define "content"}}
+<div>
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Templates</div>
+            <h1 class="page-title">Project Templates</h1>
+        </div>
+        <button hx-get="/templates/new-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
+            class="btn-primary" data-shortcut="new">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Template
+        </button>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row" style="grid-template-columns: 1fr;">
+        <div class="stat-item">
+            <p class="stat-label">Total Templates</p>
+            <p class="stat-count">{{len .Templates}}</p>
+        </div>
+    </div>
+
+    <!-- Templates Table -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Sections</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Templates}}
+                <tr>
+                    <td>
+                        <a href="/templates/{{.ID}}" style="color: var(--color-white); font-weight: 500; text-decoration: none; transition: color 0.15s ease;"
+                           onmouseover="this.style.color='var(--color-sunburst)'" onmouseout="this.style.color='var(--color-white)'">
+                            {{.Name}}
+                        </a>
+                    </td>
+                    <td class="cell-secondary">{{if .Description.Valid}}{{.Description.String}}{{else}}—{{end}}</td>
+                    <td class="cell-secondary">{{.SectionCount}}</td>
+                    <td class="cell-date">{{.CreatedAt.Format "Jan 2, 2006"}}</td>
+                    <td class="cell-actions">
+                        <button hx-delete="/templates/{{.ID}}" hx-confirm="Delete template '{{.Name}}'? This cannot be undone."
+                            class="action-delete">Delete</button>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{if not .Templates}}
+        <div class="empty-state">
+            <p>No templates yet.</p>
+            <p>Click "New Template" to create a reusable project structure.</p>
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Modal outlet -->
+    <div id="modal-outlet"></div>
+</div>
+{{end}}
+
+{{define "new-template-modal"}}
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" style="max-width: 480px;" onclick="event.stopPropagation()">
+        <h2 class="modal-title">New Template</h2>
+        <form method="POST" action="/templates">
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div class="modal-field" style="margin-bottom: 0;">
+                    <label class="modal-label">Template Name *</label>
+                    <input type="text" name="name" required class="modal-input" placeholder="e.g. Residential Remodel" />
+                </div>
+                <div class="modal-field" style="margin-bottom: 0;">
+                    <label class="modal-label">Description</label>
+                    <textarea name="description" rows="2" class="modal-textarea" placeholder="Optional description..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Create Template</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>function dismissModal(){document.getElementById('modal-outlet').innerHTML='';}</script>
+{{end}}

@@ -200,6 +200,35 @@ type Supplier struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type Template struct {
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
+type TemplateComponentGroup struct {
+	ID                    string `json:"id"`
+	TemplateSubcategoryID string `json:"template_subcategory_id"`
+	Name                  string `json:"name"`
+	SortOrder             int64  `json:"sort_order"`
+}
+
+type TemplateSection struct {
+	ID         string `json:"id"`
+	TemplateID string `json:"template_id"`
+	Name       string `json:"name"`
+	SortOrder  int64  `json:"sort_order"`
+}
+
+type TemplateSubcategory struct {
+	ID                string `json:"id"`
+	TemplateSectionID string `json:"template_section_id"`
+	Name              string `json:"name"`
+	SortOrder         int64  `json:"sort_order"`
+}
+
 type Trade struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
