@@ -96,6 +96,13 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	mux.Handle("POST /quotes/{id}/notes", protect(sm, http.HandlerFunc(appH.UpdateQuoteNotes)))
 	mux.Handle("GET /quotes/{id}/send-modal", protect(sm, http.HandlerFunc(appH.GetSendModal)))
 
+	// Material imports
+	mux.Handle("GET /imports", protect(sm, http.HandlerFunc(appH.ListImports)))
+	mux.Handle("POST /imports", protect(sm, http.HandlerFunc(appH.CreateImport)))
+	mux.Handle("GET /imports/{id}", protect(sm, http.HandlerFunc(appH.ShowImport)))
+	mux.Handle("GET /imports/{id}/status", protect(sm, http.HandlerFunc(appH.ImportStatus)))
+	mux.Handle("POST /imports/{id}/flags/{fid}/resolve", protect(sm, http.HandlerFunc(appH.ResolveImportFlag)))
+
 	// Public quote page (no auth)
 	mux.HandleFunc("GET /q/{token}", appH.GetQuotePage)
 	mux.HandleFunc("POST /q/{token}", appH.SubmitSignature)

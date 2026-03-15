@@ -1,0 +1,348 @@
+{{template "base" .}}
+{{define "title"}}Material Imports — Skalkaho{{end}}
+{{define "head"}}{{end}}
+{{define "content"}}
+<style>
+    .import-status { display: inline-flex; align-items: center; gap: 6px; }
+    .import-status--pending { color: var(--color-sunburst); }
+    .import-status--pending::before { content: ''; width: 6px; height: 6px; background: var(--color-sunburst); border-radius: 50%; animation: pulse 1.5s infinite; }
+    .import-status--processing { color: var(--color-sunburst); }
+    .import-status--processing::before { content: ''; width: 6px; height: 6px; background: var(--color-sunburst); border-radius: 50%; animation: pulse 1s infinite; }
+    .import-status--complete { color: var(--color-sage); }
+    .import-status--complete::before { content: ''; width: 6px; height: 6px; background: var(--color-sage); }
+    .import-status--failed { color: #B43C3C; }
+    .import-status--failed::before { content: ''; width: 6px; height: 6px; background: #B43C3C; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--color-sunburst); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1px; background: rgba(255,255,255,0.06); margin-bottom: 32px; }
+    .summary-item { background: var(--color-ink); padding: 16px 20px; }
+    .summary-label { font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-sage); margin-bottom: 4px; }
+    .summary-value { font-family: var(--font-body); font-size: 24px; font-weight: 500; color: var(--color-white); }
+
+    .confidence-bar { display: inline-block; width: 48px; height: 4px; background: rgba(255,255,255,0.08); position: relative; vertical-align: middle; margin-right: 6px; }
+    .confidence-fill { position: absolute; left: 0; top: 0; height: 100%; }
+    .confidence-high { background: var(--color-sage); }
+    .confidence-mid { background: var(--color-sunburst); }
+    .confidence-low { background: #B43C3C; }
+
+    .flag-actions { display: flex; gap: 8px; }
+    .flag-btn { font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; padding: 6px 14px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; transition: all 0.15s ease; }
+    .flag-btn--accept { background: rgba(122,140,110,0.15); color: var(--color-sage); border-color: rgba(122,140,110,0.3); }
+    .flag-btn--accept:hover { background: var(--color-sage); color: var(--color-ink); }
+    .flag-btn--reject { background: transparent; color: rgba(255,255,255,0.35); }
+    .flag-btn--reject:hover { background: rgba(180,60,60,0.15); color: #B43C3C; border-color: rgba(180,60,60,0.3); }
+    .flag-btn--create { background: transparent; color: rgba(255,255,255,0.35); }
+    .flag-btn--create:hover { background: rgba(196,154,60,0.15); color: var(--color-sunburst); border-color: rgba(196,154,60,0.3); }
+
+    .reasoning-text { font-family: var(--font-body); font-size: 12px; font-weight: 300; color: rgba(255,255,255,0.4); font-style: italic; margin-top: 4px; }
+
+    .upload-area { border: 2px dashed rgba(255,255,255,0.1); padding: 40px; text-align: center; transition: border-color 0.2s ease; margin-bottom: 32px; }
+    .upload-area:hover { border-color: rgba(255,255,255,0.2); }
+    .upload-area label { cursor: pointer; }
+
+    .error-box { background: rgba(180,60,60,0.1); border: 1px solid rgba(180,60,60,0.3); padding: 16px 20px; color: #B43C3C; font-family: var(--font-body); font-size: 14px; margin-bottom: 24px; }
+
+    .back-link { font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: rgba(255,255,255,0.35); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 24px; transition: color 0.15s ease; }
+    .back-link:hover { color: var(--color-sunburst); }
+</style>
+
+{{if .Job.ID}}
+    <!-- ═══════ SHOW: Job detail page ═══════ -->
+    <a href="/imports" class="back-link">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+        All Imports
+    </a>
+
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Import</div>
+            <h1 class="page-title">{{.Job.Filename}}</h1>
+            <p style="font-family: var(--font-body); font-size: 14px; color: var(--color-concrete); margin-top: 8px;">
+                Supplier: {{.SupplierName}} &middot; Started {{.Job.CreatedAt.Format "Jan 2, 2006 3:04 PM"}}
+            </p>
+        </div>
+    </div>
+
+    <div id="import-status"
+         {{if or (eq .Job.Status "pending") (eq .Job.Status "processing")}}
+         hx-get="/imports/{{.Job.ID}}/status"
+         hx-trigger="every 2s"
+         hx-swap="outerHTML"
+         {{end}}>
+        {{if eq .Job.Status "pending"}}
+            {{template "status-pending" .}}
+        {{else if eq .Job.Status "processing"}}
+            {{template "status-pending" .}}
+        {{else if eq .Job.Status "complete"}}
+            {{template "status-complete" .}}
+        {{else if eq .Job.Status "failed"}}
+            {{template "status-failed" .}}
+        {{end}}
+    </div>
+
+{{else}}
+    <!-- ═══════ INDEX: Import list + upload form ═══════ -->
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">Data</div>
+            <h1 class="page-title">Material Imports</h1>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <form method="POST" action="/imports" enctype="multipart/form-data" x-data="{ filename: '' }">
+        <div class="upload-area">
+            <div style="margin-bottom: 16px;">
+                <svg width="32" height="32" fill="none" stroke="rgba(255,255,255,0.2)" viewBox="0 0 24 24" style="margin: 0 auto;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+            </div>
+            <label>
+                <span class="btn-primary" style="margin-bottom: 12px; display: inline-flex;">Choose File</span>
+                <input type="file" name="file" accept=".xlsx,.xls" required style="display: none;"
+                    @change="filename = $event.target.files[0]?.name || ''" />
+            </label>
+            <p x-show="filename" x-text="filename" style="font-family: var(--font-body); font-size: 14px; color: var(--color-white); margin-top: 12px;" x-cloak></p>
+            <p x-show="!filename" style="font-family: var(--font-body); font-size: 13px; color: rgba(255,255,255,0.3); margin-top: 8px;">
+                .xlsx or .xls files up to 10MB
+            </p>
+        </div>
+
+        <div style="display: flex; align-items: flex-end; gap: 16px; margin-bottom: 40px;">
+            <div>
+                <label class="modal-label">Supplier</label>
+                <select name="supplier_id" required class="modal-select" style="width: 240px;">
+                    <option value="">Select supplier</option>
+                    {{range .Suppliers}}
+                    <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">Upload &amp; Import</button>
+        </div>
+    </form>
+
+    <!-- Past Imports Table -->
+    {{if .Jobs}}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>File</th>
+                    <th>Supplier</th>
+                    <th>Status</th>
+                    <th class="text-right">Total</th>
+                    <th class="text-right">Created</th>
+                    <th class="text-right">Updated</th>
+                    <th class="text-right">Flagged</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .Jobs}}
+                <tr>
+                    <td class="cell-primary">
+                        <a href="/imports/{{.ID}}" style="color: var(--color-white); text-decoration: none;">
+                            {{.Filename}}
+                        </a>
+                    </td>
+                    <td class="cell-secondary">{{.SupplierName}}</td>
+                    <td>
+                        <span class="import-status import-status--{{.Status}}" style="font-family: var(--font-ui); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">
+                            {{.Status}}
+                        </span>
+                    </td>
+                    <td class="cell-total">{{if .RowsTotal.Valid}}{{.RowsTotal.Int32}}{{else}}—{{end}}</td>
+                    <td class="cell-total">{{if .RowsCreated.Valid}}{{.RowsCreated.Int32}}{{else}}—{{end}}</td>
+                    <td class="cell-total">{{if .RowsUpdated.Valid}}{{.RowsUpdated.Int32}}{{else}}—{{end}}</td>
+                    <td class="cell-total">{{if .RowsFlagged.Valid}}{{.RowsFlagged.Int32}}{{else}}—{{end}}</td>
+                    <td class="cell-date">{{.CreatedAt.Format "Jan 2, 2006"}}</td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+    {{else}}
+    <div class="empty-state" style="border: 1px solid rgba(255,255,255,0.06); background: var(--color-granite);">
+        <p>No imports yet.</p>
+        <p>Upload a supplier spreadsheet above to get started.</p>
+    </div>
+    {{end}}
+{{end}}
+{{end}}
+
+{{define "status-pending"}}
+<div id="import-status"
+     hx-get="/imports/{{.Job.ID}}/status"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML">
+    <div style="display: flex; align-items: center; gap: 16px; padding: 32px; background: var(--color-granite); border: 1px solid rgba(255,255,255,0.06);">
+        <div class="spinner"></div>
+        <div>
+            <p style="font-family: var(--font-body); font-size: 15px; color: var(--color-white); font-weight: 500;">
+                Processing your spreadsheet...
+            </p>
+            {{if .Job.RowsTotal.Valid}}
+            <p style="font-family: var(--font-body); font-size: 13px; color: var(--color-concrete); margin-top: 4px;">
+                {{.Job.RowsTotal.Int32}} rows found
+                {{if .Job.RowsCreated.Valid}} &middot; {{.Job.RowsCreated.Int32}} created{{end}}
+                {{if .Job.RowsUpdated.Valid}} &middot; {{.Job.RowsUpdated.Int32}} updated{{end}}
+            </p>
+            {{end}}
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "status-complete"}}
+<div id="import-status">
+    <div class="summary-grid">
+        <div class="summary-item">
+            <div class="summary-label">Total Rows</div>
+            <div class="summary-value">{{if .Job.RowsTotal.Valid}}{{.Job.RowsTotal.Int32}}{{else}}0{{end}}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Created</div>
+            <div class="summary-value" style="color: var(--color-sage);">{{if .Job.RowsCreated.Valid}}{{.Job.RowsCreated.Int32}}{{else}}0{{end}}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Updated</div>
+            <div class="summary-value" style="color: var(--color-sunburst);">{{if .Job.RowsUpdated.Valid}}{{.Job.RowsUpdated.Int32}}{{else}}0{{end}}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Skipped</div>
+            <div class="summary-value" style="color: var(--color-concrete);">{{if .Job.RowsSkipped.Valid}}{{.Job.RowsSkipped.Int32}}{{else}}0{{end}}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Flagged</div>
+            <div class="summary-value" style="color: var(--color-sunburst);">{{if .Job.RowsFlagged.Valid}}{{.Job.RowsFlagged.Int32}}{{else}}0{{end}}</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Failed</div>
+            <div class="summary-value" style="color: #B43C3C;">{{if .Job.RowsFailed.Valid}}{{.Job.RowsFailed.Int32}}{{else}}0{{end}}</div>
+        </div>
+    </div>
+
+    <!-- Flag Review Queue -->
+    {{if .PendingFlags}}
+    <div style="margin-top: 8px;">
+        <h2 style="font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--color-white); margin-bottom: 16px;">
+            Review Queue
+        </h2>
+        <p style="font-family: var(--font-body); font-size: 13px; color: var(--color-concrete); margin-bottom: 20px;">
+            These rows had partial matches and need your review. Accept to update the existing material's price, reject to skip, or create a new material.
+        </p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Spreadsheet Row</th>
+                        <th>Matched Material</th>
+                        <th>Confidence</th>
+                        <th class="text-right">New Price</th>
+                        <th class="text-right">Current Price</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="flag-table-body">
+                    {{template "flag-table-body" .}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{end}}
+
+    {{if and .Flags (not .PendingFlags)}}
+    {{if gt (len .Flags) 0}}
+    <div style="padding: 20px; background: rgba(122,140,110,0.08); border: 1px solid rgba(122,140,110,0.2); margin-top: 24px;">
+        <p style="font-family: var(--font-body); font-size: 14px; color: var(--color-sage);">
+            All flagged items have been reviewed.
+        </p>
+    </div>
+    {{end}}
+    {{end}}
+</div>
+{{end}}
+
+{{define "status-failed"}}
+<div id="import-status">
+    <div class="error-box">
+        <p style="font-weight: 500; margin-bottom: 8px;">Import Failed</p>
+        <p>{{if .Job.ErrorMessage.Valid}}{{.Job.ErrorMessage.String}}{{else}}An unknown error occurred.{{end}}</p>
+    </div>
+    <a href="/imports" class="btn-ghost">Try Again</a>
+</div>
+{{end}}
+
+{{define "flag-table-body"}}
+{{range .PendingFlags}}
+<tr>
+    <td>
+        <div class="cell-primary">{{.RawName}}</div>
+        <div class="cell-secondary" style="font-size: 12px;">
+            {{if .RawUnit.Valid}}{{.RawUnit.String}}{{end}}
+            {{if .RawSupplierCode.Valid}} &middot; Code: {{.RawSupplierCode.String}}{{end}}
+        </div>
+    </td>
+    <td>
+        {{if .CandidateName.Valid}}
+        <div class="cell-primary">{{.CandidateName.String}}</div>
+        {{else}}
+        <span class="cell-secondary">No match</span>
+        {{end}}
+    </td>
+    <td>
+        {{if .Confidence.Valid}}
+        <div>
+            <span class="confidence-bar">
+                <span class="confidence-fill {{if gtf .Confidence.Float64 0.9}}confidence-high{{else if gtf .Confidence.Float64 0.8}}confidence-mid{{else}}confidence-low{{end}}"
+                      style="width: {{pct .Confidence.Float64}}%;"></span>
+            </span>
+            <span style="font-family: var(--font-ui); font-size: 11px; color: var(--color-concrete);">
+                {{pct .Confidence.Float64}}%
+            </span>
+        </div>
+        {{if .ClaudeReasoning.Valid}}
+        <div class="reasoning-text">{{.ClaudeReasoning.String}}</div>
+        {{end}}
+        {{end}}
+    </td>
+    <td class="cell-total">{{if .RawPrice.Valid}}${{printf "%.2f" .RawPrice.Float64}}{{else}}—{{end}}</td>
+    <td class="cell-total">{{if .CandidatePrice.Valid}}${{printf "%.2f" .CandidatePrice.Float64}}{{else}}—{{end}}</td>
+    <td>
+        <div class="flag-actions">
+            <form method="POST" action="/imports/{{.ImportJobID}}/flags/{{.ID}}/resolve" style="display:inline;"
+                  hx-post="/imports/{{.ImportJobID}}/flags/{{.ID}}/resolve"
+                  hx-target="#flag-table-body" hx-swap="innerHTML">
+                <input type="hidden" name="resolution" value="accepted" />
+                <button type="submit" class="flag-btn flag-btn--accept">Accept</button>
+            </form>
+            <form method="POST" action="/imports/{{.ImportJobID}}/flags/{{.ID}}/resolve" style="display:inline;"
+                  hx-post="/imports/{{.ImportJobID}}/flags/{{.ID}}/resolve"
+                  hx-target="#flag-table-body" hx-swap="innerHTML">
+                <input type="hidden" name="resolution" value="rejected" />
+                <button type="submit" class="flag-btn flag-btn--reject">Reject</button>
+            </form>
+            <form method="POST" action="/imports/{{.ImportJobID}}/flags/{{.ID}}/resolve" style="display:inline;"
+                  hx-post="/imports/{{.ImportJobID}}/flags/{{.ID}}/resolve"
+                  hx-target="#flag-table-body" hx-swap="innerHTML">
+                <input type="hidden" name="resolution" value="created" />
+                <button type="submit" class="flag-btn flag-btn--create">Create New</button>
+            </form>
+        </div>
+    </td>
+</tr>
+{{end}}
+{{if not .PendingFlags}}
+<tr>
+    <td colspan="6">
+        <div style="padding: 20px; text-align: center; color: var(--color-sage); font-family: var(--font-body); font-size: 14px;">
+            All flagged items have been reviewed.
+        </div>
+    </td>
+</tr>
+{{end}}
+{{end}}

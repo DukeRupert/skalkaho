@@ -26,6 +26,12 @@ var funcMap = template.FuncMap{
 	"gtf": func(a, b float64) bool {
 		return a > b
 	},
+	"mulf": func(a, b float64) float64 {
+		return a * b
+	},
+	"pct": func(v float64) string {
+		return fmt.Sprintf("%.0f", v*100)
+	},
 }
 
 // Renderer parses and renders HTML templates.

@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/pressly/goose/v3"
@@ -21,6 +25,8 @@ import (
 	"github.com/dukerupert/skalkaho/internal/router"
 	"github.com/dukerupert/skalkaho/internal/service/email"
 	"github.com/dukerupert/skalkaho/internal/templates"
+	"github.com/dukerupert/skalkaho/internal/worker"
+	"github.com/dukerupert/skalkaho/internal/worker/importer"
 )
 
 //go:embed migrations/*.sql
@@ -90,6 +96,15 @@ func main() {
 	appHandler := apphandler.NewHandler(queries, renderer, logger)
 	appHandler.SetDB(db)
 	appHandler.SetEmailClient(emailClient)
+
+	// Start background import worker
+	imp := importer.New(queries, db, logger)
+	w := worker.New(queries, db, 5*time.Second, logger)
+	w.SetHandler(imp.Handle)
+
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	go w.Start(ctx)
 
 	// Setup router
 	mux := http.NewServeMux()

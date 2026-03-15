@@ -72,6 +72,40 @@ type Material struct {
 	CreatedAt    time.Time      `json:"created_at"`
 }
 
+type MaterialImportFlag struct {
+	ID                  string          `json:"id"`
+	ImportJobID         string          `json:"import_job_id"`
+	SupplierID          string          `json:"supplier_id"`
+	RawName             string          `json:"raw_name"`
+	RawUnit             sql.NullString  `json:"raw_unit"`
+	RawPrice            sql.NullFloat64 `json:"raw_price"`
+	RawSupplierCode     sql.NullString  `json:"raw_supplier_code"`
+	CandidateMaterialID sql.NullString  `json:"candidate_material_id"`
+	Confidence          sql.NullFloat64 `json:"confidence"`
+	ClaudeReasoning     sql.NullString  `json:"claude_reasoning"`
+	Resolution          sql.NullString  `json:"resolution"`
+	ResolvedAt          sql.NullTime    `json:"resolved_at"`
+	CreatedAt           time.Time       `json:"created_at"`
+}
+
+type MaterialImportJob struct {
+	ID           string         `json:"id"`
+	SupplierID   string         `json:"supplier_id"`
+	Filename     string         `json:"filename"`
+	TempFilePath string         `json:"temp_file_path"`
+	Status       string         `json:"status"`
+	RowsTotal    sql.NullInt32  `json:"rows_total"`
+	RowsCreated  sql.NullInt32  `json:"rows_created"`
+	RowsUpdated  sql.NullInt32  `json:"rows_updated"`
+	RowsSkipped  sql.NullInt32  `json:"rows_skipped"`
+	RowsFlagged  sql.NullInt32  `json:"rows_flagged"`
+	RowsFailed   sql.NullInt32  `json:"rows_failed"`
+	ErrorMessage sql.NullString `json:"error_message"`
+	CreatedAt    time.Time      `json:"created_at"`
+	StartedAt    sql.NullTime   `json:"started_at"`
+	CompletedAt  sql.NullTime   `json:"completed_at"`
+}
+
 type Project struct {
 	ID              string         `json:"id"`
 	Name            string         `json:"name"`

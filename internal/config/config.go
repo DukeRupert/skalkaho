@@ -15,6 +15,7 @@ type Config struct {
 	SessionCookieName string        // Session cookie name (default: skalkaho_session)
 	SecureCookies     bool          // true if ENVIRONMENT=production
 	PostmarkAPIKey    string        // Postmark transactional email API key
+	AnthropicAPIKey   string        // Anthropic API key for material matching
 }
 
 // Load reads configuration from environment variables.
@@ -31,6 +32,7 @@ func Load() *Config {
 		SessionCookieName: getEnv("SESSION_COOKIE_NAME", "skalkaho_session"),
 		SecureCookies:     env == "production",
 		PostmarkAPIKey:    getEnv("POSTMARK_API_KEY", ""),
+		AnthropicAPIKey:   getEnv("ANTHROPIC_API_KEY", ""),
 	}
 }
 
