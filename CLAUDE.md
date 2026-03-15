@@ -43,7 +43,7 @@ mage clean              # Remove built binaries
 cmd/
 ├── server/
 │   ├── main.go             # Entry point, dependency wiring
-│   └── migrations/         # Embedded Goose SQL migrations (001-014)
+│   └── migrations/         # Embedded Goose SQL migrations (001-015)
 ├── seed/
 │   └── main.go             # CLI user management tool
 internal/
@@ -70,6 +70,8 @@ Core entities: **User** → **Project** (quote container) → **Section** → **
 Supporting: **Client**, **Supplier** → **Material**, **RateCategory** → **Rate**, **Quote** → **QuoteSignature**, **Template** → **TemplateSection** → **TemplateSubcategory** → **TemplateComponentGroup**
 
 Import: **MaterialImportJob** → **MaterialImportFlag** (linked to Supplier and optionally to a candidate Material)
+
+QuickBooks: **QBConnection** (single-row), **Invoice** → **InvoicePayment**. Clients have optional `qb_customer_id`/`qb_customer_name` for manual QBO linking.
 
 No `org_id` on any table. Single-tenant. No roles.
 
@@ -134,6 +136,11 @@ SESSION_DURATION=720h               # Session lifetime (default 30 days)
 SESSION_COOKIE_NAME=skalkaho_session
 POSTMARK_API_KEY=                   # Transactional email (Phase 9)
 ANTHROPIC_API_KEY=                  # Claude API for material import fuzzy matching (Tier 3)
+QBO_CLIENT_ID=                      # QuickBooks OAuth client ID
+QBO_CLIENT_SECRET=                  # QuickBooks OAuth client secret
+QBO_REDIRECT_URI=                   # QuickBooks OAuth redirect URI (must match Intuit dashboard)
+QBO_WEBHOOK_TOKEN=                  # QuickBooks webhook verifier token (HMAC-SHA256)
+QBO_SANDBOX=true                    # Use QBO sandbox URLs (omit or "false" for production)
 ```
 
 ## Reference Documents
@@ -141,3 +148,4 @@ ANTHROPIC_API_KEY=                  # Claude API for material import fuzzy match
 - `docs/skalkaho-spec.md` - Authoritative product specification
 - `docs/IMPLEMENTATION_PLAN.md` - Greenfield build guide with phased delivery
 - `docs/material-import-feature-plan.md` - Material import feature design (Excel upload, Claude matching, flag review)
+- `docs/quickbooks-integration-plumbing.md` - QuickBooks Online integration plan (OAuth, invoicing, payment sync)

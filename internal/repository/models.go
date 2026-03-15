@@ -12,14 +12,16 @@ import (
 )
 
 type Client struct {
-	ID          string         `json:"id"`
-	CompanyName string         `json:"company_name"`
-	ContactName sql.NullString `json:"contact_name"`
-	Email       sql.NullString `json:"email"`
-	Phone       sql.NullString `json:"phone"`
-	Address     sql.NullString `json:"address"`
-	Notes       sql.NullString `json:"notes"`
-	CreatedAt   time.Time      `json:"created_at"`
+	ID             string         `json:"id"`
+	CompanyName    string         `json:"company_name"`
+	ContactName    sql.NullString `json:"contact_name"`
+	Email          sql.NullString `json:"email"`
+	Phone          sql.NullString `json:"phone"`
+	Address        sql.NullString `json:"address"`
+	Notes          sql.NullString `json:"notes"`
+	CreatedAt      time.Time      `json:"created_at"`
+	QbCustomerID   sql.NullString `json:"qb_customer_id"`
+	QbCustomerName sql.NullString `json:"qb_customer_name"`
 }
 
 type CompanyProfile struct {
@@ -40,6 +42,29 @@ type ComponentGroup struct {
 	SubcategoryID string `json:"subcategory_id"`
 	Name          string `json:"name"`
 	SortOrder     int64  `json:"sort_order"`
+}
+
+type Invoice struct {
+	ID           string         `json:"id"`
+	QuoteID      string         `json:"quote_id"`
+	QbInvoiceID  sql.NullString `json:"qb_invoice_id"`
+	QbInvoiceNum sql.NullString `json:"qb_invoice_num"`
+	QbSyncToken  sql.NullString `json:"qb_sync_token"`
+	Amount       float64        `json:"amount"`
+	Status       string         `json:"status"`
+	DueDate      sql.NullTime   `json:"due_date"`
+	Memo         sql.NullString `json:"memo"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+}
+
+type InvoicePayment struct {
+	ID          string    `json:"id"`
+	InvoiceID   string    `json:"invoice_id"`
+	QbPaymentID string    `json:"qb_payment_id"`
+	Amount      float64   `json:"amount"`
+	PaymentDate time.Time `json:"payment_date"`
+	SyncedAt    time.Time `json:"synced_at"`
 }
 
 type LineItem struct {
@@ -121,6 +146,17 @@ type Project struct {
 	OtherMarkup     float64        `json:"other_markup"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       time.Time      `json:"updated_at"`
+}
+
+type QbConnection struct {
+	ID                 int64        `json:"id"`
+	RealmID            string       `json:"realm_id"`
+	AccessToken        string       `json:"access_token"`
+	RefreshToken       string       `json:"refresh_token"`
+	AccessTokenExpiry  time.Time    `json:"access_token_expiry"`
+	RefreshTokenExpiry time.Time    `json:"refresh_token_expiry"`
+	ConnectedAt        time.Time    `json:"connected_at"`
+	LastRefreshedAt    sql.NullTime `json:"last_refreshed_at"`
 }
 
 type Quote struct {

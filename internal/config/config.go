@@ -16,6 +16,11 @@ type Config struct {
 	SecureCookies     bool          // true if ENVIRONMENT=production
 	PostmarkAPIKey    string        // Postmark transactional email API key
 	AnthropicAPIKey   string        // Anthropic API key for material matching
+	QBOClientID       string        // QuickBooks OAuth client ID
+	QBOClientSecret   string        // QuickBooks OAuth client secret
+	QBORedirectURI    string        // QuickBooks OAuth redirect URI
+	QBOWebhookToken   string        // QuickBooks webhook verifier token
+	QBOSandbox        bool          // Use QBO sandbox URLs
 }
 
 // Load reads configuration from environment variables.
@@ -33,6 +38,11 @@ func Load() *Config {
 		SecureCookies:     env == "production",
 		PostmarkAPIKey:    getEnv("POSTMARK_API_KEY", ""),
 		AnthropicAPIKey:   getEnv("ANTHROPIC_API_KEY", ""),
+		QBOClientID:       getEnv("QBO_CLIENT_ID", ""),
+		QBOClientSecret:   getEnv("QBO_CLIENT_SECRET", ""),
+		QBORedirectURI:    getEnv("QBO_REDIRECT_URI", ""),
+		QBOWebhookToken:   getEnv("QBO_WEBHOOK_TOKEN", ""),
+		QBOSandbox:        getEnv("QBO_SANDBOX", "") == "true",
 	}
 }
 

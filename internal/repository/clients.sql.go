@@ -46,7 +46,7 @@ func (q *Queries) CountTotalClientProjects(ctx context.Context) (int64, error) {
 const createClient = `-- name: CreateClient :one
 INSERT INTO clients (id, company_name, contact_name, email, phone, address, notes)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, company_name, contact_name, email, phone, address, notes, created_at
+RETURNING id, company_name, contact_name, email, phone, address, notes, created_at, qb_customer_id, qb_customer_name
 `
 
 type CreateClientParams struct {
@@ -79,6 +79,8 @@ func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) (Cli
 		&i.Address,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.QbCustomerID,
+		&i.QbCustomerName,
 	)
 	return i, err
 }
@@ -93,7 +95,7 @@ func (q *Queries) DeleteClient(ctx context.Context, id string) error {
 }
 
 const getClient = `-- name: GetClient :one
-SELECT id, company_name, contact_name, email, phone, address, notes, created_at FROM clients WHERE id = $1
+SELECT id, company_name, contact_name, email, phone, address, notes, created_at, qb_customer_id, qb_customer_name FROM clients WHERE id = $1
 `
 
 func (q *Queries) GetClient(ctx context.Context, id string) (Client, error) {
@@ -108,12 +110,14 @@ func (q *Queries) GetClient(ctx context.Context, id string) (Client, error) {
 		&i.Address,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.QbCustomerID,
+		&i.QbCustomerName,
 	)
 	return i, err
 }
 
 const listClients = `-- name: ListClients :many
-SELECT id, company_name, contact_name, email, phone, address, notes, created_at FROM clients ORDER BY company_name ASC
+SELECT id, company_name, contact_name, email, phone, address, notes, created_at, qb_customer_id, qb_customer_name FROM clients ORDER BY company_name ASC
 `
 
 func (q *Queries) ListClients(ctx context.Context) ([]Client, error) {
@@ -134,6 +138,8 @@ func (q *Queries) ListClients(ctx context.Context) ([]Client, error) {
 			&i.Address,
 			&i.Notes,
 			&i.CreatedAt,
+			&i.QbCustomerID,
+			&i.QbCustomerName,
 		); err != nil {
 			return nil, err
 		}
@@ -149,7 +155,7 @@ func (q *Queries) ListClients(ctx context.Context) ([]Client, error) {
 }
 
 const searchClients = `-- name: SearchClients :many
-SELECT id, company_name, contact_name, email, phone, address, notes, created_at FROM clients
+SELECT id, company_name, contact_name, email, phone, address, notes, created_at, qb_customer_id, qb_customer_name FROM clients
 WHERE company_name ILIKE '%' || $1::text || '%'
    OR contact_name ILIKE '%' || $1::text || '%'
    OR email ILIKE '%' || $1::text || '%'
@@ -175,6 +181,8 @@ func (q *Queries) SearchClients(ctx context.Context, searchTerm string) ([]Clien
 			&i.Address,
 			&i.Notes,
 			&i.CreatedAt,
+			&i.QbCustomerID,
+			&i.QbCustomerName,
 		); err != nil {
 			return nil, err
 		}
@@ -193,7 +201,7 @@ const updateClient = `-- name: UpdateClient :one
 UPDATE clients
 SET company_name = $2, contact_name = $3, email = $4, phone = $5, address = $6, notes = $7
 WHERE id = $1
-RETURNING id, company_name, contact_name, email, phone, address, notes, created_at
+RETURNING id, company_name, contact_name, email, phone, address, notes, created_at, qb_customer_id, qb_customer_name
 `
 
 type UpdateClientParams struct {
@@ -226,6 +234,8 @@ func (q *Queries) UpdateClient(ctx context.Context, arg UpdateClientParams) (Cli
 		&i.Address,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.QbCustomerID,
+		&i.QbCustomerName,
 	)
 	return i, err
 }
