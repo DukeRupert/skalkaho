@@ -43,7 +43,7 @@ mage clean              # Remove built binaries
 cmd/
 ├── server/
 │   ├── main.go             # Entry point, dependency wiring
-│   └── migrations/         # Embedded Goose SQL migrations (001-015)
+│   └── migrations/         # Embedded Goose SQL migrations (001-016)
 ├── seed/
 │   └── main.go             # CLI user management tool
 internal/
@@ -69,6 +69,8 @@ Core entities: **User** → **Project** (quote container) → **Section** → **
 
 Supporting: **Client**, **Supplier** → **Material**, **RateCategory** → **Rate**, **Quote** → **QuoteSignature**, **Template** → **TemplateSection** → **TemplateSubcategory** → **TemplateComponentGroup**
 
+Supply: **SupplyList** (scoped to Quote, optionally to Supplier) → **SupplyListItem** (snapshot of line item + material at generation time)
+
 Import: **MaterialImportJob** → **MaterialImportFlag** (linked to Supplier and optionally to a candidate Material)
 
 QuickBooks: **QBConnection** (single-row), **Invoice** → **InvoicePayment**. Clients have optional `qb_customer_id`/`qb_customer_name` for manual QBO linking.
@@ -91,6 +93,22 @@ A single goroutine polls `material_import_jobs` every 5 seconds using `FOR UPDAT
 7. HTMX polls `/imports/{id}/status` every 2s; flag review queue rendered inline
 
 **Material Naming Convention**: All new materials created by the import pipeline are normalized to `Category, Dimensions/Weight, Details` format via Claude. Category comes first so searching by what-it-is returns all sizes. Examples: `Stud, 2x4x8, Douglas Fir` · `Plywood, 4x8, 3/4 CDX` · `Concrete Mix, 80lb, Quikrete` · `Screw, #10x3, GRK RSS`. Existing materials (Tier 1 price updates) keep their current names.
+
+## Supply Lists
+
+Persistent supply lists generated from a signed quote. Lists are snapshots — subsequent quote/estimate edits do not affect existing lists. Three generation modes:
+
+- **All suppliers** — one list covering every supplier + ad hoc items grouped under "No Supplier"
+- **Per supplier (all)** — one list per supplier in a single transaction, excludes ad hoc items
+- **Per supplier (individual)** — owner picks a specific supplier from a dropdown
+
+**Data flow**: `line_items` → JOIN `materials` → JOIN `suppliers` → snapshot into `supply_list_items`. Each item stores snapshotted `material_name`, `supplier_name`, `supplier_code`, `unit_price`, and computed `extended_price`. Supplier name is stored as a string (not FK) so the snapshot is independent of future supplier record changes.
+
+**Key constraints**: Generation gated to `quote.status = 'signed'`. `supply_lists.quote_id` uses `ON DELETE RESTRICT` (can't delete a quote that has supply lists). Items CASCADE delete with their parent list.
+
+**Routes**: All under `/quotes/{id}/supply-lists/...`. Accessible from the quote row on the project overview page (signed quotes show a "Supply Lists" action link).
+
+**Templates**: `supply_lists.html` (index), `supply_list_show.html` (detail/print view with `@media print` styles). Dates and notes are editable inline via HTMX.
 
 ## Authentication
 
@@ -149,3 +167,4 @@ QBO_SANDBOX=true                    # Use QBO sandbox URLs (omit or "false" for 
 - `docs/IMPLEMENTATION_PLAN.md` - Greenfield build guide with phased delivery
 - `docs/material-import-feature-plan.md` - Material import feature design (Excel upload, Claude matching, flag review)
 - `docs/quickbooks-integration-plumbing.md` - QuickBooks Online integration plan (OAuth, invoicing, payment sync)
+- `docs/supply-list-feature-plan.md` - Supply list feature design (snapshot generation, print view, delivery tracking)

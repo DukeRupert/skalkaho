@@ -96,6 +96,16 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	mux.Handle("POST /quotes/{id}/notes", protect(sm, http.HandlerFunc(appH.UpdateQuoteNotes)))
 	mux.Handle("GET /quotes/{id}/send-modal", protect(sm, http.HandlerFunc(appH.GetSendModal)))
 
+	// Supply lists
+	mux.Handle("GET /quotes/{id}/supply-lists", protect(sm, http.HandlerFunc(appH.SupplyListIndex)))
+	mux.Handle("POST /quotes/{id}/supply-lists/generate/all", protect(sm, http.HandlerFunc(appH.GenerateAllSupplyList)))
+	mux.Handle("POST /quotes/{id}/supply-lists/generate/per-supplier", protect(sm, http.HandlerFunc(appH.GeneratePerSupplierSupplyList)))
+	mux.Handle("POST /quotes/{id}/supply-lists/generate/supplier/{sid}", protect(sm, http.HandlerFunc(appH.GenerateForSupplierSupplyList)))
+	mux.Handle("GET /quotes/{id}/supply-lists/{lid}", protect(sm, http.HandlerFunc(appH.SupplyListShow)))
+	mux.Handle("PATCH /quotes/{id}/supply-lists/{lid}/dates", protect(sm, http.HandlerFunc(appH.UpdateSupplyListDates)))
+	mux.Handle("PATCH /quotes/{id}/supply-lists/{lid}/notes", protect(sm, http.HandlerFunc(appH.UpdateSupplyListNotes)))
+	mux.Handle("DELETE /quotes/{id}/supply-lists/{lid}", protect(sm, http.HandlerFunc(appH.DeleteSupplyList)))
+
 	// Material imports
 	mux.Handle("GET /imports", protect(sm, http.HandlerFunc(appH.ListImports)))
 	mux.Handle("POST /imports", protect(sm, http.HandlerFunc(appH.CreateImport)))

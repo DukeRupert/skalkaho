@@ -1,0 +1,171 @@
+{{template "base" .}}
+{{define "title"}}Supply Lists — Skalkaho{{end}}
+{{define "head"}}{{end}}
+{{define "content"}}
+<style>
+    .sl-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        transition: border-color 0.15s ease;
+    }
+    .sl-card:hover { border-color: rgba(255,255,255,0.12); }
+
+    .sl-card__info { flex: 1; min-width: 0; }
+    .sl-card__label {
+        font-family: var(--font-ui);
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--color-white);
+        margin-bottom: 4px;
+    }
+    .sl-card__meta {
+        font-family: var(--font-ui);
+        font-size: 11px;
+        color: rgba(255,255,255,0.4);
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .sl-card__stat {
+        font-weight: 600;
+        color: rgba(255,255,255,0.6);
+    }
+    .sl-card__delivery {
+        font-size: 11px;
+        color: rgba(255,255,255,0.35);
+        margin-top: 6px;
+    }
+    .sl-card__delivery .delivered {
+        color: var(--color-sage);
+        font-weight: 600;
+    }
+    .sl-card__actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .gen-section {
+        margin-bottom: 24px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .gen-section .btn-primary,
+    .gen-section .btn-ghost { font-size: 12px; padding: 8px 16px; }
+
+    .supplier-select {
+        appearance: none;
+        -webkit-appearance: none;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--color-white);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        padding: 8px 32px 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg fill='none' stroke='rgba(255,255,255,0.4)' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 14px;
+    }
+    .supplier-select option {
+        background: var(--color-granite);
+        color: var(--color-white);
+    }
+</style>
+
+<div>
+    <!-- Header -->
+    <div class="page-header">
+        <div>
+            <div class="page-eyebrow">
+                <a href="/projects/{{.ProjectID}}" style="color: inherit; text-decoration: none;">{{.Project.Name}}</a>
+                &rsaquo; Quote v{{.Quote.Version}}
+            </div>
+            <h1 class="page-title">Supply Lists</h1>
+        </div>
+        <a href="/projects/{{.ProjectID}}" class="btn-ghost" style="font-size: 12px; padding: 8px 16px;">
+            Back to Project
+        </a>
+    </div>
+
+    {{if eq .Quote.Status "signed"}}
+    <!-- Generate Actions -->
+    <div class="gen-section">
+        <form method="POST" action="/quotes/{{.Quote.ID}}/supply-lists/generate/all">
+            <button type="submit" class="btn-primary">Generate All Suppliers</button>
+        </form>
+        <form method="POST" action="/quotes/{{.Quote.ID}}/supply-lists/generate/per-supplier">
+            <button type="submit" class="btn-ghost">Generate Per Supplier</button>
+        </form>
+        {{if .Suppliers}}
+        <form method="POST" id="single-supplier-form"
+            x-data="{ sid: '' }"
+            :action="'/quotes/{{.Quote.ID}}/supply-lists/generate/supplier/' + sid">
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <select x-model="sid" class="supplier-select">
+                    <option value="" disabled selected>Select supplier...</option>
+                    {{range .Suppliers}}
+                    <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+                <button type="submit" class="btn-ghost" :disabled="!sid">Generate</button>
+            </div>
+        </form>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty-state" style="padding: 20px; margin-bottom: 24px;">
+        <p>Supply lists can only be generated for signed quotes. This quote is <strong>{{.Quote.Status}}</strong>.</p>
+    </div>
+    {{end}}
+
+    <!-- Supply Lists -->
+    {{if .Lists}}
+    <div>
+        {{range .Lists}}
+        <div class="sl-card">
+            <div class="sl-card__info">
+                <div class="sl-card__label">{{.Label}}</div>
+                <div class="sl-card__meta">
+                    <span><span class="sl-card__stat">{{.ItemCount}}</span> items</span>
+                    <span><span class="sl-card__stat">{{money .TotalValue}}</span></span>
+                    <span>Generated {{.GeneratedAt}}</span>
+                </div>
+                <div class="sl-card__delivery">
+                    {{if .EstimatedDelivery}}Est. delivery: {{.EstimatedDelivery}}{{end}}
+                    {{if .HasActualDelivery}}
+                    &middot; <span class="delivered">Delivered {{.ActualDelivery}}</span>
+                    {{end}}
+                </div>
+            </div>
+            <div class="sl-card__actions">
+                <a href="/quotes/{{$.Quote.ID}}/supply-lists/{{.ID}}" class="action-edit">View</a>
+                <button hx-delete="/quotes/{{$.Quote.ID}}/supply-lists/{{.ID}}"
+                    hx-confirm="Delete this supply list?"
+                    class="action-delete">&times;</button>
+            </div>
+        </div>
+        {{end}}
+    </div>
+    {{else}}
+    <div class="empty-state" style="padding: 40px 20px;">
+        <p>No supply lists generated yet.</p>
+        {{if eq .Quote.Status "signed"}}
+        <p>Use the buttons above to generate supply lists from this quote.</p>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{end}}

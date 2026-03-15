@@ -1,0 +1,317 @@
+{{template "base" .}}
+{{define "title"}}Supply List — {{.List.Label}} — Skalkaho{{end}}
+{{define "head"}}{{end}}
+{{define "content"}}
+<style>
+    /* ── Print styles ── */
+    @media print {
+        .sidebar, .no-print, [data-no-print] { display: none !important; }
+        body { background: white !important; color: black !important; }
+        .sl-print { padding: 0 !important; }
+        .sl-print * { color: black !important; border-color: #ccc !important; }
+        .sl-header { border-bottom: 2px solid black !important; padding-bottom: 12px !important; }
+        .sl-table th { background: #f0f0f0 !important; }
+        .sl-table td, .sl-table th { padding: 4px 8px !important; font-size: 11px !important; }
+        .sl-group-header { background: #e8e8e8 !important; }
+        .sl-subtotal td { border-top: 1px solid #999 !important; }
+        .sl-grand-total td { border-top: 2px solid black !important; font-weight: 700 !important; }
+    }
+
+    /* ── Screen styles ── */
+    .sl-print { max-width: 900px; }
+
+    .sl-header {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+    }
+    .sl-title {
+        font-family: var(--font-display);
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-white);
+        margin-bottom: 16px;
+    }
+    .sl-meta {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 20px;
+        font-size: 13px;
+        font-family: var(--font-ui);
+    }
+    .sl-meta dt {
+        color: rgba(255,255,255,0.4);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        padding-top: 2px;
+    }
+    .sl-meta dd {
+        color: rgba(255,255,255,0.8);
+        margin: 0;
+    }
+
+    .sl-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-ui);
+        font-size: 12px;
+        margin-top: 20px;
+    }
+    .sl-table th {
+        text-align: left;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.35);
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sl-table th.text-right,
+    .sl-table td.text-right { text-align: right; }
+    .sl-table td {
+        padding: 6px 10px;
+        color: rgba(255,255,255,0.7);
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .sl-group-header td {
+        background: rgba(255,255,255,0.04);
+        font-weight: 700;
+        color: var(--color-white);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .sl-subtotal td {
+        border-top: 1px solid rgba(255,255,255,0.1);
+        font-weight: 600;
+        color: rgba(255,255,255,0.6);
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+    .sl-grand-total td {
+        border-top: 2px solid rgba(255,255,255,0.2);
+        font-weight: 700;
+        color: var(--color-white);
+        font-size: 13px;
+        padding: 10px;
+    }
+
+    .sl-dates-form {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        margin-top: 20px;
+        padding: 16px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px;
+    }
+    .sl-dates-form label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4);
+        display: block;
+        margin-bottom: 4px;
+    }
+    .sl-dates-form input[type="date"] {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--color-white);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        padding: 6px 10px;
+        border-radius: 4px;
+    }
+
+    .sl-notes-form {
+        margin-top: 12px;
+        padding: 16px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px;
+    }
+    .sl-notes-form label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4);
+        display: block;
+        margin-bottom: 6px;
+    }
+    .sl-notes-form textarea {
+        width: 100%;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--color-white);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 4px;
+        min-height: 60px;
+        resize: vertical;
+    }
+</style>
+
+<div class="sl-print">
+    <!-- Nav bar (hidden on print) -->
+    <div class="page-header no-print">
+        <div>
+            <div class="page-eyebrow">
+                <a href="/projects/{{.Project.ID}}" style="color: inherit; text-decoration: none;">{{.ProjectName}}</a>
+                &rsaquo;
+                <a href="/quotes/{{.QuoteID}}/supply-lists" style="color: inherit; text-decoration: none;">Supply Lists</a>
+            </div>
+            <h1 class="page-title">{{.List.Label}}</h1>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button onclick="window.print()" class="btn-ghost" style="font-size: 12px; padding: 8px 16px;">
+                Print
+            </button>
+            <a href="/quotes/{{.QuoteID}}/supply-lists" class="btn-ghost" style="font-size: 12px; padding: 8px 16px;">
+                Back to Lists
+            </a>
+        </div>
+    </div>
+
+    <!-- Print header -->
+    <div class="sl-header">
+        <div class="sl-title">Supply List</div>
+        <dl class="sl-meta">
+            <dt>Project</dt>
+            <dd>{{.ProjectName}}</dd>
+            <dt>Supplier</dt>
+            <dd>{{.List.Label}}</dd>
+            <dt>Generated</dt>
+            <dd>{{.GeneratedAtFmt}}</dd>
+            {{if .EstDeliveryFmt}}
+            <dt>Est. Delivery</dt>
+            <dd>{{.EstDeliveryFmt}}</dd>
+            {{end}}
+            {{if .ActDeliveryFmt}}
+            <dt>Act. Delivery</dt>
+            <dd>{{.ActDeliveryFmt}}</dd>
+            {{end}}
+        </dl>
+    </div>
+
+    <!-- Items table -->
+    {{if .IsAllSuppliers}}
+    <!-- Grouped by supplier -->
+    <table class="sl-table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Item</th>
+                <th class="text-right">Qty</th>
+                <th>Unit</th>
+                <th class="text-right">Unit $</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Groups}}
+            <tr class="sl-group-header">
+                <td colspan="6">{{.SupplierName}}</td>
+            </tr>
+            {{range .Items}}
+            <tr>
+                <td>{{if .SupplierCode.Valid}}{{.SupplierCode.String}}{{else}}&mdash;{{end}}</td>
+                <td>{{.MaterialName}}</td>
+                <td class="text-right">{{printf "%.0f" .Quantity}}</td>
+                <td>{{.Unit}}</td>
+                <td class="text-right">{{money .UnitPrice}}</td>
+                <td class="text-right">{{money .ExtendedPrice}}</td>
+            </tr>
+            {{end}}
+            <tr class="sl-subtotal">
+                <td colspan="5" class="text-right">Subtotal:</td>
+                <td class="text-right">{{money .Subtotal}}</td>
+            </tr>
+            {{end}}
+            <tr class="sl-grand-total">
+                <td colspan="5" class="text-right">Grand Total:</td>
+                <td class="text-right">{{money .GrandTotal}}</td>
+            </tr>
+        </tbody>
+    </table>
+    {{else}}
+    <!-- Single supplier -->
+    <table class="sl-table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Item</th>
+                <th class="text-right">Qty</th>
+                <th>Unit</th>
+                <th class="text-right">Unit $</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Items}}
+            <tr>
+                <td>{{if .SupplierCode.Valid}}{{.SupplierCode.String}}{{else}}&mdash;{{end}}</td>
+                <td>{{.MaterialName}}</td>
+                <td class="text-right">{{printf "%.0f" .Quantity}}</td>
+                <td>{{.Unit}}</td>
+                <td class="text-right">{{money .UnitPrice}}</td>
+                <td class="text-right">{{money .ExtendedPrice}}</td>
+            </tr>
+            {{end}}
+            <tr class="sl-grand-total">
+                <td colspan="5" class="text-right">Total:</td>
+                <td class="text-right">{{money .GrandTotal}}</td>
+            </tr>
+        </tbody>
+    </table>
+    {{end}}
+
+    <!-- Dates form (hidden on print) -->
+    <div class="no-print" id="dates-section">
+        {{template "dates-form" .}}
+    </div>
+
+    <!-- Notes form (hidden on print) -->
+    <div class="no-print">
+        <div class="sl-notes-form">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes"
+                hx-patch="/quotes/{{.QuoteID}}/supply-lists/{{.List.ID}}/notes"
+                hx-trigger="change"
+                hx-include="this"
+                placeholder="Add notes...">{{.List.Notes.String}}</textarea>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{define "dates-form"}}
+<form class="sl-dates-form"
+    hx-patch="/quotes/{{.QuoteID}}/supply-lists/{{.List.ID}}/dates"
+    hx-target="#dates-section"
+    hx-swap="innerHTML">
+    <div>
+        <label for="estimated_delivery">Est. Delivery</label>
+        <input type="date" id="estimated_delivery" name="estimated_delivery"
+            value="{{if .List.EstimatedDelivery.Valid}}{{.List.EstimatedDelivery.Time.Format "2006-01-02"}}{{end}}" />
+    </div>
+    <div>
+        <label for="actual_delivery">Act. Delivery</label>
+        <input type="date" id="actual_delivery" name="actual_delivery"
+            value="{{if .List.ActualDelivery.Valid}}{{.List.ActualDelivery.Time.Format "2006-01-02"}}{{end}}" />
+    </div>
+    <button type="submit" class="btn-ghost" style="font-size: 11px; padding: 6px 14px;">Save Dates</button>
+</form>
+{{end}}

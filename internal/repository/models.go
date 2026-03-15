@@ -271,6 +271,32 @@ type Supplier struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type SupplyList struct {
+	ID                string         `json:"id"`
+	QuoteID           string         `json:"quote_id"`
+	SupplierID        sql.NullString `json:"supplier_id"`
+	Label             string         `json:"label"`
+	EstimatedDelivery sql.NullTime   `json:"estimated_delivery"`
+	ActualDelivery    sql.NullTime   `json:"actual_delivery"`
+	GeneratedAt       time.Time      `json:"generated_at"`
+	Notes             sql.NullString `json:"notes"`
+}
+
+type SupplyListItem struct {
+	ID            string         `json:"id"`
+	SupplyListID  string         `json:"supply_list_id"`
+	MaterialID    sql.NullString `json:"material_id"`
+	SupplierID    sql.NullString `json:"supplier_id"`
+	SupplierName  sql.NullString `json:"supplier_name"`
+	MaterialName  string         `json:"material_name"`
+	SupplierCode  sql.NullString `json:"supplier_code"`
+	Quantity      float64        `json:"quantity"`
+	Unit          string         `json:"unit"`
+	UnitPrice     float64        `json:"unit_price"`
+	ExtendedPrice float64        `json:"extended_price"`
+	SortOrder     int64          `json:"sort_order"`
+}
+
 type Template struct {
 	ID          string         `json:"id"`
 	Name        string         `json:"name"`
