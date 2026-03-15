@@ -33,6 +33,7 @@ type QuoteView struct {
 	CreatedAt string
 	ExpiresAt string
 	Signed    bool
+	HasNotes  bool
 }
 
 // SendModalData holds data for the send quote modal.
@@ -41,6 +42,14 @@ type SendModalData struct {
 	QuoteURL string
 	Status   string
 	Email    string // pre-filled from client
+}
+
+// NotesModalData holds data for the quote notes modal.
+type NotesModalData struct {
+	QuoteID   string
+	ProjectID string
+	Version   int64
+	Notes     string
 }
 
 // ListQuotes returns the quote version list partial for the overview page.
@@ -353,9 +362,78 @@ func toQuoteViews(quotes []repository.Quote) []QuoteView {
 		if q.Status == "signed" {
 			view.Signed = true
 		}
+		if q.Notes != "" {
+			view.HasNotes = true
+		}
 		views = append(views, view)
 	}
 	return views
+}
+
+// GetNotesModal returns the modal for viewing/editing quote notes.
+func (h *Handler) GetNotesModal(w http.ResponseWriter, r *http.Request) {
+	quoteID := r.PathValue("id")
+
+	quote, err := h.queries.GetQuote(r.Context(), quoteID)
+	if err != nil {
+		h.logger.Error("getting quote for notes", "error", err)
+		http.Error(w, "Quote not found", http.StatusNotFound)
+		return
+	}
+
+	data := NotesModalData{
+		QuoteID:   quoteID,
+		ProjectID: quote.ProjectID,
+		Version:   quote.Version,
+		Notes:     quote.Notes,
+	}
+
+	if err := h.renderer.RenderPartial(w, "project_overview.html", "notes-modal", data); err != nil {
+		h.logger.Error("rendering notes modal", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
+// UpdateQuoteNotes saves notes on a quote.
+func (h *Handler) UpdateQuoteNotes(w http.ResponseWriter, r *http.Request) {
+	quoteID := r.PathValue("id")
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	notes := r.FormValue("notes")
+	if err := h.queries.UpdateQuoteNotes(r.Context(), repository.UpdateQuoteNotesParams{
+		ID:    quoteID,
+		Notes: notes,
+	}); err != nil {
+		h.logger.Error("updating quote notes", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Get the project ID to re-render the quote list
+	quote, err := h.queries.GetQuote(r.Context(), quoteID)
+	if err != nil {
+		h.logger.Error("getting quote after notes update", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Return updated quote list by setting the path value and delegating
+	// We need to render the notes-saved confirmation modal
+	data := NotesModalData{
+		QuoteID:   quoteID,
+		ProjectID: quote.ProjectID,
+		Version:   quote.Version,
+		Notes:     notes,
+	}
+
+	if err := h.renderer.RenderPartial(w, "project_overview.html", "notes-modal-saved", data); err != nil {
+		h.logger.Error("rendering notes saved", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 func generateToken(length int) (string, error) {

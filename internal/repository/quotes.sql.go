@@ -16,7 +16,7 @@ import (
 const createQuote = `-- name: CreateQuote :one
 INSERT INTO quotes (id, project_id, version, status, estimate_snapshot, totals_snapshot, created_by)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, project_id, version, status, estimate_snapshot, totals_snapshot, token, expires_at, sent_at, created_at, created_by
+RETURNING id, project_id, version, status, estimate_snapshot, totals_snapshot, token, expires_at, sent_at, created_at, created_by, notes
 `
 
 type CreateQuoteParams struct {
@@ -52,6 +52,7 @@ func (q *Queries) CreateQuote(ctx context.Context, arg CreateQuoteParams) (Quote
 		&i.SentAt,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.Notes,
 	)
 	return i, err
 }
@@ -130,7 +131,7 @@ func (q *Queries) GetLatestQuoteVersion(ctx context.Context, projectID string) (
 }
 
 const getQuote = `-- name: GetQuote :one
-SELECT id, project_id, version, status, estimate_snapshot, totals_snapshot, token, expires_at, sent_at, created_at, created_by FROM quotes WHERE id = $1
+SELECT id, project_id, version, status, estimate_snapshot, totals_snapshot, token, expires_at, sent_at, created_at, created_by, notes FROM quotes WHERE id = $1
 `
 
 func (q *Queries) GetQuote(ctx context.Context, id string) (Quote, error) {
@@ -148,12 +149,13 @@ func (q *Queries) GetQuote(ctx context.Context, id string) (Quote, error) {
 		&i.SentAt,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.Notes,
 	)
 	return i, err
 }
 
 const getQuoteByToken = `-- name: GetQuoteByToken :one
-SELECT q.id, q.project_id, q.version, q.status, q.estimate_snapshot, q.totals_snapshot, q.token, q.expires_at, q.sent_at, q.created_at, q.created_by,
+SELECT q.id, q.project_id, q.version, q.status, q.estimate_snapshot, q.totals_snapshot, q.token, q.expires_at, q.sent_at, q.created_at, q.created_by, q.notes,
     p.name AS project_name, p.client_name AS project_client_name,
     c.company_name AS client_company, c.contact_name AS client_contact,
     c.email AS client_email, c.phone AS client_phone
@@ -175,6 +177,7 @@ type GetQuoteByTokenRow struct {
 	SentAt            sql.NullTime          `json:"sent_at"`
 	CreatedAt         time.Time             `json:"created_at"`
 	CreatedBy         sql.NullString        `json:"created_by"`
+	Notes             string                `json:"notes"`
 	ProjectName       string                `json:"project_name"`
 	ProjectClientName sql.NullString        `json:"project_client_name"`
 	ClientCompany     sql.NullString        `json:"client_company"`
@@ -198,6 +201,7 @@ func (q *Queries) GetQuoteByToken(ctx context.Context, token sql.NullString) (Ge
 		&i.SentAt,
 		&i.CreatedAt,
 		&i.CreatedBy,
+		&i.Notes,
 		&i.ProjectName,
 		&i.ProjectClientName,
 		&i.ClientCompany,
@@ -259,7 +263,7 @@ func (q *Queries) ListQuoteEmails(ctx context.Context, quoteID string) ([]QuoteE
 }
 
 const listQuotesByProject = `-- name: ListQuotesByProject :many
-SELECT id, project_id, version, status, estimate_snapshot, totals_snapshot, token, expires_at, sent_at, created_at, created_by FROM quotes WHERE project_id = $1 ORDER BY version DESC
+SELECT id, project_id, version, status, estimate_snapshot, totals_snapshot, token, expires_at, sent_at, created_at, created_by, notes FROM quotes WHERE project_id = $1 ORDER BY version DESC
 `
 
 func (q *Queries) ListQuotesByProject(ctx context.Context, projectID string) ([]Quote, error) {
@@ -283,6 +287,7 @@ func (q *Queries) ListQuotesByProject(ctx context.Context, projectID string) ([]
 			&i.SentAt,
 			&i.CreatedAt,
 			&i.CreatedBy,
+			&i.Notes,
 		); err != nil {
 			return nil, err
 		}
@@ -303,6 +308,20 @@ UPDATE quotes SET status = 'superseded' WHERE project_id = $1 AND status IN ('dr
 
 func (q *Queries) SupersedeActiveQuotes(ctx context.Context, projectID string) error {
 	_, err := q.db.ExecContext(ctx, supersedeActiveQuotes, projectID)
+	return err
+}
+
+const updateQuoteNotes = `-- name: UpdateQuoteNotes :exec
+UPDATE quotes SET notes = $2 WHERE id = $1
+`
+
+type UpdateQuoteNotesParams struct {
+	ID    string `json:"id"`
+	Notes string `json:"notes"`
+}
+
+func (q *Queries) UpdateQuoteNotes(ctx context.Context, arg UpdateQuoteNotesParams) error {
+	_, err := q.db.ExecContext(ctx, updateQuoteNotes, arg.ID, arg.Notes)
 	return err
 }
 

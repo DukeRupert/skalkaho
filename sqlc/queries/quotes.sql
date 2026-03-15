@@ -44,5 +44,8 @@ INSERT INTO quote_emails (id, quote_id, recipient, provider_id)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 
+-- name: UpdateQuoteNotes :exec
+UPDATE quotes SET notes = $2 WHERE id = $1;
+
 -- name: ListQuoteEmails :many
 SELECT * FROM quote_emails WHERE quote_id = $1 ORDER BY sent_at DESC;

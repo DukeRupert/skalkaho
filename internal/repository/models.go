@@ -101,6 +101,7 @@ type Quote struct {
 	SentAt           sql.NullTime          `json:"sent_at"`
 	CreatedAt        time.Time             `json:"created_at"`
 	CreatedBy        sql.NullString        `json:"created_by"`
+	Notes            string                `json:"notes"`
 }
 
 type QuoteEmail struct {

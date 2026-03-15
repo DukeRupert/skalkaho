@@ -714,6 +714,8 @@
                 <td class="cell-date">{{if .ExpiresAt}}{{.ExpiresAt}}{{else}}&mdash;{{end}}</td>
                 <td class="cell-actions">
                     <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                        <button hx-get="/quotes/{{.ID}}/notes-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
+                            class="action-edit" {{if .HasNotes}}style="font-weight: 600;"{{end}}>Notes{{if .HasNotes}} *{{end}}</button>
                         {{if .Token}}
                         <a href="/q/{{.Token}}" target="_blank" class="action-edit">View</a>
                         {{end}}
@@ -798,6 +800,47 @@
         </div>
         <div class="modal-actions" style="justify-content: center;">
             <button type="button" onclick="dismissModal()" class="btn-primary">Done</button>
+        </div>
+    </div>
+</div>
+<script>function dismissModal(){document.getElementById('modal-outlet').innerHTML='';}</script>
+{{end}}
+
+{{define "notes-modal"}}
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" onclick="event.stopPropagation()">
+        <h2 class="modal-title" style="font-size: 20px;">Notes — v{{.Version}}</h2>
+        <form hx-post="/quotes/{{.QuoteID}}/notes" hx-target="#modal-outlet" hx-swap="innerHTML">
+            <div class="modal-field">
+                <label for="notes" class="modal-label">Record communications, requested changes, or reminders</label>
+                <textarea name="notes" id="notes" class="modal-input" rows="8"
+                    style="resize: vertical; min-height: 120px; font-family: inherit; line-height: 1.5;"
+                    placeholder="e.g. Client asked to remove drywall section, add 10% contingency...">{{.Notes}}</textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="dismissModal()" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary">Save Notes</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>function dismissModal(){document.getElementById('modal-outlet').innerHTML='';}</script>
+{{end}}
+
+{{define "notes-modal-saved"}}
+<div class="modal-backdrop">
+    <div class="modal-overlay" onclick="dismissModal()"></div>
+    <div class="modal-panel" onclick="event.stopPropagation()" style="text-align: center;">
+        <div style="margin-bottom: 20px;">
+            <svg style="width: 48px; height: 48px; color: var(--color-sage); margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <h2 class="modal-title" style="font-size: 20px; text-align: center;">Notes Saved</h2>
+        <div class="modal-actions" style="justify-content: center;">
+            <button type="button" onclick="dismissModal()" class="btn-primary"
+                hx-get="/projects/{{.ProjectID}}/quotes" hx-target="#quote-list" hx-swap="innerHTML" hx-trigger="click">Done</button>
         </div>
     </div>
 </div>

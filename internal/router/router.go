@@ -92,6 +92,8 @@ func Register(mux *http.ServeMux, authH *authhandler.Handler, appH *apphandler.H
 	mux.Handle("POST /quotes/{id}/send", protect(sm, http.HandlerFunc(appH.SendQuote)))
 	mux.Handle("POST /quotes/{id}/resend", protect(sm, http.HandlerFunc(appH.ResendQuote)))
 	mux.Handle("GET /quotes/{id}/preview", protect(sm, http.HandlerFunc(appH.PreviewQuote)))
+	mux.Handle("GET /quotes/{id}/notes-modal", protect(sm, http.HandlerFunc(appH.GetNotesModal)))
+	mux.Handle("POST /quotes/{id}/notes", protect(sm, http.HandlerFunc(appH.UpdateQuoteNotes)))
 	mux.Handle("GET /quotes/{id}/send-modal", protect(sm, http.HandlerFunc(appH.GetSendModal)))
 
 	// Public quote page (no auth)
