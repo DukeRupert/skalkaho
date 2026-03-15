@@ -1,0 +1,254 @@
+{{template "base" .}}
+{{define "title"}}Materials List — {{.List.Label}} — Skalkaho{{end}}
+{{define "head"}}{{end}}
+{{define "content"}}
+<style>
+    /* ── Print styles ── */
+    @media print {
+        .sidebar, .no-print, [data-no-print] { display: none !important; }
+        body { background: white !important; color: black !important; }
+        .ml-print { padding: 0 !important; }
+        .ml-print * { color: black !important; border-color: #ccc !important; }
+        .ml-header { border-bottom: 2px solid black !important; padding-bottom: 12px !important; }
+        .ml-section-header { background: #e8e8e8 !important; }
+        .ml-subcat-header { background: #f4f4f4 !important; }
+        .ml-table th { background: #f0f0f0 !important; }
+        .ml-table td, .ml-table th { padding: 4px 8px !important; font-size: 11px !important; }
+        .ml-footer { margin-top: 24px; font-size: 10px; font-style: italic; }
+        .ml-footer { display: block !important; }
+    }
+
+    /* ── Screen styles ── */
+    .ml-print { max-width: 900px; }
+
+    .ml-header {
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+    }
+    .ml-title {
+        font-family: var(--font-display);
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--color-white);
+        margin-bottom: 16px;
+    }
+    .ml-meta {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 6px 20px;
+        font-size: 13px;
+        font-family: var(--font-ui);
+    }
+    .ml-meta dt {
+        color: rgba(255,255,255,0.4);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        padding-top: 2px;
+    }
+    .ml-meta dd {
+        color: rgba(255,255,255,0.8);
+        margin: 0;
+    }
+    .ml-meta .ml-note {
+        grid-column: 1 / -1;
+        margin-top: 8px;
+        font-size: 11px;
+        color: rgba(255,255,255,0.35);
+        font-style: italic;
+    }
+
+    .ml-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-ui);
+        font-size: 12px;
+        margin-top: 20px;
+    }
+    .ml-table th {
+        text-align: left;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.35);
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ml-table th.text-right,
+    .ml-table td.text-right { text-align: right; }
+    .ml-table td {
+        padding: 6px 10px;
+        color: rgba(255,255,255,0.7);
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .ml-section-header td {
+        background: rgba(255,255,255,0.04);
+        font-weight: 700;
+        color: var(--color-white);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ml-subcat-header td {
+        background: rgba(255,255,255,0.02);
+        font-weight: 600;
+        color: rgba(255,255,255,0.7);
+        font-size: 11px;
+        padding: 8px 10px 8px 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .ml-notes-form {
+        margin-top: 12px;
+        padding: 16px;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 8px;
+    }
+    .ml-notes-form label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.4);
+        display: block;
+        margin-bottom: 6px;
+    }
+    .ml-notes-form textarea {
+        width: 100%;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: var(--color-white);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 4px;
+        min-height: 60px;
+        resize: vertical;
+    }
+
+    .ml-footer { display: none; }
+</style>
+
+<div class="ml-print">
+    <!-- Nav bar (hidden on print) -->
+    <div class="page-header no-print">
+        <div>
+            <div class="page-eyebrow">
+                <a href="/projects/{{.Project.ID}}" style="color: inherit; text-decoration: none;">{{.ProjectName}}</a>
+                &rsaquo;
+                <a href="/quotes/{{.QuoteID}}/materials-lists" style="color: inherit; text-decoration: none;">Materials Lists</a>
+            </div>
+            <h1 class="page-title">{{.List.Label}}</h1>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button onclick="window.print()" class="btn-ghost" style="font-size: 12px; padding: 8px 16px;">
+                Print
+            </button>
+            <a href="/quotes/{{.QuoteID}}/materials-lists" class="btn-ghost" style="font-size: 12px; padding: 8px 16px;">
+                Back to Lists
+            </a>
+        </div>
+    </div>
+
+    <!-- Print header -->
+    <div class="ml-header">
+        <div class="ml-title">Materials List</div>
+        <dl class="ml-meta">
+            <dt>Project</dt>
+            <dd>{{.ProjectName}}</dd>
+            <dt>Category</dt>
+            <dd>{{.List.Label}}</dd>
+            <dt>Generated</dt>
+            <dd>{{.GeneratedAtFmt}}</dd>
+            <div class="ml-note">Quantities reflect current quote — verify before ordering.</div>
+        </dl>
+    </div>
+
+    <!-- Items table -->
+    {{if .IsAllSections}}
+    <!-- Full quote: grouped by section → subcategory -->
+    <table class="ml-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-right">Qty</th>
+                <th>Unit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .SectionGroups}}
+            <tr class="ml-section-header">
+                <td colspan="3">{{.SectionName}}</td>
+            </tr>
+            {{range .SubcategoryGroups}}
+            <tr class="ml-subcat-header">
+                <td colspan="3">{{.SubcategoryName}}</td>
+            </tr>
+            {{range .Items}}
+            <tr>
+                <td>{{.ItemName}}</td>
+                <td class="text-right">{{printf "%.0f" .Quantity}}</td>
+                <td>{{.Unit}}</td>
+            </tr>
+            {{end}}
+            {{end}}
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <!-- Single section: subcategory grouping only -->
+    <table class="ml-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-right">Qty</th>
+                <th>Unit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .SectionGroups}}
+            {{range .SubcategoryGroups}}
+            <tr class="ml-subcat-header">
+                <td colspan="3">{{.SubcategoryName}}</td>
+            </tr>
+            {{range .Items}}
+            <tr>
+                <td>{{.ItemName}}</td>
+                <td class="text-right">{{printf "%.0f" .Quantity}}</td>
+                <td>{{.Unit}}</td>
+            </tr>
+            {{end}}
+            {{end}}
+            {{end}}
+        </tbody>
+    </table>
+    {{end}}
+
+    <!-- Print footer -->
+    <div class="ml-footer">
+        <p>* Quantities reflect current quote state at time of printing.</p>
+        <p>* Verify with project manager before placing orders.</p>
+    </div>
+
+    <!-- Notes form (hidden on print) -->
+    <div class="no-print">
+        <div class="ml-notes-form">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes"
+                hx-patch="/quotes/{{.QuoteID}}/materials-lists/{{.List.ID}}/notes"
+                hx-trigger="change"
+                hx-include="this"
+                placeholder="Add notes...">{{.List.Notes.String}}</textarea>
+        </div>
+    </div>
+</div>
+{{end}}

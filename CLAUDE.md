@@ -43,7 +43,7 @@ mage clean              # Remove built binaries
 cmd/
 ├── server/
 │   ├── main.go             # Entry point, dependency wiring
-│   └── migrations/         # Embedded Goose SQL migrations (001-016)
+│   └── migrations/         # Embedded Goose SQL migrations (001-017)
 ├── seed/
 │   └── main.go             # CLI user management tool
 internal/
@@ -70,6 +70,8 @@ Core entities: **User** → **Project** (quote container) → **Section** → **
 Supporting: **Client**, **Supplier** → **Material**, **RateCategory** → **Rate**, **Quote** → **QuoteSignature**, **Template** → **TemplateSection** → **TemplateSubcategory** → **TemplateComponentGroup**
 
 Supply: **SupplyList** (scoped to Quote, optionally to Supplier) → **SupplyListItem** (snapshot of line item + material at generation time)
+
+Materials: **MaterialsList** (scoped to Quote, optionally to Section) — metadata only, items queried live from quote at render time
 
 Import: **MaterialImportJob** → **MaterialImportFlag** (linked to Supplier and optionally to a candidate Material)
 
@@ -109,6 +111,22 @@ Persistent supply lists generated from a signed quote. Lists are snapshots — s
 **Routes**: All under `/quotes/{id}/supply-lists/...`. Accessible from the quote row on the project overview page (signed quotes show a "Supply Lists" action link).
 
 **Templates**: `supply_lists.html` (index), `supply_list_show.html` (detail/print view with `@media print` styles). Dates and notes are editable inline via HTMX.
+
+## Materials Lists
+
+Job-site materials lists generated from a signed quote. Unlike supply lists, these are **live** — items are queried from the quote at render time, not snapshotted. No prices or supplier info; just item name, quantity, and unit for the foreman. Three generation modes:
+
+- **Entire quote** — one list covering all categories and subcategories
+- **Per category (all)** — one list per top-level section
+- **Single category** — owner picks a specific section from a dropdown
+
+**Data model**: `materials_lists` stores only metadata (quote_id, optional section_id, label, notes). Items are queried live via `GetMaterialsListItems` (full quote, grouped by section → subcategory) or `GetMaterialsListItemsBySection` (single section, grouped by subcategory). A nullable `supply_list_id` FK is reserved for future supply association features.
+
+**Key constraints**: Generation gated to `quote.status = 'signed'`. `materials_lists.quote_id` uses `ON DELETE RESTRICT`. `section_id` uses `ON DELETE RESTRICT`. `supply_list_id` uses `ON DELETE SET NULL`.
+
+**Routes**: All under `/quotes/{id}/materials-lists/...`. Accessible from the quote row on the project overview page alongside Supply Lists.
+
+**Templates**: `materials_lists.html` (index), `materials_list_show.html` (detail/print view with `@media print` styles, section → subcategory hierarchy). Notes editable inline via HTMX.
 
 ## Authentication
 
@@ -168,3 +186,4 @@ QBO_SANDBOX=true                    # Use QBO sandbox URLs (omit or "false" for 
 - `docs/material-import-feature-plan.md` - Material import feature design (Excel upload, Claude matching, flag review)
 - `docs/quickbooks-integration-plumbing.md` - QuickBooks Online integration plan (OAuth, invoicing, payment sync)
 - `docs/supply-list-feature-plan.md` - Supply list feature design (snapshot generation, print view, delivery tracking)
+- `docs/materials-list-feature-plan.md` - Materials list feature design (live queries, section grouping, foreman print view)

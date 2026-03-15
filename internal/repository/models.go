@@ -131,6 +131,16 @@ type MaterialImportJob struct {
 	CompletedAt  sql.NullTime   `json:"completed_at"`
 }
 
+type MaterialsList struct {
+	ID           string         `json:"id"`
+	QuoteID      string         `json:"quote_id"`
+	SectionID    sql.NullString `json:"section_id"`
+	SupplyListID sql.NullString `json:"supply_list_id"`
+	Label        string         `json:"label"`
+	Notes        sql.NullString `json:"notes"`
+	GeneratedAt  time.Time      `json:"generated_at"`
+}
+
 type Project struct {
 	ID              string         `json:"id"`
 	Name            string         `json:"name"`
