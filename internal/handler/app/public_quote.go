@@ -18,7 +18,7 @@ type PublicQuoteData struct {
 	// Quote info
 	QuoteID   string
 	Version   int64
-	Status    string // "active", "signed", "expired", "not_found"
+	Status    string // "active", "signed", "expired", "not_found", "preview"
 	SentAt    string
 	ExpiresAt string
 
@@ -36,8 +36,70 @@ type PublicQuoteData struct {
 	SignerName string
 	SignedAt   string
 
+	// Preview mode (authenticated user reviewing before send)
+	IsPreview bool
+	ProjectID string
+
 	// Error message
 	Error string
+}
+
+// PreviewQuote renders the quote as the client will see it, for contractor review before sending.
+func (h *Handler) PreviewQuote(w http.ResponseWriter, r *http.Request) {
+	quoteID := r.PathValue("id")
+	ctx := r.Context()
+
+	quote, err := h.queries.GetQuote(ctx, quoteID)
+	if err != nil {
+		http.Error(w, "Quote not found", http.StatusNotFound)
+		return
+	}
+
+	project, err := h.queries.GetProject(ctx, quote.ProjectID)
+	if err != nil {
+		h.logger.Error("getting project for preview", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	companyName := "Contractor"
+	profile, err := h.queries.GetCompanyProfile(ctx)
+	if err == nil {
+		companyName = profile.Name
+	}
+
+	var costSummary domain.ProjectCostSummary
+	if quote.TotalsSnapshot.Valid {
+		_ = json.Unmarshal(quote.TotalsSnapshot.RawMessage, &costSummary)
+	}
+
+	data := PublicQuoteData{
+		QuoteID:     quote.ID,
+		Version:     quote.Version,
+		Status:      "preview",
+		ProjectName: project.Name,
+		CompanyName: companyName,
+		CostSummary: costSummary,
+		IsPreview:   true,
+		ProjectID:   project.ID,
+	}
+
+	// Get client name
+	if project.ClientID.Valid {
+		client, err := h.queries.GetClient(ctx, project.ClientID.String)
+		if err == nil {
+			if client.CompanyName != "" {
+				data.ClientName = client.CompanyName
+			} else if client.ContactName.Valid {
+				data.ClientName = client.ContactName.String
+			}
+		}
+	}
+
+	if err := h.renderer.Render(w, "quote_public.html", data); err != nil {
+		h.logger.Error("rendering quote preview", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
 }
 
 // GetQuotePage renders the public quote page at /q/{token}.

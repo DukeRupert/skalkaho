@@ -718,6 +718,7 @@
                         <a href="/q/{{.Token}}" target="_blank" class="action-edit">View</a>
                         {{end}}
                         {{if eq .Status "draft"}}
+                        <a href="/quotes/{{.ID}}/preview" target="_blank" class="action-edit">Preview</a>
                         <button hx-get="/quotes/{{.ID}}/send-modal" hx-target="#modal-outlet" hx-swap="innerHTML"
                             class="action-edit">Send</button>
                         {{else if eq .Status "sent"}}

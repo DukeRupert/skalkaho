@@ -472,6 +472,62 @@
             color: var(--color-concrete);
         }
 
+        /* ── Preview banner ── */
+        .preview-banner {
+            background: rgba(61, 74, 82, 0.08);
+            border-left: 3px solid var(--color-granite);
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .preview-banner-text h2 {
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: var(--color-granite);
+        }
+
+        .preview-banner-text p {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--color-muted-text);
+            margin-top: 4px;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .btn-back {
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: var(--color-muted-text);
+            background: transparent;
+            border: 1px solid rgba(0,0,0,0.12);
+            padding: 10px 20px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .btn-back:hover {
+            border-color: var(--color-granite);
+            color: var(--color-granite);
+        }
+
         /* ── Bottom accent ── */
         .bottom-accent {
             position: fixed;
@@ -521,6 +577,19 @@
 
 {{else}}
 <div class="quote-container">
+    {{if .IsPreview}}
+    <!-- Preview Banner -->
+    <div class="preview-banner no-print">
+        <div class="preview-banner-text">
+            <h2>Draft Preview</h2>
+            <p>This is how the quote will appear to your client.</p>
+        </div>
+        <div class="preview-actions">
+            <a href="/projects/{{.ProjectID}}" class="btn-back">Back to Project</a>
+        </div>
+    </div>
+    {{end}}
+
     <!-- Header -->
     <div class="quote-card">
         <div class="quote-header">
@@ -533,10 +602,12 @@
             </div>
             <div class="quote-meta">
                 <span class="quote-badge
-                    {{if eq .Status "active"}}quote-badge--active
+                    {{if eq .Status "preview"}}quote-badge--active
+                    {{else if eq .Status "active"}}quote-badge--active
                     {{else if eq .Status "signed"}}quote-badge--signed
                     {{else if eq .Status "expired"}}quote-badge--expired{{end}}">
-                    {{if eq .Status "active"}}Awaiting Signature
+                    {{if eq .Status "preview"}}Draft
+                    {{else if eq .Status "active"}}Awaiting Signature
                     {{else if eq .Status "signed"}}Signed
                     {{else if eq .Status "expired"}}Expired{{end}}
                 </span>
