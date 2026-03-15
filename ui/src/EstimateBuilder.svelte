@@ -197,13 +197,13 @@
 		<div class="px-5 pt-6">
 			{#if estimate.sections.length === 0 && !showAddSection}
 				<div class="text-center py-16 text-[var(--color-muted-text)]">
-					<p class="text-lg font-[var(--font-ui)]">No sections yet</p>
-					<p class="text-sm mt-1 font-[var(--font-body)]">Add a section to start building your estimate.</p>
+					<p class="text-lg font-[var(--font-ui)]">No categories yet</p>
+					<p class="text-sm mt-1 font-[var(--font-body)]">Add a category to start building your estimate.</p>
 					<button
 						onclick={() => showAddSection = true}
 						class="mt-4 px-4 py-2 bg-[var(--color-granite)] border border-white/[0.06] text-[var(--color-sunburst)] text-sm font-[var(--font-ui)] font-semibold uppercase tracking-wide hover:border-[var(--color-sunburst)] transition-colors"
 					>
-						+ Add First Section
+						+ Add First Category
 					</button>
 				</div>
 			{:else}
@@ -221,13 +221,13 @@
 				{/each}
 			{/if}
 
-			<!-- Add Section -->
+			<!-- Add Category -->
 			{#if showAddSection}
 				<div class="flex items-center gap-2 mt-4">
 					<input
 						type="text"
 						bind:value={newSectionName}
-						placeholder="Section name (e.g. Framing, Roofing)"
+						placeholder="Category name (e.g. Framing, Roofing)"
 						class="flex-1 px-0 py-2 bg-transparent border-0 border-b-2 border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/20"
 						onkeydown={(e) => { if (e.key === 'Enter') addSection(); if (e.key === 'Escape') showAddSection = false; }}
 					/>
@@ -242,7 +242,7 @@
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
 					</svg>
-					Add Section
+					Add Category
 				</button>
 			{/if}
 		</div>

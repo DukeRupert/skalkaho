@@ -198,6 +198,7 @@ func (h *Handler) createLineItem(r *http.Request, subcategoryID string, componen
 		PriceOverride:    li.PriceOverride,
 		Description:      toNullString(ptrToStr(li.Description)),
 		SortOrder:        int64(li.SortOrder),
+		VisualGroup:      toNullString(ptrToStr(li.VisualGroup)),
 	})
 	return err
 }
@@ -422,6 +423,9 @@ func toDomainLineItem(li repository.LineItem) domain.EstimateLineItem {
 	}
 	if li.ComponentGroupID.Valid {
 		item.ComponentGroupID = &li.ComponentGroupID.String
+	}
+	if li.VisualGroup.Valid {
+		item.VisualGroup = &li.VisualGroup.String
 	}
 	return item
 }

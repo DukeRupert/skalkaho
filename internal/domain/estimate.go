@@ -98,6 +98,7 @@ type EstimateLineItem struct {
 	Description      *string      `json:"description,omitempty"`
 	SortOrder        int          `json:"sort_order"`
 	ComponentGroupID *string      `json:"component_group_id,omitempty"`
+	VisualGroup      *string      `json:"visual_group,omitempty"`
 }
 
 // MaterialDBEntry represents a material from the database for autocomplete.

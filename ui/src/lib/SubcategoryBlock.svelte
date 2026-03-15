@@ -9,10 +9,13 @@
 
 	let isCollapsed = $state(collapsed);
 	let showAddForm = $state(false);
+	let addingToGroup = $state(null); // null = ungrouped, string = visual_group name
 	let isEditing = $state(false);
 	let editName = $state(subcat.name);
 	let showAddGroup = $state(false);
 	let newGroupName = $state('');
+	let showAddVisualGroup = $state(false);
+	let newVisualGroupName = $state('');
 	let totals = $derived(subcategoryTotals(subcat, globals));
 
 	let markupSummary = $derived.by(() => {
@@ -32,6 +35,24 @@
 		subcat.component_groups.reduce((sum, g) => sum + g.line_items.length, 0)
 	);
 
+	// Derive visual groups from line items
+	let visualGroups = $derived.by(() => {
+		const groups = new Map(); // name → items[]
+		const ungrouped = [];
+		for (const item of subcat.line_items) {
+			if (item.visual_group) {
+				if (!groups.has(item.visual_group)) groups.set(item.visual_group, []);
+				groups.get(item.visual_group).push(item);
+			} else {
+				ungrouped.push(item);
+			}
+		}
+		return { groups, ungrouped };
+	});
+
+	// Track collapsed state per visual group
+	let collapsedGroups = $state({});
+
 	function addItem(itemData) {
 		onsnapshot?.();
 		subcat.line_items.push({
@@ -48,9 +69,16 @@
 			description: null,
 			sort_order: subcat.line_items.length,
 			component_group_id: null,
+			visual_group: addingToGroup,
 		});
 		showAddForm = false;
+		addingToGroup = null;
 		onchange?.();
+	}
+
+	function startAddItem(groupName = null) {
+		addingToGroup = groupName;
+		showAddForm = true;
 	}
 
 	function deleteItem(itemId) {
@@ -79,7 +107,7 @@
 
 	function addComponentGroup() {
 		onsnapshot?.();
-		const name = newGroupName.trim() || 'New Group';
+		const name = newGroupName.trim() || 'New section';
 		subcat.component_groups.push({
 			id: nanoid(),
 			name,
@@ -98,6 +126,38 @@
 			subcat.component_groups.splice(idx, 1);
 			onchange?.();
 		}
+	}
+
+	function addVisualGroup() {
+		const name = newVisualGroupName.trim();
+		if (!name) return;
+		// Just create the group by adding a placeholder — the group exists when items reference it
+		// For now, toggle the add-item form for this group so user can immediately add items
+		newVisualGroupName = '';
+		showAddVisualGroup = false;
+		startAddItem(name);
+	}
+
+	function deleteVisualGroup(groupName) {
+		onsnapshot?.();
+		// Remove group label from all items in this group (makes them ungrouped)
+		for (const item of subcat.line_items) {
+			if (item.visual_group === groupName) {
+				item.visual_group = null;
+			}
+		}
+		onchange?.();
+	}
+
+	function renameVisualGroup(oldName, newName) {
+		if (!newName.trim() || newName === oldName) return;
+		onsnapshot?.();
+		for (const item of subcat.line_items) {
+			if (item.visual_group === oldName) {
+				item.visual_group = newName.trim();
+			}
+		}
+		onchange?.();
 	}
 
 	function handleOverrideInput(type, e) {
@@ -280,7 +340,8 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each subcat.line_items as item (item.id)}
+						<!-- Ungrouped items first -->
+						{#each visualGroups.ungrouped as item (item.id)}
 							<LineItemRow
 								{item}
 								{globals}
@@ -290,8 +351,121 @@
 								ondelete={deleteItem}
 							/>
 						{/each}
+						<!-- Visual groups -->
+						{#each [...visualGroups.groups.entries()] as [groupName, groupItems] (groupName)}
+							{@const isGroupCollapsed = collapsedGroups[groupName] ?? false}
+							<tr class="border-b border-white/[0.04]">
+								<td colspan="9" class="px-0 py-0">
+									<div class="flex items-center gap-2 py-1.5 px-1 bg-white/[0.02] group/vg">
+										<button
+											onclick={() => collapsedGroups[groupName] = !isGroupCollapsed}
+											class="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-sage)] uppercase tracking-wider font-[var(--font-ui)]"
+										>
+											<svg class="w-2.5 h-2.5 text-white/25 transition-transform {isGroupCollapsed ? '' : 'rotate-90'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+											</svg>
+											{groupName}
+										</button>
+										<span class="text-xs text-white/20 font-[var(--font-body)]">({groupItems.length})</span>
+										<button
+											onclick={() => deleteVisualGroup(groupName)}
+											class="opacity-0 group-hover/vg:opacity-100 text-white/20 hover:text-red-400 transition-opacity p-0.5 ml-auto"
+											title="Ungroup items"
+										>
+											<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+											</svg>
+										</button>
+									</div>
+								</td>
+							</tr>
+							{#if !isGroupCollapsed}
+								{#each groupItems as item (item.id)}
+									<LineItemRow
+										{item}
+										{globals}
+										markupOverrides={subcat.markup_overrides}
+										markupEnabled={subcat.markup_enabled}
+										{onchange}
+										ondelete={deleteItem}
+									/>
+								{/each}
+								<!-- Add item within this visual group -->
+								{#if showAddForm && addingToGroup === groupName}
+									<tr><td colspan="9" class="px-1 py-1">
+										<Autocomplete
+											{materialsDb}
+											{ratesDb}
+											{subcontractorsDb}
+											categoryType="materials"
+											onselect={addItem}
+											oncancel={() => { showAddForm = false; addingToGroup = null; }}
+										/>
+									</td></tr>
+								{:else}
+									<tr><td colspan="9" class="px-1 py-0.5">
+										<button
+											onclick={() => startAddItem(groupName)}
+											class="text-xs text-[var(--color-muted-text)] hover:text-[var(--color-sunburst)] flex items-center gap-1 font-[var(--font-ui)] transition-colors ml-4"
+										>
+											<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+											</svg>
+											Add Item
+										</button>
+									</td></tr>
+								{/if}
+							{/if}
+						{/each}
+						<!-- Pending new visual group (no items yet) -->
+						{#if showAddForm && addingToGroup !== null && !visualGroups.groups.has(addingToGroup)}
+							<tr class="border-b border-white/[0.04]">
+								<td colspan="9" class="px-0 py-0">
+									<div class="flex items-center gap-2 py-1.5 px-1 bg-white/[0.02]">
+										<span class="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-sage)] uppercase tracking-wider font-[var(--font-ui)]">
+											<svg class="w-2.5 h-2.5 text-white/25 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+											</svg>
+											{addingToGroup}
+										</span>
+									</div>
+								</td>
+							</tr>
+							<tr><td colspan="9" class="px-1 py-1">
+								<Autocomplete
+									{materialsDb}
+									{ratesDb}
+									{subcontractorsDb}
+									categoryType="materials"
+									onselect={addItem}
+									oncancel={() => { showAddForm = false; addingToGroup = null; }}
+								/>
+							</td></tr>
+						{/if}
 					</tbody>
 				</table>
+			{/if}
+
+			<!-- Pending new visual group when no table exists yet -->
+			{#if showAddForm && addingToGroup !== null && !visualGroups.groups.has(addingToGroup) && totalItems === 0}
+				<div class="mb-2">
+					<div class="flex items-center gap-2 py-1.5 px-1 bg-white/[0.02] border-b border-white/[0.04]">
+						<span class="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-sage)] uppercase tracking-wider font-[var(--font-ui)]">
+							<svg class="w-2.5 h-2.5 text-white/25 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+							</svg>
+							{addingToGroup}
+						</span>
+					</div>
+					<Autocomplete
+						{materialsDb}
+						{ratesDb}
+						{subcontractorsDb}
+						categoryType="materials"
+						onselect={addItem}
+						oncancel={() => { showAddForm = false; addingToGroup = null; }}
+					/>
+				</div>
 			{/if}
 
 			{#each subcat.component_groups as group (group.id)}
@@ -309,13 +483,13 @@
 				/>
 			{/each}
 
-			<!-- Add component group -->
+			<!-- Add section -->
 			{#if showAddGroup}
 				<div class="flex items-center gap-2 ml-5 mt-2">
 					<input
 						type="text"
 						bind:value={newGroupName}
-						placeholder="Group name"
+						placeholder="Section name"
 						class="flex-1 px-0 py-1 bg-transparent border-0 border-b border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/20"
 						onkeydown={(e) => { if (e.key === 'Enter') addComponentGroup(); if (e.key === 'Escape') showAddGroup = false; }}
 					/>
@@ -330,12 +504,37 @@
 					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
 					</svg>
-					Add Group
+					Add Section
 				</button>
 			{/if}
 
-			<!-- Add item button + autocomplete -->
-			{#if showAddForm}
+			<!-- Add visual group -->
+			{#if showAddVisualGroup}
+				<div class="flex items-center gap-2 mt-2">
+					<input
+						type="text"
+						bind:value={newVisualGroupName}
+						placeholder="Group label (e.g. Interior, Phase 1)"
+						class="flex-1 px-0 py-1 bg-transparent border-0 border-b border-white/[0.08] text-[var(--color-white)] text-sm font-[var(--font-body)] focus:border-[var(--color-sunburst)] focus:ring-0 focus:outline-none placeholder-white/20"
+						onkeydown={(e) => { if (e.key === 'Enter') addVisualGroup(); if (e.key === 'Escape') showAddVisualGroup = false; }}
+					/>
+					<button onclick={addVisualGroup} class="px-2 py-1 bg-[var(--color-sunburst)] text-[var(--color-ink)] text-xs font-[var(--font-ui)] font-bold uppercase tracking-wide hover:brightness-110">Add</button>
+					<button onclick={() => showAddVisualGroup = false} class="px-2 py-1 text-[var(--color-muted-text)] text-xs hover:text-[var(--color-white)] font-[var(--font-ui)]">Cancel</button>
+				</div>
+			{:else}
+				<button
+					onclick={() => showAddVisualGroup = true}
+					class="mt-1 text-xs text-[var(--color-muted-text)] hover:text-[var(--color-sunburst)] flex items-center gap-1 font-[var(--font-ui)] transition-colors"
+				>
+					<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+					</svg>
+					Add Label Group
+				</button>
+			{/if}
+
+			<!-- Add ungrouped item -->
+			{#if showAddForm && addingToGroup === null}
 				<div class="mt-2">
 					<Autocomplete
 						{materialsDb}
@@ -343,12 +542,12 @@
 						{subcontractorsDb}
 						categoryType="materials"
 						onselect={addItem}
-						oncancel={() => showAddForm = false}
+						oncancel={() => { showAddForm = false; addingToGroup = null; }}
 					/>
 				</div>
 			{:else}
 				<button
-					onclick={() => showAddForm = true}
+					onclick={() => startAddItem(null)}
 					class="mt-2 text-xs text-[var(--color-muted-text)] hover:text-[var(--color-sunburst)] flex items-center gap-1 font-[var(--font-ui)] transition-colors"
 				>
 					<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

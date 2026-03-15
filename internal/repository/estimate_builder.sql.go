@@ -44,13 +44,13 @@ const createLineItem = `-- name: CreateLineItem :one
 INSERT INTO line_items (
     id, subcategory_id, component_group_id, category_type, item_name,
     quantity, unit, unit_price, is_custom, material_id,
-    price_override, description, sort_order, subcontractor_id
+    price_override, description, sort_order, subcontractor_id, visual_group
 ) VALUES (
     $1, $2, $3, $4, $5,
     $6, $7, $8, $9, $10,
-    $11, $12, $13, $14
+    $11, $12, $13, $14, $15
 )
-RETURNING id, subcategory_id, component_group_id, category_type, item_name, quantity, unit, unit_price, is_custom, material_id, price_override, description, sort_order, subcontractor_id
+RETURNING id, subcategory_id, component_group_id, category_type, item_name, quantity, unit, unit_price, is_custom, material_id, price_override, description, sort_order, subcontractor_id, visual_group
 `
 
 type CreateLineItemParams struct {
@@ -68,6 +68,7 @@ type CreateLineItemParams struct {
 	Description      sql.NullString `json:"description"`
 	SortOrder        int64          `json:"sort_order"`
 	SubcontractorID  sql.NullString `json:"subcontractor_id"`
+	VisualGroup      sql.NullString `json:"visual_group"`
 }
 
 func (q *Queries) CreateLineItem(ctx context.Context, arg CreateLineItemParams) (LineItem, error) {
@@ -86,6 +87,7 @@ func (q *Queries) CreateLineItem(ctx context.Context, arg CreateLineItemParams) 
 		arg.Description,
 		arg.SortOrder,
 		arg.SubcontractorID,
+		arg.VisualGroup,
 	)
 	var i LineItem
 	err := row.Scan(
@@ -103,6 +105,7 @@ func (q *Queries) CreateLineItem(ctx context.Context, arg CreateLineItemParams) 
 		&i.Description,
 		&i.SortOrder,
 		&i.SubcontractorID,
+		&i.VisualGroup,
 	)
 	return i, err
 }
@@ -278,7 +281,7 @@ func (q *Queries) ListComponentGroupsBySubcategory(ctx context.Context, subcateg
 }
 
 const listLineItemsBySubcategory = `-- name: ListLineItemsBySubcategory :many
-SELECT id, subcategory_id, component_group_id, category_type, item_name, quantity, unit, unit_price, is_custom, material_id, price_override, description, sort_order, subcontractor_id FROM line_items WHERE subcategory_id = $1 ORDER BY sort_order ASC
+SELECT id, subcategory_id, component_group_id, category_type, item_name, quantity, unit, unit_price, is_custom, material_id, price_override, description, sort_order, subcontractor_id, visual_group FROM line_items WHERE subcategory_id = $1 ORDER BY sort_order ASC
 `
 
 // Line Items
@@ -306,6 +309,7 @@ func (q *Queries) ListLineItemsBySubcategory(ctx context.Context, subcategoryID 
 			&i.Description,
 			&i.SortOrder,
 			&i.SubcontractorID,
+			&i.VisualGroup,
 		); err != nil {
 			return nil, err
 		}

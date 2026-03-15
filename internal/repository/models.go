@@ -57,6 +57,7 @@ type LineItem struct {
 	Description      sql.NullString `json:"description"`
 	SortOrder        int64          `json:"sort_order"`
 	SubcontractorID  sql.NullString `json:"subcontractor_id"`
+	VisualGroup      sql.NullString `json:"visual_group"`
 }
 
 type Material struct {
