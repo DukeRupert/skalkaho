@@ -138,6 +138,14 @@ func (h *Handler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Move project to "In Review" when a quote is generated
+	if err := h.queries.UpdateProjectStatus(ctx, repository.UpdateProjectStatusParams{
+		ID:     projectID,
+		Status: "In Review",
+	}); err != nil {
+		h.logger.Error("updating project status", "error", err)
+	}
+
 	// Return updated quote list
 	h.ListQuotes(w, r)
 }

@@ -239,10 +239,10 @@ func (h *Handler) SubmitSignature(w http.ResponseWriter, r *http.Request) {
 		h.logger.Error("updating quote status", "error", err)
 	}
 
-	// Update project status to "In Review"
+	// Update project status to "Active" when quote is signed
 	if err := h.queries.UpdateProjectStatus(ctx, repository.UpdateProjectStatusParams{
 		ID:     row.ProjectID,
-		Status: "In Review",
+		Status: "Active",
 	}); err != nil {
 		h.logger.Error("updating project status", "error", err)
 	}
