@@ -3,17 +3,7 @@
 {{define "head"}}{{end}}
 {{define "content"}}
 <style>
-    /* ── Project-specific: status indicators ── */
-    .status--draft { color: rgba(255,255,255,0.45); }
-    .status--draft::before { background: rgba(255,255,255,0.3); }
-    .status--review { color: var(--color-sunburst); }
-    .status--review::before { background: var(--color-sunburst); }
-    .status--active { color: var(--color-sage); }
-    .status--active::before { background: var(--color-sage); }
-    .status--completed { color: var(--color-concrete); }
-    .status--completed::before { background: var(--color-concrete); }
-
-    /* Project link */
+    /* ── Project-specific ── */
     .project-link {
         font-weight: 500;
         color: var(--color-white);
@@ -82,7 +72,7 @@
     </div>
 
     <!-- Projects Table -->
-    <div class="table-wrap" style="border-top: none;">
+    <div class="table-wrap table-wrap--flush">
         <table>
             <thead>
                 <tr>
@@ -171,7 +161,7 @@
     </td>
     <td class="cell-total">${{printf "%.2f" .Total}}</td>
     <td class="cell-date">{{.UpdatedAt.Format "Jan 2, 2006"}}</td>
-    <td style="text-align: right;">
+    <td class="cell-actions">
         <button hx-delete="/projects/{{.ID}}" hx-confirm="Delete project '{{.Name}}'?"
             class="action-delete">Delete</button>
     </td>

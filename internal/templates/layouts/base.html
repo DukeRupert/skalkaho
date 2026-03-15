@@ -1222,6 +1222,120 @@
         flex-shrink: 0;
       }
 
+      /* ── Status indicators ── */
+      .status--draft { color: rgba(255,255,255,0.45); }
+      .status--draft::before { background: rgba(255,255,255,0.3); }
+      .status--review { color: var(--color-sunburst); }
+      .status--review::before { background: var(--color-sunburst); }
+      .status--active { color: var(--color-sage); }
+      .status--active::before { background: var(--color-sage); }
+      .status--completed { color: var(--color-concrete); }
+      .status--completed::before { background: var(--color-concrete); }
+
+      /* ── Expandable detail rows ── */
+      .expand-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--color-white);
+        padding: 0;
+        transition: color 0.15s ease;
+      }
+
+      .expand-btn:hover {
+        color: var(--color-sunburst);
+      }
+
+      .expand-btn svg {
+        width: 14px;
+        height: 14px;
+        color: rgba(255,255,255,0.3);
+        transition: transform 0.15s ease;
+      }
+
+      .detail-row td {
+        padding: 16px 20px;
+        background: rgba(255,255,255,0.02);
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .detail-label {
+        font-family: var(--font-ui);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--color-sage);
+        margin-bottom: 4px;
+      }
+
+      .detail-value {
+        font-family: var(--font-body);
+        font-size: 14px;
+        font-weight: 300;
+        color: var(--color-concrete);
+      }
+
+      /* ── Filter select (styled <select> for inline filters) ── */
+      .filter-select {
+        appearance: none;
+        -webkit-appearance: none;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid rgba(255,255,255,0.08);
+        padding: 6px 24px 6px 0;
+        font-family: var(--font-ui);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.10em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.55);
+        cursor: pointer;
+        outline: none;
+        transition: border-color 0.3s ease, color 0.2s ease;
+        background-image: url("data:image/svg+xml,%3Csvg fill='none' stroke='rgba(255,255,255,0.3)' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0 center;
+        background-size: 14px;
+      }
+
+      .filter-select:focus {
+        border-bottom-color: var(--color-sunburst);
+        color: var(--color-white);
+      }
+
+      .filter-select option {
+        background: var(--color-granite);
+        color: var(--color-white);
+        text-transform: none;
+        letter-spacing: normal;
+      }
+
+      /* ── Action cell alignment ── */
+      .cell-actions {
+        text-align: right;
+      }
+
+      .cell-actions .action-edit {
+        margin-right: 12px;
+      }
+
+      /* ── Table variant: flush top (connects to tab bar/filter bar) ── */
+      .table-wrap--flush {
+        border-top: none;
+      }
+
       /* ── Shared responsive ── */
       @media (max-width: 1023px) {
         .stats-row {
@@ -1266,6 +1380,10 @@
         }
 
         .modal-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .detail-grid {
           grid-template-columns: 1fr;
         }
       }

@@ -5,18 +5,7 @@
 <style>
     /* ── Subcontractor-specific styles ── */
     .subs-stats {
-        display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 1px;
-        margin-bottom: 32px;
-    }
-
-    .subs-stats .stat-item {
-        border-right: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .subs-stats .stat-item:last-child {
-        border-right: none;
     }
 
     .favorite-btn {
@@ -41,7 +30,6 @@
     .trade-badge {
         display: inline-block;
         padding: 2px 8px;
-        border-radius: 3px;
         font-family: var(--font-ui);
         font-size: 11px;
         font-weight: 600;
@@ -54,60 +42,6 @@
         color: rgba(255,255,255,0.35);
         font-size: 11px;
         margin-left: 4px;
-    }
-
-    .expand-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-family: var(--font-body);
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--color-white);
-        padding: 0;
-        transition: color 0.15s ease;
-    }
-
-    .expand-btn:hover {
-        color: var(--color-sunburst);
-    }
-
-    .expand-btn svg {
-        width: 14px;
-        height: 14px;
-        color: rgba(255,255,255,0.3);
-        transition: transform 0.15s ease;
-    }
-
-    .detail-row td {
-        padding: 16px 20px;
-        background: rgba(255,255,255,0.02);
-    }
-
-    .detail-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .detail-label {
-        font-family: var(--font-ui);
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--color-sage);
-        margin-bottom: 4px;
-    }
-
-    .detail-value {
-        font-family: var(--font-body);
-        font-size: 14px;
-        font-weight: 300;
-        color: var(--color-concrete);
     }
 
     /* Trade checkboxes in modal */
@@ -133,7 +67,6 @@
         margin-top: 12px;
         padding: 12px;
         background: rgba(255,255,255,0.03);
-        border-radius: 6px;
     }
 
     .primary-radio-group label {
@@ -164,9 +97,6 @@
         .subs-stats {
             grid-template-columns: 1fr;
         }
-        .detail-grid {
-            grid-template-columns: 1fr;
-        }
         .trade-checks {
             grid-template-columns: 1fr;
         }
@@ -189,7 +119,7 @@
     </div>
 
     <!-- Stats Row -->
-    <div class="subs-stats">
+    <div class="stats-row subs-stats">
         <div class="stat-item">
             <p class="stat-label">Total Subcontractors</p>
             <p class="stat-count">{{.TotalSubs}}</p>
@@ -222,7 +152,7 @@
     </div>
 
     <!-- Subcontractors Table -->
-    <div class="table-wrap" style="border-top: none;">
+    <div class="table-wrap table-wrap--flush">
         <table>
             <thead>
                 <tr>
@@ -275,9 +205,9 @@
         {{if .PrimaryTrade.Valid}}<span class="trade-badge">{{.PrimaryTrade.String}}</span>{{else}}—{{end}}
     </td>
     <td class="cell-secondary">{{if .Phone.Valid}}{{.Phone.String}}{{else}}—{{end}}</td>
-    <td style="text-align: right;">
+    <td class="cell-actions">
         <button hx-get="/subcontractors/{{.ID}}/edit" hx-target="#modal-outlet" hx-swap="innerHTML"
-            class="action-edit" style="margin-right: 12px;">Edit</button>
+            class="action-edit">Edit</button>
         <button hx-delete="/subcontractors/{{.ID}}" hx-confirm="Delete subcontractor '{{.Name}}'?"
             class="action-delete">Delete</button>
     </td>

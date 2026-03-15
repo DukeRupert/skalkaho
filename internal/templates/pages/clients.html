@@ -3,82 +3,9 @@
 {{define "head"}}{{end}}
 {{define "content"}}
 <style>
-    /* ── Client-specific: stats uses 3 cols with border dividers ── */
+    /* ── Client-specific: stats row with 3 columns ── */
     .clients-stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1px;
-        margin-bottom: 32px;
-    }
-
-    .clients-stats .stat-item {
-        border-right: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .clients-stats .stat-item:last-child {
-        border-right: none;
-    }
-
-    /* Expandable row toggle */
-    .expand-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-family: var(--font-body);
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--color-white);
-        padding: 0;
-        transition: color 0.15s ease;
-    }
-
-    .expand-btn:hover {
-        color: var(--color-sunburst);
-    }
-
-    .expand-btn svg {
-        width: 14px;
-        height: 14px;
-        color: rgba(255,255,255,0.3);
-        transition: transform 0.15s ease;
-    }
-
-    /* Expanded detail row */
-    .detail-row td {
-        padding: 16px 20px;
-        background: rgba(255,255,255,0.02);
-    }
-
-    .detail-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .detail-label {
-        font-family: var(--font-ui);
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: var(--color-sage);
-        margin-bottom: 4px;
-    }
-
-    .detail-value {
-        font-family: var(--font-body);
-        font-size: 14px;
-        font-weight: 300;
-        color: var(--color-concrete);
-    }
-
-    @media (max-width: 767px) {
-        .detail-grid {
-            grid-template-columns: 1fr;
-        }
+        grid-template-columns: repeat(3, 1fr);
     }
 </style>
 <div>
@@ -98,7 +25,7 @@
     </div>
 
     <!-- Stats Row -->
-    <div class="clients-stats">
+    <div class="stats-row clients-stats">
         <div class="stat-item">
             <p class="stat-label">Total Clients</p>
             <p class="stat-count">{{.TotalClients}}</p>
@@ -125,7 +52,7 @@
     </div>
 
     <!-- Clients Table -->
-    <div class="table-wrap" style="border-top: none;">
+    <div class="table-wrap table-wrap--flush">
         <table>
             <thead>
                 <tr>
@@ -169,9 +96,9 @@
     <td class="cell-secondary">{{if .Email.Valid}}{{.Email.String}}{{else}}—{{end}}</td>
     <td class="cell-secondary">{{if .Phone.Valid}}{{.Phone.String}}{{else}}—{{end}}</td>
     <td class="cell-date">{{.CreatedAt.Format "Jan 2, 2006"}}</td>
-    <td style="text-align: right;">
+    <td class="cell-actions">
         <button hx-get="/clients/{{.ID}}/edit" hx-target="#modal-outlet" hx-swap="innerHTML"
-            class="action-edit" style="margin-right: 12px;">Edit</button>
+            class="action-edit">Edit</button>
         <button hx-delete="/clients/{{.ID}}" hx-confirm="Delete client '{{.CompanyName}}'?"
             class="action-delete">Delete</button>
     </td>

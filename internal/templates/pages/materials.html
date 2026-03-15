@@ -61,7 +61,7 @@
     </div>
 
     <!-- Materials Table -->
-    <div class="table-wrap" style="border-top: none;">
+    <div class="table-wrap table-wrap--flush">
         <table>
             <thead>
                 <tr>
@@ -109,7 +109,7 @@
                         {{end}}
                     </select>
                 </div>
-                <div class="modal-grid" style="margin-bottom: 24px;">
+                <div class="modal-grid modal-field">
                     <div>
                         <label class="modal-label">Unit Price</label>
                         <input type="number" name="unit_price" step="0.01" value="0" class="modal-input" />
@@ -163,10 +163,10 @@
         {{end}}
     </td>
     <td class="cell-date">{{.LastUpdated.Format "Jan 2, 2006"}}</td>
-    <td style="text-align: right;">
+    <td class="cell-actions">
         <button hx-get="/materials/{{.ID}}/edit" hx-target="#edit-material-content" hx-swap="innerHTML"
             @htmx:after-swap.window="showEdit = true"
-            class="action-edit" style="margin-right: 12px;">Edit</button>
+            class="action-edit">Edit</button>
         <button hx-delete="/materials/{{.ID}}" hx-confirm="Delete material '{{.Name}}'?"
             class="action-delete">Delete</button>
     </td>

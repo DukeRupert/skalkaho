@@ -3,16 +3,6 @@
 {{define "head"}}{{end}}
 {{define "content"}}
 <style>
-    /* ── Status indicators ── */
-    .status--draft { color: rgba(255,255,255,0.45); }
-    .status--draft::before { background: rgba(255,255,255,0.3); }
-    .status--review { color: var(--color-sunburst); }
-    .status--review::before { background: var(--color-sunburst); }
-    .status--active { color: var(--color-sage); }
-    .status--active::before { background: var(--color-sage); }
-    .status--completed { color: var(--color-concrete); }
-    .status--completed::before { background: var(--color-concrete); }
-
     /* ── Status select dropdown ── */
     .status-select {
         appearance: none;
@@ -722,7 +712,7 @@
                 </td>
                 <td class="cell-date">{{if .SentAt}}{{.SentAt}}{{else}}&mdash;{{end}}</td>
                 <td class="cell-date">{{if .ExpiresAt}}{{.ExpiresAt}}{{else}}&mdash;{{end}}</td>
-                <td style="text-align: right;">
+                <td class="cell-actions">
                     <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
                         {{if .Token}}
                         <a href="/q/{{.Token}}" target="_blank" class="action-edit">View</a>

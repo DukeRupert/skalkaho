@@ -1,5 +1,6 @@
 {{template "base" .}}
 {{define "title"}}Labor &amp; Equipment Rates — Skalkaho{{end}}
+{{define "head"}}{{end}}
 {{define "content"}}
 <div x-data="{ showAddCategory: false }">
     <!-- Header -->
@@ -49,7 +50,7 @@
     </div>
 
     <!-- Rates Table -->
-    <div class="table-wrap" style="border-top: none;">
+    <div class="table-wrap table-wrap--flush">
         <table>
             <thead>
                 <tr>
@@ -88,9 +89,9 @@
     <td class="cell-total">${{printf "%.2f" .Rate}}</td>
     <td class="cell-secondary">{{.Unit}}</td>
     <td class="cell-date">{{.LastUpdated.Format "Jan 2, 2006"}}</td>
-    <td style="text-align: right;">
+    <td class="cell-actions">
         <button hx-get="/rates/{{.ID}}/edit" hx-target="#modal-outlet" hx-swap="innerHTML"
-            class="action-edit" style="margin-right: 12px;">Edit</button>
+            class="action-edit">Edit</button>
         <button hx-delete="/rates/{{.ID}}" hx-confirm="Delete rate '{{.Name}}'?"
             class="action-delete">Delete</button>
     </td>
@@ -121,7 +122,7 @@
                 <label class="modal-label">Supplier</label>
                 <input type="text" name="supplier" class="modal-input" />
             </div>
-            <div class="modal-grid" style="margin-bottom: 24px;">
+            <div class="modal-grid modal-field">
                 <div>
                     <label class="modal-label">Rate</label>
                     <input type="number" name="rate" step="0.01" value="0" class="modal-input" />
@@ -168,7 +169,7 @@
                 <label class="modal-label">Supplier</label>
                 <input type="text" name="supplier" value="{{if .Supplier.Valid}}{{.Supplier.String}}{{end}}" class="modal-input" />
             </div>
-            <div class="modal-grid" style="margin-bottom: 24px;">
+            <div class="modal-grid modal-field">
                 <div>
                     <label class="modal-label">Rate</label>
                     <input type="number" name="rate" step="0.01" value="{{printf "%.2f" .Rate}}" class="modal-input" />

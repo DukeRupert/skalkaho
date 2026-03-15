@@ -4,50 +4,545 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{if eq .Status "not_found"}}Quote Not Found{{else}}Quote — {{.ProjectName}}{{end}}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Barlow:wght@300;400;500&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --color-ink:        #1E2120;
+            --color-granite:    #3D4A52;
+            --color-sage:       #7A8C6E;
+            --color-sunburst:   #C49A3C;
+            --color-limestone:  #F2EDE4;
+            --color-concrete:   #D4CEC6;
+            --color-white:      #FAFAF8;
+            --color-body-text:  #3A3830;
+            --color-muted-text: #7A7468;
+
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-ui:      'Barlow Condensed', system-ui, sans-serif;
+            --font-body:    'Barlow', system-ui, sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--color-limestone);
+            color: var(--color-body-text);
+            min-height: 100vh;
+        }
+
+        /* Grain texture */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.4'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+            opacity: 0.02;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         @media print {
             .no-print { display: none !important; }
             body { background: white !important; }
+            body::before { display: none; }
             .print-break { page-break-before: always; }
+        }
+
+        /* ── Layout ── */
+        .quote-container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 48px 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Card ── */
+        .quote-card {
+            background: var(--color-white);
+            border: 1px solid rgba(0,0,0,0.08);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        /* ── Not Found ── */
+        .not-found {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .not-found h1 {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-ink);
+            margin-bottom: 8px;
+        }
+
+        .not-found p {
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 300;
+            color: var(--color-muted-text);
+        }
+
+        /* ── Header card ── */
+        .quote-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .quote-company {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-ink);
+        }
+
+        .quote-project {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--color-muted-text);
+            margin-top: 6px;
+        }
+
+        .quote-project strong {
+            font-weight: 500;
+            color: var(--color-body-text);
+        }
+
+        .quote-meta {
+            text-align: right;
+        }
+
+        /* ── Status badge (light mode) ── */
+        .quote-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            font-family: var(--font-ui);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            border: 1px solid;
+        }
+
+        .quote-badge::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            flex-shrink: 0;
+        }
+
+        .quote-badge--active {
+            color: var(--color-sunburst);
+            border-color: rgba(196,154,60,0.25);
+            background: rgba(196,154,60,0.06);
+        }
+
+        .quote-badge--active::before {
+            background: var(--color-sunburst);
+        }
+
+        .quote-badge--signed {
+            color: var(--color-sage);
+            border-color: rgba(122,140,110,0.25);
+            background: rgba(122,140,110,0.06);
+        }
+
+        .quote-badge--signed::before {
+            background: var(--color-sage);
+        }
+
+        .quote-badge--expired {
+            color: #B43C3C;
+            border-color: rgba(180,60,60,0.2);
+            background: rgba(180,60,60,0.04);
+        }
+
+        .quote-badge--expired::before {
+            background: #B43C3C;
+        }
+
+        .quote-version {
+            font-family: var(--font-ui);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: var(--color-muted-text);
+            margin-top: 8px;
+        }
+
+        /* ── Expired notice ── */
+        .expired-notice {
+            background: rgba(180, 60, 60, 0.06);
+            border-left: 3px solid #B43C3C;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .expired-notice h2 {
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: #B43C3C;
+        }
+
+        .expired-notice p {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--color-muted-text);
+            margin-top: 4px;
+        }
+
+        /* ── Section label ── */
+        .quote-section-label {
+            font-family: var(--font-ui);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.20em;
+            text-transform: uppercase;
+            color: var(--color-sage);
+            padding: 0 0 12px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+
+        /* ── Table ── */
+        .quote-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .quote-table thead tr {
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .quote-table th {
+            text-align: left;
+            padding: 10px 0;
+            font-family: var(--font-ui);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--color-muted-text);
+        }
+
+        .quote-table th.text-right {
+            text-align: right;
+        }
+
+        .quote-table td {
+            padding: 10px 0;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--color-body-text);
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+
+        .quote-table td.text-right {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .quote-table td.font-medium {
+            font-weight: 500;
+        }
+
+        /* ── Summary rows ── */
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--color-body-text);
+        }
+
+        .summary-row span:last-child {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            padding: 16px 0 0 0;
+            margin-top: 12px;
+            border-top: 2px solid var(--color-ink);
+        }
+
+        .summary-total span {
+            font-family: var(--font-body);
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--color-ink);
+        }
+
+        .summary-total span:last-child {
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Validity note ── */
+        .validity-note {
+            font-family: var(--font-body);
+            font-size: 12px;
+            font-weight: 300;
+            color: var(--color-muted-text);
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        /* ── Signature form ── */
+        .sign-title {
+            font-family: var(--font-display);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--color-ink);
+            margin-bottom: 8px;
+        }
+
+        .sign-desc {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--color-muted-text);
+            margin-bottom: 24px;
+        }
+
+        .sign-label {
+            display: block;
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.20em;
+            text-transform: uppercase;
+            color: var(--color-sage);
+            margin-bottom: 10px;
+        }
+
+        .sign-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid rgba(0,0,0,0.12);
+            padding: 10px 0;
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 400;
+            color: var(--color-ink);
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .sign-input::placeholder {
+            color: var(--color-muted-text);
+        }
+
+        .sign-input:focus {
+            border-bottom-color: var(--color-sunburst);
+        }
+
+        .sign-submit {
+            width: 100%;
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            background: var(--color-granite);
+            color: var(--color-white);
+            padding: 15px 28px;
+            border: 2px solid var(--color-granite);
+            cursor: pointer;
+            margin-top: 24px;
+            transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+        }
+
+        .sign-submit:hover {
+            background: var(--color-sunburst);
+            border-color: var(--color-sunburst);
+            color: var(--color-ink);
+        }
+
+        .sign-submit:focus-visible {
+            outline: 2px solid var(--color-sunburst);
+            outline-offset: 3px;
+        }
+
+        .sign-fine-print {
+            font-family: var(--font-body);
+            font-size: 11px;
+            font-weight: 300;
+            color: var(--color-muted-text);
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        /* ── Signed confirmation ── */
+        .signed-notice {
+            text-align: center;
+            padding: 32px;
+            margin-bottom: 24px;
+            background: rgba(122,140,110,0.06);
+            border-left: 3px solid var(--color-sage);
+        }
+
+        .signed-notice svg {
+            width: 40px;
+            height: 40px;
+            color: var(--color-sage);
+            margin: 0 auto 16px;
+        }
+
+        .signed-notice h2 {
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: var(--color-sage);
+        }
+
+        .signed-notice p {
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--color-muted-text);
+            margin-top: 4px;
+        }
+
+        .signed-notice strong {
+            font-weight: 500;
+            color: var(--color-body-text);
+        }
+
+        /* ── Print / Footer ── */
+        .print-btn {
+            display: block;
+            margin: 0 auto 32px;
+            font-family: var(--font-ui);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: var(--color-muted-text);
+            background: transparent;
+            border: 1px solid rgba(0,0,0,0.12);
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .print-btn:hover {
+            border-color: var(--color-sunburst);
+            color: var(--color-sunburst);
+        }
+
+        .quote-footer {
+            text-align: center;
+            padding-bottom: 48px;
+        }
+
+        .quote-footer p {
+            font-family: var(--font-ui);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--color-concrete);
+        }
+
+        /* ── Bottom accent ── */
+        .bottom-accent {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(
+                90deg,
+                var(--color-sunburst) 0%,
+                var(--color-sage) 55%,
+                transparent 100%
+            );
+            z-index: 10;
+        }
+
+        @media (max-width: 600px) {
+            .quote-container {
+                padding: 24px 16px;
+            }
+
+            .quote-card {
+                padding: 24px 20px;
+            }
+
+            .quote-header {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .quote-meta {
+                text-align: left;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body>
 
 {{if eq .Status "not_found"}}
 <!-- Not Found -->
-<div class="flex items-center justify-center min-h-screen">
-    <div class="text-center">
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">Quote Not Found</h1>
-        <p class="text-gray-500">This quote link is invalid or has been removed.</p>
+<div class="not-found">
+    <div>
+        <h1>Quote Not Found</h1>
+        <p>This quote link is invalid or has been removed.</p>
     </div>
 </div>
 
 {{else}}
-<div class="max-w-3xl mx-auto py-8 px-4">
+<div class="quote-container">
     <!-- Header -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <div class="flex items-start justify-between">
+    <div class="quote-card">
+        <div class="quote-header">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">{{.CompanyName}}</h1>
-                <p class="text-sm text-gray-500 mt-1">Quote for <span class="font-medium text-gray-700">{{.ProjectName}}</span></p>
+                <h1 class="quote-company">{{.CompanyName}}</h1>
+                <p class="quote-project">Quote for <strong>{{.ProjectName}}</strong></p>
                 {{if .ClientName}}
-                <p class="text-sm text-gray-500">Prepared for <span class="font-medium text-gray-700">{{.ClientName}}</span></p>
+                <p class="quote-project">Prepared for <strong>{{.ClientName}}</strong></p>
                 {{end}}
             </div>
-            <div class="text-right">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    {{if eq .Status "active"}}bg-blue-100 text-blue-800
-                    {{else if eq .Status "signed"}}bg-green-100 text-green-800
-                    {{else if eq .Status "expired"}}bg-red-100 text-red-800{{end}}">
+            <div class="quote-meta">
+                <span class="quote-badge
+                    {{if eq .Status "active"}}quote-badge--active
+                    {{else if eq .Status "signed"}}quote-badge--signed
+                    {{else if eq .Status "expired"}}quote-badge--expired{{end}}">
                     {{if eq .Status "active"}}Awaiting Signature
                     {{else if eq .Status "signed"}}Signed
                     {{else if eq .Status "expired"}}Expired{{end}}
                 </span>
-                <p class="text-xs text-gray-400 mt-2">Version {{.Version}}</p>
+                <p class="quote-version">Version {{.Version}}</p>
                 {{if .SentAt}}
-                <p class="text-xs text-gray-400">Sent {{.SentAt}}</p>
+                <p class="quote-version">Sent {{.SentAt}}</p>
                 {{end}}
             </div>
         </div>
@@ -55,30 +550,28 @@
 
     {{if eq .Status "expired"}}
     <!-- Expired Notice -->
-    <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-6 text-center">
-        <h2 class="text-lg font-semibold text-red-800">This Quote Has Expired</h2>
-        <p class="text-sm text-red-600 mt-1">Please contact the contractor for an updated quote.</p>
+    <div class="expired-notice">
+        <h2>This Quote Has Expired</h2>
+        <p>Please contact the contractor for an updated quote.</p>
     </div>
     {{end}}
 
     <!-- Cost Breakdown -->
     {{if .CostSummary.Sections}}
-    <div class="bg-white rounded-lg border border-gray-200 mb-6">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Estimate Breakdown</h2>
-        </div>
-        <table class="w-full">
+    <div class="quote-card">
+        <div class="quote-section-label">Estimate Breakdown</div>
+        <table class="quote-table">
             <thead>
-                <tr class="border-b border-gray-200 bg-gray-50">
-                    <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Section</th>
-                    <th class="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <tr>
+                    <th>Section</th>
+                    <th class="text-right">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 {{range .CostSummary.Sections}}
-                <tr class="border-b border-gray-100">
-                    <td class="px-6 py-3 text-sm font-medium text-gray-900">{{.Name}}</td>
-                    <td class="px-6 py-3 text-sm text-gray-900 text-right font-mono">{{money .Total}}</td>
+                <tr>
+                    <td class="font-medium">{{.Name}}</td>
+                    <td class="text-right">{{money .Total}}</td>
                 </tr>
                 {{end}}
             </tbody>
@@ -87,108 +580,103 @@
     {{end}}
 
     <!-- Grand Total Breakdown -->
-    <div class="bg-white rounded-lg border border-gray-200 mb-6">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Total Summary</h2>
-        </div>
-        <div class="px-6 py-4 space-y-2">
+    <div class="quote-card">
+        <div class="quote-section-label">Total Summary</div>
+        <div style="padding-top: 16px;">
             {{if gtf (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup) 0}}
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Materials</span>
-                <span class="font-mono text-gray-900">{{money (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup)}}</span>
+            <div class="summary-row">
+                <span>Materials</span>
+                <span>{{money (addf .CostSummary.MaterialsBase .CostSummary.MaterialsMarkup)}}</span>
             </div>
             {{end}}
             {{if gtf (addf .CostSummary.LaborBase .CostSummary.LaborMarkup) 0}}
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Labor</span>
-                <span class="font-mono text-gray-900">{{money (addf .CostSummary.LaborBase .CostSummary.LaborMarkup)}}</span>
+            <div class="summary-row">
+                <span>Labor</span>
+                <span>{{money (addf .CostSummary.LaborBase .CostSummary.LaborMarkup)}}</span>
             </div>
             {{end}}
             {{if gtf (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup) 0}}
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Equipment</span>
-                <span class="font-mono text-gray-900">{{money (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup)}}</span>
+            <div class="summary-row">
+                <span>Equipment</span>
+                <span>{{money (addf .CostSummary.EquipmentBase .CostSummary.EquipmentMarkup)}}</span>
             </div>
             {{end}}
             {{if gtf (addf .CostSummary.SubsBase .CostSummary.SubsMarkup) 0}}
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Subcontractors</span>
-                <span class="font-mono text-gray-900">{{money (addf .CostSummary.SubsBase .CostSummary.SubsMarkup)}}</span>
+            <div class="summary-row">
+                <span>Subcontractors</span>
+                <span>{{money (addf .CostSummary.SubsBase .CostSummary.SubsMarkup)}}</span>
             </div>
             {{end}}
             {{if gtf (addf .CostSummary.OtherBase .CostSummary.OtherMarkup) 0}}
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Other</span>
-                <span class="font-mono text-gray-900">{{money (addf .CostSummary.OtherBase .CostSummary.OtherMarkup)}}</span>
+            <div class="summary-row">
+                <span>Other</span>
+                <span>{{money (addf .CostSummary.OtherBase .CostSummary.OtherMarkup)}}</span>
             </div>
             {{end}}
             {{if gtf .CostSummary.LumpSumTotal 0}}
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Lump Sums</span>
-                <span class="font-mono text-gray-900">{{money .CostSummary.LumpSumTotal}}</span>
+            <div class="summary-row">
+                <span>Lump Sums</span>
+                <span>{{money .CostSummary.LumpSumTotal}}</span>
             </div>
             {{end}}
-            <div class="border-t border-gray-200 pt-3 mt-3">
-                <div class="flex justify-between">
-                    <span class="text-lg font-bold text-gray-900">Total</span>
-                    <span class="text-lg font-bold text-gray-900 font-mono">{{money .CostSummary.GrandTotal}}</span>
-                </div>
+            <div class="summary-total">
+                <span>Total</span>
+                <span>{{money .CostSummary.GrandTotal}}</span>
             </div>
         </div>
     </div>
 
     {{if .ExpiresAt}}
-    <p class="text-xs text-gray-400 text-center mb-6">This quote is valid until {{.ExpiresAt}}.</p>
+    <p class="validity-note">This quote is valid until {{.ExpiresAt}}.</p>
     {{end}}
 
     {{if eq .Status "active"}}
     <!-- Signature Form -->
-    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Accept This Quote</h2>
-        <p class="text-sm text-gray-500 mb-4">By signing below, you accept the terms and pricing outlined in this quote.</p>
-        <form method="POST" class="space-y-4">
-            <div>
-                <label for="signer_name" class="block text-sm font-medium text-gray-700 mb-1">Your Full Name</label>
+    <div class="quote-card">
+        <h2 class="sign-title">Accept This Quote</h2>
+        <p class="sign-desc">By signing below, you accept the terms and pricing outlined in this quote.</p>
+        <form method="POST">
+            <div style="margin-bottom: 24px;">
+                <label for="signer_name" class="sign-label">Your Full Name</label>
                 <input type="text" name="signer_name" id="signer_name" required
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    class="sign-input"
                     placeholder="Enter your full name" />
             </div>
-            <button type="submit"
-                class="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition-colors">
-                I Accept This Quote
-            </button>
-            <p class="text-xs text-gray-400 text-center">Your name and IP address will be recorded as your electronic signature.</p>
+            <button type="submit" class="sign-submit">I Accept This Quote</button>
+            <p class="sign-fine-print">Your name and IP address will be recorded as your electronic signature.</p>
         </form>
     </div>
     {{end}}
 
     {{if eq .Status "signed"}}
     <!-- Signed Confirmation -->
-    <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 text-center">
-        <svg class="w-12 h-12 text-green-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    <div class="signed-notice">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        <h2 class="text-lg font-semibold text-green-800">Quote Accepted</h2>
-        <p class="text-sm text-green-600 mt-1">Signed by <strong>{{.SignerName}}</strong></p>
+        <h2>Quote Accepted</h2>
+        <p>Signed by <strong>{{.SignerName}}</strong></p>
         {{if .SignedAt}}
-        <p class="text-xs text-green-500 mt-1">{{.SignedAt}}</p>
+        <p>{{.SignedAt}}</p>
         {{end}}
     </div>
     {{end}}
 
     <!-- Print Button -->
-    <div class="text-center no-print mb-8">
-        <button onclick="window.print()"
-            class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+    <div class="no-print">
+        <button onclick="window.print()" class="print-btn">
             Print / Save as PDF
         </button>
     </div>
 
     <!-- Footer -->
-    <div class="text-center text-xs text-gray-400 pb-8">
+    <div class="quote-footer">
         <p>Powered by Skalkaho</p>
     </div>
 </div>
+
+<!-- Bottom accent rule -->
+<div class="bottom-accent no-print"></div>
 {{end}}
 
 </body>
